@@ -1,0 +1,180 @@
+{% extends "dashboard/seeker/_layout.html" %}
+{% load static humanize %}
+
+{% block title %}Dashboard — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="sj-dashboard-header mb-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <h1 class="mb-0">Welcome back, {{ user.first_name|default:"there" }}! 👋</h1>
+      <p class="subtitle mb-0">Here's your job search overview</p>
+    </div>
+    <div class="d-flex gap-2 flex-shrink-0">
+      <a href="{% url 'core:job-search' %}" class="btn btn-gradient">
+        <i class="bi bi-search me-1"></i> Browse Jobs
+      </a>
+      <a href="{% url 'seeker:resumes' %}" class="btn btn-outline-light-brand">
+        <i class="bi bi-file-earmark-arrow-up me-1"></i> Upload Resume
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Profile Completion -->
+<div class="sj-profile-completion mb-4 animate-fade-up" {% if profile_completion == 100 %}data-confetti="true"{% endif %}>
+  <div class="completion-header">
+    <div>
+      <h6 class="fw-700 mb-0">{% if profile_completion == 100 %}Profile Complete! 🎉{% else %}Complete your profile{% endif %}</h6>
+      <p class="fs-sm text-muted-2 mb-0">{% if profile_completion == 100 %}You're fully set up to get 5× more views from recruiters.{% else %}A complete profile gets 5× more views from recruiters{% endif %}</p>
+    </div>
+    <span class="completion-pct">{{ profile_completion }}%</span>
+  </div>
+  <div class="sj-progress">
+    <div class="bar" style="width:{{ profile_completion }}%"></div>
+  </div>
+  <div class="completion-steps mt-3">
+    <div class="step"><span class="step-check done"><i class="bi bi-check2"></i></span> Account created</div>
+    <div class="step"><span class="step-check {% if profile %}done{% else %}pending{% endif %}"><i class="bi {% if profile %}bi-check2{% else %}bi-circle{% endif %}"></i></span> Add personal details</div>
+    <div class="step"><span class="step-check {% if has_resume %}done{% else %}pending{% endif %}"><i class="bi {% if has_resume %}bi-check2{% else %}bi-circle{% endif %}"></i></span> Upload resume</div>
+    <div class="step"><span class="step-check {% if has_skills %}done{% else %}pending{% endif %}"><i class="bi {% if has_skills %}bi-check2{% else %}bi-circle{% endif %}"></i></span> Add skills & experience</div>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="sj-kpi-grid mb-4 stagger-children">
+  <div class="sj-kpi animate-fade-up">
+    <div class="kpi-icon ico-gradient-primary"><i class="bi bi-send-check"></i></div>
+    <div><div class="kpi-value" data-counter="{{ applied_count }}">{{ applied_count }}</div><div class="kpi-label">Applied Jobs</div></div>
+  </div>
+  <div class="sj-kpi animate-fade-up">
+    <div class="kpi-icon ico-gradient-cool"><i class="bi bi-bookmark"></i></div>
+    <div><div class="kpi-value" data-counter="{{ saved_count }}">{{ saved_count }}</div><div class="kpi-label">Saved Jobs</div></div>
+  </div>
+  <div class="sj-kpi animate-fade-up">
+    <div class="kpi-icon ico-gradient-green"><i class="bi bi-person-check"></i></div>
+    <div><div class="kpi-value" data-counter="{{ shortlisted_count }}">{{ shortlisted_count }}</div><div class="kpi-label">Shortlisted</div></div>
+  </div>
+  <div class="sj-kpi animate-fade-up">
+    <div class="kpi-icon ico-gradient-warm"><i class="bi bi-calendar-event"></i></div>
+    <div><div class="kpi-value" data-counter="{{ interview_count }}">{{ interview_count }}</div><div class="kpi-label">Interviews</div></div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Recent Applications -->
+  <div class="col-lg-7">
+    <div class="sj-activity-feed">
+      <div class="feed-header d-flex align-items-center justify-content-between">
+        <span>Recent Applications</span>
+        <a href="{% url 'seeker:applied-jobs' %}" class="fs-sm fw-semibold text-primary">View all</a>
+      </div>
+      {% if recent_applications %}
+        {% for app in recent_applications %}
+        <div class="sj-activity-item">
+          <div class="sj-logo-sm flex-shrink-0">{{ app.job.company.name|slice:":1"|upper }}</div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="fs-sm fw-semibold text-ink text-truncate">{{ app.job.title }}</div>
+            <div class="fs-xs text-muted-2">{{ app.job.company.name }}</div>
+          </div>
+          <div class="text-end flex-shrink-0">
+            <span class="status-pill status-{{ app.status }}">{{ app.get_status_display }}</span>
+            <div class="fs-xs text-subtle mt-1">{{ app.applied_at|timesince }} ago</div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="sj-empty py-4">
+          <div class="icon"><i class="bi bi-send"></i></div>
+          <h6>No applications yet</h6>
+          <p class="fs-sm text-muted-2">Start applying to jobs to see them here.</p>
+          <a href="{% url 'core:job-search' %}" class="btn btn-gradient btn-sm">Browse Jobs</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Quick Actions + Recommended -->
+  <div class="col-lg-5">
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-700 mb-3">Quick Actions</h6>
+      <div class="d-grid gap-2">
+        <a href="{% url 'core:job-search' %}" class="sj-quick-action flex-row py-2">
+          <div class="action-icon bg-soft-primary"><i class="bi bi-search"></i></div>
+          <span class="action-label">Search Jobs</span>
+          <i class="bi bi-chevron-right ms-auto text-muted-2"></i>
+        </a>
+        <a href="{% url 'seeker:edit-profile' %}" class="sj-quick-action flex-row py-2">
+          <div class="action-icon bg-soft-info"><i class="bi bi-pencil"></i></div>
+          <span class="action-label">Edit Profile</span>
+          <i class="bi bi-chevron-right ms-auto text-muted-2"></i>
+        </a>
+        <a href="{% url 'seeker:resumes' %}" class="sj-quick-action flex-row py-2">
+          <div class="action-icon bg-soft-success"><i class="bi bi-file-earmark-arrow-up"></i></div>
+          <span class="action-label">Upload Resume</span>
+          <i class="bi bi-chevron-right ms-auto text-muted-2"></i>
+        </a>
+      </div>
+    </div>
+
+    {% if recommended_jobs %}
+    <div class="sj-card p-4">
+      <h6 class="fw-700 mb-3">Recommended for you</h6>
+      {% for job in recommended_jobs|slice:":3" %}
+      <a href="{% url 'core:job-detail' slug=job.slug %}" class="d-flex align-items-center gap-3 py-2 text-reset border-bottom">
+        <div class="sj-logo-sm flex-shrink-0">{{ job.company.name|slice:":1"|upper }}</div>
+        <div class="flex-grow-1 min-w-0">
+          <div class="fs-sm fw-semibold text-ink text-truncate">{{ job.title }}</div>
+          <div class="fs-xs text-muted-2">{{ job.company.name }}</div>
+        </div>
+        <span class="sj-badge fs-xs">{{ job.get_job_type_display }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block dashboard_js %}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const profileCard = document.querySelector('.sj-profile-completion');
+    if (profileCard) {
+      const is100Percent = profileCard.getAttribute('data-confetti') === "true";
+      
+      if (is100Percent) {
+        if (!localStorage.getItem('profileConfettiShown')) {
+          // Play confetti
+          setTimeout(() => {
+            confetti({
+              particleCount: 150,
+              spread: 80,
+              origin: { y: 0.6 },
+              colors: ['#4ade80', '#3b82f6', '#8b5cf6', '#f43f5e']
+            });
+            localStorage.setItem('profileConfettiShown', 'true');
+            
+            // Fade out the card after the confetti settles
+            setTimeout(() => {
+              profileCard.style.transition = 'opacity 0.8s ease, height 0.8s ease, margin 0.8s ease';
+              profileCard.style.opacity = '0';
+              profileCard.style.height = '0px';
+              profileCard.style.margin = '0px';
+              profileCard.style.overflow = 'hidden';
+              setTimeout(() => profileCard.remove(), 800);
+            }, 3500);
+          }, 500);
+        } else {
+          // Already shown confetti and user is still at 100%, hide card immediately
+          profileCard.style.display = 'none';
+        }
+      } else {
+        // Less than 100%. Reset the flag so if they reach 100% again, they get confetti again!
+        localStorage.removeItem('profileConfettiShown');
+      }
+    }
+  });
+</script>
+{% endblock %}

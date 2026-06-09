@@ -1,0 +1,62 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% block title %}Company Profile — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<h4 class="fw-800 mb-4">Company Profile</h4>
+
+<form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+  {% csrf_token %}
+  
+  <div class="sj-card p-4 mb-4">
+    <div class="d-flex align-items-center gap-4 mb-4">
+      <div class="sj-logo-lg" style="width: 80px; height: 80px; font-size: 2rem;">
+        {% if company and company.logo %}
+          <img src="{{ company.logo.url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">
+        {% elif company %}
+          {{ company.name|slice:":1"|upper }}
+        {% else %}
+          <i class="bi bi-building"></i>
+        {% endif %}
+      </div>
+      <div>
+        <label for="logo" class="form-label mb-1">Company Logo</label>
+        <input class="form-control form-control-sm" type="file" id="logo" name="logo" accept="image/*">
+      </div>
+    </div>
+    
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label for="name" class="form-label">Company Name *</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ company.name|default:'' }}" required>
+      </div>
+      <div class="col-md-6">
+        <label for="website" class="form-label">Website</label>
+        <input type="url" class="form-control" id="website" name="website" value="{{ company.website|default:'' }}" placeholder="https://...">
+      </div>
+      <div class="col-md-6">
+        <label for="industry" class="form-label">Industry</label>
+        <input type="text" class="form-control" id="industry" name="industry" value="{{ company.industry|default:'' }}" placeholder="e.g. Technology, Healthcare">
+      </div>
+      <div class="col-md-6">
+        <label for="size" class="form-label">Company Size</label>
+        <select class="form-select" id="size" name="size">
+          <option value="">Select size</option>
+          <option value="1-10" {% if company.size == '1-10' %}selected{% endif %}>Startup (1–10)</option>
+          <option value="11-50" {% if company.size == '11-50' %}selected{% endif %}>Small (11–50)</option>
+          <option value="51-200" {% if company.size == '51-200' %}selected{% endif %}>Medium (51–200)</option>
+          <option value="201-1000" {% if company.size == '201-1000' %}selected{% endif %}>Large (201–1000)</option>
+          <option value="1000+" {% if company.size == '1000+' %}selected{% endif %}>Enterprise (1000+)</option>
+        </select>
+      </div>
+      <div class="col-12">
+        <label for="description" class="form-label">About the Company</label>
+        <textarea class="form-control" id="description" name="description" rows="5" placeholder="What does your company do?">{{ company.description|default:'' }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Save Company</button>
+  </div>
+</form>
+
+{% endblock %}

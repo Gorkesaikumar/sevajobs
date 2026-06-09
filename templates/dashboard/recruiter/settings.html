@@ -1,0 +1,5 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% block title %}Settings — SevaJobs{% endblock %}
+{% block dashboard_content %}<h4 class="fw-800 mb-4">Account Settings</h4>
+<div class="sj-card p-4 mb-4"><h5 class="fw-700 mb-3"><i class="bi bi-key me-2 text-primary"></i>Change Password</h5><form method="post"><div class="row g-3"><div class="col-md-12"><label class="form-label">Current Password</label><input type="password" class="form-control" name="current_password" required></div><div class="col-md-6"><label class="form-label">New Password</label><input type="password" class="form-control" name="new_password" required></div><div class="col-md-6"><label class="form-label">Confirm Password</label><input type="password" class="form-control" name="confirm_password" required></div></div><button type="submit" class="btn btn-primary btn-sm mt-3">Update Password</button></form></div>
+{% endblock %}

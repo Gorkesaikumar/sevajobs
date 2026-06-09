@@ -1,0 +1,55 @@
+{# Job Card — expects `job` in context #}
+{% load humanize %}
+<article class="sj-card p-4 h-100 d-flex flex-column position-relative">
+  <button class="sj-save-btn {% if job.is_saved %}saved{% endif %}" data-job-id="{{ job.id }}" aria-label="Save job" type="button">
+    <i class="bi {% if job.is_saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i>
+  </button>
+
+  <div class="d-flex align-items-start gap-3 mb-3">
+    <div class="sj-logo flex-shrink-0" aria-hidden="true">
+      {% if job.company.logo %}
+        <img src="{{ job.company.logo.url }}" alt="{{ job.company.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+      {% else %}
+        {{ job.company.name|default:"S"|slice:":1"|upper }}
+      {% endif %}
+    </div>
+    <div class="flex-grow-1 min-w-0">
+      <div class="d-flex flex-wrap gap-2 mb-1">
+        {% if job.is_currently_featured %}<span class="sj-badge is-featured"><i class="bi bi-star-fill"></i> Featured</span>{% endif %}
+        {% if job.is_remote %}<span class="sj-badge is-remote"><i class="bi bi-laptop"></i> Remote</span>{% endif %}
+      </div>
+      <h3 class="h6 mb-1 text-truncate">
+        <a href="{% url 'core:job-detail' slug=job.slug %}" class="stretched-link text-reset">{{ job.title }}</a>
+      </h3>
+      <p class="text-muted-2 small mb-0">{{ job.company.name }}</p>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <span class="sj-chip"><i class="bi bi-geo-alt"></i> {{ job.location|truncatechars:20 }}</span>
+    <span class="sj-chip"><i class="bi bi-briefcase"></i> {{ job.get_job_type_display }}</span>
+    <span class="sj-chip"><i class="bi bi-bar-chart"></i> {{ job.get_experience_level_display }}</span>
+  </div>
+
+  {% if job.skills_required.all %}
+  <div class="d-flex flex-wrap gap-1 mb-3">
+    {% for skill in job.skills_required.all|slice:":3" %}
+      <span class="sj-badge" style="font-size:.7rem;">{{ skill.name }}</span>
+    {% endfor %}
+    {% if job.skills_required.count > 3 %}
+      <span class="sj-badge" style="font-size:.7rem;">+{{ job.skills_required.count|add:"-3" }} more</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="mt-auto d-flex align-items-center justify-content-between pt-3 border-top">
+    <span class="fw-semibold text-ink">
+      {% if job.salary_is_disclosed and job.salary_min %}
+        ₹{{ job.salary_min|intcomma }}{% if job.salary_max %} – ₹{{ job.salary_max|intcomma }}{% endif %}
+      {% else %}
+        <span class="text-muted-2 fw-normal fs-sm">Not disclosed</span>
+      {% endif %}
+    </span>
+    <span class="text-muted-2 small">{{ job.created_at|timesince }} ago</span>
+  </div>
+</article>

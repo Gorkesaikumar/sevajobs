@@ -1,0 +1,103 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load sj_extras humanize %}
+{% block title %}Candidate Detail — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-800 mb-1">Candidate Profile</h4>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0 fs-sm">
+        <li class="breadcrumb-item"><a href="{% url 'recruiter:applications' %}" class="text-muted-2 text-decoration-none">Applications</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ application.applicant.full_name }}</li>
+      </ol>
+    </nav>
+  </div>
+  <div class="d-flex gap-2">
+    {% if application.status != "shortlisted" and application.status != "selected" and application.status != "rejected" and application.status != "withdrawn" %}
+    <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="d-inline mb-0">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="shortlist">
+      <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i> Approve</button>
+    </form>
+    <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="d-inline mb-0">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="reject">
+      <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-lg me-1"></i> Reject</button>
+    </form>
+    {% else %}
+      <span class="badge {{ application.status|status_class }} align-self-center py-2 px-3 fs-sm">{{ application.get_status_display }}</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3">Applicant Details</h5>
+      <div class="row mb-3">
+        <div class="col-sm-4 text-muted-2">Name</div>
+        <div class="col-sm-8 fw-semibold">{{ application.applicant.full_name }}</div>
+      </div>
+      <div class="row mb-3">
+        <div class="col-sm-4 text-muted-2">Email</div>
+        <div class="col-sm-8"><a href="mailto:{{ application.applicant.email }}">{{ application.applicant.email }}</a></div>
+      </div>
+      {% if application.applicant.phone %}
+      <div class="row mb-3">
+        <div class="col-sm-4 text-muted-2">Phone</div>
+        <div class="col-sm-8">{{ application.applicant.phone }}</div>
+      </div>
+      {% endif %}
+      {% if application.applicant.job_seeker_profile and application.applicant.job_seeker_profile.current_location %}
+      <div class="row mb-3">
+        <div class="col-sm-4 text-muted-2">Location</div>
+        <div class="col-sm-8">{{ application.applicant.job_seeker_profile.current_location }}</div>
+      </div>
+      {% endif %}
+      <div class="row mb-3">
+        <div class="col-sm-4 text-muted-2">Applied For</div>
+        <div class="col-sm-8 fw-semibold">{{ application.job.title }}</div>
+      </div>
+      <div class="row mb-3">
+        <div class="col-sm-4 text-muted-2">Applied On</div>
+        <div class="col-sm-8">{{ application.applied_at|date:"M j, Y, g:i a" }}</div>
+      </div>
+      {% if application.expected_salary %}
+      <div class="row mb-3">
+        <div class="col-sm-4 text-muted-2">Expected Salary</div>
+        <div class="col-sm-8">₹{{ application.expected_salary|intcomma }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if application.cover_letter %}
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3">Cover Letter</h5>
+      <div class="bg-soft p-3 rounded" style="white-space: pre-wrap;">{{ application.cover_letter }}</div>
+    </div>
+    {% endif %}
+
+  </div>
+  <div class="col-lg-4">
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3">Resume</h5>
+      {% if application.resume %}
+        <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-soft rounded">
+          <div class="fs-1 text-primary"><i class="bi bi-file-earmark-pdf"></i></div>
+          <div class="min-w-0">
+            <h6 class="mb-1 text-truncate">{{ application.resume.file_name|default:"Resume" }}</h6>
+            <div class="fs-sm text-muted-2">Uploaded on {{ application.resume.created_at|date:"M j, Y" }}</div>
+          </div>
+        </div>
+        <div class="d-grid gap-2">
+          {% if application.resume.file %}
+          <a href="{{ application.resume.file.url }}" target="_blank" class="btn btn-outline-primary"><i class="bi bi-download me-1"></i> Download Resume</a>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="text-muted-2 mb-0">No resume provided.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "dashboard/_layout.html" %}
+{% load static sj_extras %}
+
+{% block title %}Recruiter Dashboard — SevaJobs{% endblock %}
+{% block role_label %}Recruiter{% endblock %}
+
+{% block sidebar_nav %}
+  <li><a class="nav-link active" href="#"><i class="bi bi-speedometer2" aria-hidden="true"></i>Overview</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-briefcase" aria-hidden="true"></i>My Jobs</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-people" aria-hidden="true"></i>Applicants</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-search" aria-hidden="true"></i>Search Candidates</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-building" aria-hidden="true"></i>Company Profile</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-megaphone" aria-hidden="true"></i>Advertisements</a></li>
+{% endblock %}
+
+{% block dashboard %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h1 class="h4 mb-1">Hiring overview</h1>
+    <p class="text-muted-2 mb-0">{{ company.name|default:"Acme Technologies" }} · hiring pipeline at a glance.</p>
+  </div>
+  <a href="#" class="btn btn-gradient"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Post a job</a>
+</div>
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  {% for s in "Active jobs|8|bi-briefcase|bg-soft-primary;Total applicants|342|bi-people|bg-soft-info;Pending review|57|bi-hourglass-split|bg-soft-warning;Shortlisted|29|bi-check2-circle|bg-soft-success"|pairs %}
+    <div class="col-6 col-md-3">
+      <div class="sj-stat d-flex align-items-center justify-content-between">
+        <div>
+          <div class="num">{{ s.1 }}</div>
+          <small class="text-muted-2">{{ s.0 }}</small>
+        </div>
+        <div class="ico {{ s.3 }}"><i class="bi {{ s.2 }}" aria-hidden="true"></i></div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="row g-4">
+  <!-- Active jobs -->
+  <div class="col-lg-7">
+    <div class="sj-card p-0 overflow-hidden h-100">
+      <div class="p-4 d-flex justify-content-between align-items-center">
+        <h2 class="h6 mb-0">Active job postings</h2>
+        <a href="#" class="small">Manage all</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table sj-table mb-0 align-middle">
+          <thead><tr><th>Role</th><th>Applicants</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+          <tbody>
+            {% for j in "Senior Python Developer|48|active;Product Designer|31|active;Data Analyst|22|active;Marketing Lead|14|paused"|pairs %}
+              <tr>
+                <td class="fw-semibold">{{ j.0 }}</td>
+                <td><span class="sj-chip"><i class="bi bi-people"></i>{{ j.1 }}</span></td>
+                <td>
+                  {% if j.2 == "active" %}<span class="status-pill status-selected">Active</span>
+                  {% else %}<span class="status-pill status-withdrawn">Paused</span>{% endif %}
+                </td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-light-brand" aria-label="Manage {{ j.0 }}"><i class="bi bi-three-dots"></i></button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent applicants -->
+  <div class="col-lg-5">
+    <div class="sj-card p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h6 mb-0">Recent applicants</h2>
+        <a href="#" class="small">View all</a>
+      </div>
+      <div class="d-grid gap-3">
+        {% for c in "Aarav Sharma|Senior Python Developer|shortlisted;Meera Iyer|Product Designer|under_review;Rohan Das|Data Analyst|applied;Sara Khan|Marketing Lead|interview_scheduled"|pairs %}
+          <div class="d-flex align-items-center gap-3">
+            <div class="sj-logo flex-shrink-0" style="width:44px;height:44px;font-size:1rem;" aria-hidden="true">{{ c.0|slice:":1" }}</div>
+            <div class="flex-grow-1 min-w-0">
+              <div class="fw-semibold text-truncate">{{ c.0 }}</div>
+              <small class="text-muted-2 text-truncate d-block">{{ c.1 }}</small>
+            </div>
+            <span class="status-pill {{ c.2|status_class }}">{{ c.2|cut:"_"|title }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Log in — SevaJobs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="{% static 'css/main.css' %}" rel="stylesheet">
+  <link href="{% static 'css/animations.css' %}" rel="stylesheet">
+</head>
+<body>
+  {% include "partials/_messages.html" %}
+
+  <div class="sj-auth">
+    <!-- Left: Brand Panel -->
+    <div class="sj-auth-aside d-none d-lg-flex col-lg-5 col-xl-6">
+      <div class="aside-content animate-fade-up">
+        <div class="sj-brand text-white mb-4" style="font-size:2rem;">Seva<span class="dot" style="color:#a5f3fc;">Jobs</span></div>
+        <h2>Welcome back!</h2>
+        <p>Log in to access your dashboard, track applications, and discover new opportunities matched to your profile.</p>
+        <div class="d-flex gap-3 justify-content-center mt-4">
+          <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);min-width:100px;">
+            <div class="fw-800 text-white" style="font-size:1.5rem;" data-counter="10000">10K+</div>
+            <div class="fs-xs" style="color:rgba(255,255,255,.6);">Active Jobs</div>
+          </div>
+          <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);min-width:100px;">
+            <div class="fw-800 text-white" style="font-size:1.5rem;" data-counter="500">500+</div>
+            <div class="fs-xs" style="color:rgba(255,255,255,.6);">Companies</div>
+          </div>
+          <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);min-width:100px;">
+            <div class="fw-800 text-white" style="font-size:1.5rem;" data-counter="50000">50K+</div>
+            <div class="fs-xs" style="color:rgba(255,255,255,.6);">Candidates</div>
+          </div>
+        </div>
+      </div>
+      <!-- Floating elements -->
+      <div class="sj-auth-floating" style="top:12%;right:10%;animation-delay:1s;">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-briefcase-fill text-info"></i>
+          <span class="text-white fs-sm fw-600">New jobs daily</span>
+        </div>
+      </div>
+      <div class="sj-auth-floating" style="bottom:15%;left:8%;animation-delay:3s;">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-shield-check text-success"></i>
+          <span class="text-white fs-sm fw-600">Verified employers</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Form -->
+    <div class="sj-auth-form-panel col-12 col-lg-7 col-xl-6 py-5 px-3">
+      <div class="w-100" style="max-width:440px;">
+        <!-- Mobile brand -->
+        <div class="text-center mb-4 d-lg-none">
+          <a href="/" class="sj-brand" style="font-size:1.6rem;">Seva<span class="dot">Jobs</span></a>
+        </div>
+
+        <div class="sj-auth-card animate-fade-up">
+          <h3 class="fw-800 mb-1">Log in to your account</h3>
+          <p class="text-muted-2 fs-sm mb-4">Enter your credentials to access your dashboard</p>
+
+          <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+            <div class="mb-3">
+              <label for="email" class="form-label">Email Address</label>
+              <div class="input-icon-group">
+                <i class="bi bi-envelope input-icon"></i>
+                <input type="email" class="form-control form-control-lg" id="email" name="email" value="{{ email|default:'' }}"
+                       placeholder="name@example.com" required autofocus>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="d-flex justify-content-between">
+                <label for="password" class="form-label">Password</label>
+                <a href="{% url 'accounts:forgot-password' %}" class="fs-xs fw-semibold text-primary">Forgot password?</a>
+              </div>
+              <div class="input-icon-group position-relative">
+                <i class="bi bi-lock input-icon"></i>
+                <input type="password" class="form-control form-control-lg" id="password" name="password"
+                       placeholder="Enter your password" required>
+                <button type="button" class="btn btn-ghost position-absolute end-0 top-50 translate-middle-y me-1" data-toggle-password="password" aria-label="Toggle password">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-check mb-4">
+              <input class="form-check-input" type="checkbox" name="remember_me" id="remember_me">
+              <label class="form-check-label" for="remember_me">Remember me</label>
+            </div>
+
+            <button type="submit" class="btn btn-gradient btn-lg w-100 mb-3">
+              <i class="bi bi-box-arrow-in-right me-1"></i> Log in
+            </button>
+          </form>
+
+          <div class="divider my-4 position-relative text-center">
+            <span class="bg-surface px-3 position-relative text-muted-2 fs-sm" style="z-index:1;">or continue with</span>
+          </div>
+
+          <div class="d-flex gap-2 mb-4">
+            <button class="btn btn-outline-light-brand flex-fill" type="button" disabled>
+              <i class="bi bi-google me-1"></i> Google
+            </button>
+            <button class="btn btn-outline-light-brand flex-fill" type="button" disabled>
+              <i class="bi bi-linkedin me-1"></i> LinkedIn
+            </button>
+          </div>
+
+          <p class="text-center text-muted-2 fs-sm mb-0">
+            Don't have an account? <a href="{% url 'accounts:register' %}" class="fw-semibold text-primary">Sign up free</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="{% static 'js/main.js' %}" defer></script>
+  <script src="{% static 'js/forms.js' %}" defer></script>
+</body>
+</html>

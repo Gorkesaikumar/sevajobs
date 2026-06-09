@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link href="{% static 'css/dashboard.css' %}?v=1.1" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Sidebar -->
+    <div class="col-lg-3">
+      <button class="sj-sidebar-mobile-toggle" type="button"><i class="bi bi-list"></i> Navigation</button>
+      <nav class="sj-sidebar" aria-label="Dashboard navigation">
+        <div class="sidebar-section">Main</div>
+        {% block sidebar_nav %}{% endblock %}
+      </nav>
+    </div>
+    <!-- Content -->
+    <div class="col-lg-9">
+      {% block dashboard_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dashboard.js' %}" defer></script>
+{% block dashboard_js %}{% endblock %}
+{% endblock %}

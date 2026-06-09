@@ -1,0 +1,12 @@
+{# Sidebar Ad — expects `sidebar_ad` object #}
+{% if sidebar_ad %}
+<div class="sj-ad-sidebar mb-4" data-ad-id="{{ sidebar_ad.id }}">
+  <a href="{{ sidebar_ad.target_url }}" target="_blank" rel="noopener sponsored">
+    <img src="{{ sidebar_ad.image.url }}" alt="{{ sidebar_ad.title }}" loading="lazy">
+  </a>
+  <div class="p-3">
+    <div class="fs-xs text-muted-2 mb-1"><i class="bi bi-megaphone"></i> Sponsored</div>
+    <div class="fw-semibold fs-sm text-ink">{{ sidebar_ad.title }}</div>
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% load static humanize sj_extras %}
+
+{% block title %}SevaJobs — India's Premium Job Portal{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block content %}
+<!-- ====== SCROLL BAR ADS ====== -->
+{% if scroll_ads %}
+<div class="position-relative overflow-hidden py-2 border-bottom" style="background: rgba(var(--bs-primary-rgb), 0.03); backdrop-filter: blur(10px); white-space: nowrap;">
+  <!-- Glitter animation overlay -->
+  <div class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none" style="background: linear-gradient(90deg, transparent, rgba(var(--bs-primary-rgb), 0.1), transparent); width: 200%; animation: shimmer 3s infinite linear; z-index: 0;"></div>
+  
+  <marquee behavior="scroll" direction="left" scrollamount="6" class="m-0 fw-semibold position-relative" style="z-index: 1;">
+    {% for ad in scroll_ads %}
+      <span class="mx-4" style="color: var(--bs-heading-color);">
+        {% if ad.is_sponsored %}
+          <span class="badge bg-warning text-dark me-2 shadow-sm" style="animation: pulse-glow 2s infinite;"><i class="bi bi-stars me-1"></i>Sponsored</span>
+        {% endif %}
+        {% if ad.target_url %}<a href="{{ ad.target_url }}" class="text-decoration-none" style="color: var(--bs-primary);" target="_blank">{% endif %}
+        {{ ad.title }}
+        {% if ad.target_url %}</a>{% endif %}
+      </span>
+      {% if not forloop.last %}<span class="mx-4 text-muted opacity-50">•</span>{% endif %}
+    {% endfor %}
+  </marquee>
+</div>
+
+<style>
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  @keyframes pulse-glow {
+    0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+  }
+</style>
+{% endif %}
+
+<!-- ====== HERO ====== -->
+<section class="sj-hero py-5 py-lg-6">
+  <div class="container position-relative" style="z-index:1;">
+    <div class="row justify-content-center text-center">
+      <div class="col-lg-8 col-xl-7">
+        <div class="mb-3">
+          <span class="sj-badge is-new animate-bounce-in">🚀 Over {{ total_jobs|default:"10,000"|intcomma }}+ active jobs</span>
+        </div>
+        <h1 class="display-4 fw-800 mb-3 animate-fade-up" style="animation-delay:.1s;">
+          Find your <span class="text-warning">dream job</span><br>in seconds
+        </h1>
+        <p class="lead mb-4 animate-fade-up" style="animation-delay:.2s;">
+          Connect with India's top employers. Search thousands of curated positions
+          across every industry, experience level, and location.
+        </p>
+
+        <!-- Search bar -->
+        <div class="sj-search mx-auto animate-fade-up" style="max-width:750px;animation-delay:.3s;">
+          <form class="d-lg-flex align-items-center gap-0" action="{% url 'core:job-search' %}" method="get">
+            <div class="flex-grow-1 position-relative">
+              <div class="input-icon-group">
+                <i class="bi bi-search input-icon"></i>
+                <input type="text" class="form-control form-control-lg" name="q"
+                       placeholder="Job title, keyword, or company" autocomplete="off" id="q-keyword">
+              </div>
+              <div id="search-suggestions" class="dropdown-menu w-100 d-none shadow-lg mt-1 p-0" style="border-radius:var(--sj-radius);overflow:hidden;"></div>
+            </div>
+            <div class="input-divider d-none d-lg-block"></div>
+            <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
+              <div class="input-icon-group">
+                <i class="bi bi-geo-alt input-icon"></i>
+                <input type="text" class="form-control form-control-lg" name="location" placeholder="Location" style="min-width:160px;">
+              </div>
+              <button type="submit" class="btn btn-gradient btn-lg px-4">
+                <i class="bi bi-search me-1"></i> Search
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-center gap-2 mt-3 animate-fade-up" style="animation-delay:.4s;">
+          <span class="text-white-50 fs-sm fw-600">Popular:</span>
+          <a href="{% url 'core:job-search' %}?q=python" class="sj-chip" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.85);">Python</a>
+          <a href="{% url 'core:job-search' %}?q=react" class="sj-chip" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.85);">React</a>
+          <a href="{% url 'core:job-search' %}?q=data+science" class="sj-chip" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.85);">Data Science</a>
+          <a href="{% url 'core:job-search' %}?q=ui+ux" class="sj-chip" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.85);">UI/UX Design</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating glassmorphism cards -->
+  <div class="sj-auth-floating d-none d-xl-block" style="top:15%;left:5%;animation-delay:0s;">
+    <div class="d-flex align-items-center gap-2">
+      <div class="sj-logo-sm" style="background:rgba(255,255,255,.15);border:0;color:#fff;">G</div>
+      <div><div class="fw-bold text-white fs-sm">Google</div><div class="fs-xs" style="color:rgba(255,255,255,.6);">12 open roles</div></div>
+    </div>
+  </div>
+  <div class="sj-auth-floating d-none d-xl-block" style="bottom:20%;right:4%;animation-delay:2s;">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-check-circle-fill text-success"></i>
+      <span class="text-white fs-sm fw-600">Application sent!</span>
+    </div>
+  </div>
+</section>
+
+<!-- ====== TRUST STRIP ====== -->
+<section class="py-4 border-bottom">
+  <div class="container">
+    <div class="text-center mb-3">
+      <span class="text-muted-2 fs-sm fw-600 text-uppercase" style="letter-spacing:.06em;">Trusted by 500+ top employers</span>
+    </div>
+    <div class="d-flex flex-wrap justify-content-center align-items-center gap-4 gap-lg-5 opacity-50">
+      {% for name in "Infosys,TCS,Wipro,HCL,Tata,Reliance,Flipkart,Razorpay"|split:"," %}
+        <span class="fw-800 text-muted" style="font-size:1.1rem;">{{ name }}</span>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ====== KPI STATS ====== -->
+<section class="section-sm">
+  <div class="container">
+    <div class="row g-3 justify-content-center">
+      <div class="col-6 col-md-3">
+        {% include "partials/_stat_card.html" with icon="bi-briefcase" icon_class="ico-gradient-primary" value=total_jobs label="Active Jobs" %}
+      </div>
+      <div class="col-6 col-md-3">
+        {% include "partials/_stat_card.html" with icon="bi-buildings" icon_class="ico-gradient-cool" value=total_companies label="Companies" %}
+      </div>
+      <div class="col-6 col-md-3">
+        {% include "partials/_stat_card.html" with icon="bi-people" icon_class="ico-gradient-green" value=50000 label="Candidates" %}
+      </div>
+      <div class="col-6 col-md-3">
+        {% include "partials/_stat_card.html" with icon="bi-check-circle" icon_class="ico-gradient-warm" value=12000 label="Placements" %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== DISPLAY ADS ====== -->
+{% if display_ads %}
+<section class="section pt-0">
+  <div class="container">
+    <div class="row g-4 justify-content-center">
+      {% for ad in display_ads %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm overflow-hidden h-100" style="border-radius: var(--sj-radius);">
+          <div class="position-relative">
+            {% if ad.image %}
+              <img src="{{ ad.image.url }}" alt="{{ ad.title }}" class="card-img-top object-fit-cover" style="height: 200px;">
+            {% endif %}
+            {% if ad.is_sponsored %}
+              <div class="position-absolute top-0 end-0 m-2">
+                <span class="badge bg-warning text-dark shadow-sm"><i class="bi bi-star-fill me-1"></i>Sponsored</span>
+              </div>
+            {% endif %}
+          </div>
+          <div class="card-body text-center bg-white">
+            <h5 class="card-title fw-bold mb-3">{{ ad.title }}</h5>
+            {% if ad.target_url %}
+              <a href="{{ ad.target_url }}" target="_blank" class="btn btn-primary w-100">Learn More <i class="bi bi-box-arrow-up-right ms-1"></i></a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ====== CATEGORIES ====== -->
+{% if categories %}
+<section class="section" id="categories">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="sj-badge is-new mb-2">Popular Categories</span>
+      <h2 class="fw-800">Browse by <span class="text-gradient">category</span></h2>
+      <p class="text-muted-2 mx-auto" style="max-width:480px;">Explore opportunities across India's fastest-growing industries</p>
+    </div>
+    <div class="row g-3 stagger-children">
+      {% for cat in categories %}
+      <div class="col-6 col-md-4 col-lg-3 animate-fade-up">
+        <a href="{% url 'core:job-search' %}?category={{ cat.slug }}" class="sj-card p-4 d-flex flex-column align-items-center text-center h-100 text-reset hover-lift">
+          <div class="ico bg-soft-primary mb-3" style="width:56px;height:56px;border-radius:14px;">
+            <i class="bi {{ cat.icon|default:'bi-grid' }}" style="font-size:1.3rem;"></i>
+          </div>
+          <h6 class="mb-1">{{ cat.name }}</h6>
+          <span class="text-muted-2 fs-xs">{{ cat.jobs.count }} {{ cat.jobs.count|pluralize:"job,jobs" }}</span>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ====== FEATURED JOBS ====== -->
+{% if featured_jobs %}
+<section class="section bg-soft" id="featured-jobs">
+  <div class="container">
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-4 gap-3">
+      <div>
+        <span class="sj-badge is-featured mb-2"><i class="bi bi-star-fill me-1"></i>Featured</span>
+        <h2 class="fw-800 mb-1">Featured <span class="text-gradient">opportunities</span></h2>
+        <p class="text-muted-2 mb-0">Hand-picked positions from top employers</p>
+      </div>
+      <a href="{% url 'core:job-search' %}" class="btn btn-outline-primary">
+        View all jobs <i class="bi bi-arrow-right ms-1"></i>
+      </a>
+    </div>
+    <div class="row g-3 stagger-children">
+      {% for job in featured_jobs %}
+      <div class="col-md-6 col-xl-4 animate-fade-up">
+        {% include "partials/_job_card.html" with job=job %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ====== HOW IT WORKS ====== -->
+<section class="section" id="how-it-works">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="sj-badge mb-2">Simple Process</span>
+      <h2 class="fw-800">How it <span class="text-gradient">works</span></h2>
+      <p class="text-muted-2 mx-auto" style="max-width:480px;">Three simple steps to land your dream job</p>
+    </div>
+    <div class="row g-4">
+      {% for step in "Create Profile,Find Jobs,Apply & Get Hired"|split:"," %}
+      <div class="col-md-4">
+        <div class="text-center reveal">
+          <div class="ico mx-auto mb-3 {% cycle 'ico-gradient-primary' 'ico-gradient-cool' 'ico-gradient-green' %}"
+               style="width:72px;height:72px;border-radius:20px;font-size:1.6rem;">
+            {% if forloop.counter == 1 %}<i class="bi bi-person-plus"></i>
+            {% elif forloop.counter == 2 %}<i class="bi bi-search"></i>
+            {% else %}<i class="bi bi-rocket-takeoff"></i>{% endif %}
+          </div>
+          <div class="fs-sm text-primary fw-700 mb-1">Step {{ forloop.counter }}</div>
+          <h5 class="fw-700">{{ step }}</h5>
+          <p class="text-muted-2 fs-sm px-3">
+            {% if forloop.counter == 1 %}Sign up in 60 seconds, add your skills and experience, and upload your resume.
+            {% elif forloop.counter == 2 %}Browse curated positions or let our smart matching find the perfect fit for you.
+            {% else %}Apply with one click, track your applications, and get hired faster.{% endif %}
+          </p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ====== FEATURED EMPLOYERS ====== -->
+{% if featured_companies %}
+<section class="section bg-soft" id="employers">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="sj-badge is-verified mb-2"><i class="bi bi-patch-check-fill me-1"></i>Top Employers</span>
+      <h2 class="fw-800">Featured <span class="text-gradient">employers</span></h2>
+      <p class="text-muted-2 mx-auto" style="max-width:480px;">Join companies that are building the future of India</p>
+    </div>
+    <div class="row g-3 stagger-children">
+      {% for company in featured_companies %}
+      <div class="col-6 col-md-4 col-lg-2 animate-fade-up">
+        <a href="{% url 'core:company-detail' slug=company.slug %}" class="sj-featured-employer h-100 text-reset d-flex flex-column align-items-center text-center py-4">
+          <div class="sj-logo mb-2">
+            {% if company.logo %}
+              <img src="{{ company.logo.url }}" alt="{{ company.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+            {% else %}
+              {{ company.name|slice:":1"|upper }}
+            {% endif %}
+          </div>
+          <div class="fw-semibold fs-sm text-truncate w-100">{{ company.name }}</div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ====== CTA ====== -->
+<section class="section">
+  <div class="container">
+    <div class="sj-card p-5 text-center" style="background:var(--sj-gradient);border:0;color:#fff;">
+      <div class="row justify-content-center">
+        <div class="col-lg-7">
+          <h2 class="fw-800 mb-3" style="color:#fff;">Ready to take the next step?</h2>
+          <p class="mb-4" style="color:rgba(255,255,255,.8);">
+            Whether you're a job seeker looking for your dream role, or a recruiter searching for top talent — SevaJobs has you covered.
+          </p>
+          <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a href="{% url 'accounts:register' %}" class="btn btn-white btn-lg">
+              <i class="bi bi-person-plus me-1"></i> Sign up free
+            </a>
+            <a href="{% url 'accounts:register' %}?role=recruiter" class="btn btn-outline-light-brand btn-lg" style="border-color:rgba(255,255,255,.3);color:#fff;">
+              <i class="bi bi-megaphone me-1"></i> Post a job
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/search.js' %}" defer></script>
+{% endblock %}
+
+{% block modals %}
+{{ block.super }}
+{% if popup_ads %}
+  {% for ad in popup_ads %}
+  <!-- Popup Ad Modal -->
+  <div class="modal fade sj-popup-ad" id="popupAdModal{{ ad.id }}" tabindex="-1" aria-hidden="true" data-duration="{{ ad.duration_seconds }}">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: var(--sj-radius);">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3 bg-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        {% if ad.image %}
+          <img src="{{ ad.image.url }}" alt="{{ ad.title }}" class="img-fluid w-100 object-fit-cover" style="max-height: 300px;">
+        {% endif %}
+        <div class="modal-body text-center p-4">
+          {% if ad.is_sponsored %}
+            <span class="badge bg-warning text-dark mb-2"><i class="bi bi-star-fill me-1"></i>Sponsored</span>
+          {% endif %}
+          <h4 class="fw-bold mb-3">{{ ad.title }}</h4>
+          {% if ad.target_url %}
+            <a href="{{ ad.target_url }}" target="_blank" class="btn btn-primary btn-lg w-100">View Offer</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const popups = document.querySelectorAll('.sj-popup-ad');
+      if (popups.length > 0) {
+        // Trigger the first popup using its configured duration
+        const ad = popups[0];
+        const durationSecs = parseInt(ad.getAttribute('data-duration')) || 30;
+        const durationMs = durationSecs * 1000;
+        
+        setInterval(function() {
+          const modalInstance = bootstrap.Modal.getOrCreateInstance(ad);
+          modalInstance.show();
+        }, durationMs);
+      }
+    });
+  </script>
+{% endif %}
+{% endblock %}

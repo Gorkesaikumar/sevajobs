@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Contact Us — SevaJobs{% endblock %}
+{% block breadcrumb %}{% include "partials/_breadcrumb.html" %}{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center mb-5">
+        <span class="sj-badge mb-2">Get in Touch</span>
+        <h1 class="fw-800">We'd love to hear <span class="text-gradient">from you</span></h1>
+        <p class="text-muted-2">Have a question, feedback, or partnership inquiry? Reach out and our team will respond within 24 hours.</p>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Contact info cards -->
+      <div class="col-lg-4">
+        <div class="d-grid gap-3">
+          <div class="sj-card p-4">
+            <div class="ico bg-soft-primary mb-3" style="width:44px;height:44px;border-radius:12px;"><i class="bi bi-envelope"></i></div>
+            <h6 class="fw-700">Email Us</h6>
+            <p class="text-muted-2 fs-sm mb-1">For general inquiries</p>
+            <a href="mailto:support@sevajobs.in" class="fw-semibold">support@sevajobs.in</a>
+          </div>
+          <div class="sj-card p-4">
+            <div class="ico bg-soft-success mb-3" style="width:44px;height:44px;border-radius:12px;"><i class="bi bi-telephone"></i></div>
+            <h6 class="fw-700">Call Us</h6>
+            <p class="text-muted-2 fs-sm mb-1">Mon-Fri, 9 AM - 6 PM IST</p>
+            <a href="tel:+911800123456" class="fw-semibold">1800-123-456</a>
+          </div>
+          <div class="sj-card p-4">
+            <div class="ico bg-soft-warning mb-3" style="width:44px;height:44px;border-radius:12px;"><i class="bi bi-geo-alt"></i></div>
+            <h6 class="fw-700">Visit Us</h6>
+            <p class="text-muted-2 fs-sm mb-0">123 Tech Park, HSR Layout,<br>Bengaluru, Karnataka 560102</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact form -->
+      <div class="col-lg-8">
+        <div class="sj-card p-5">
+          <h4 class="fw-700 mb-4">Send us a message</h4>
+          <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="contact-name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="contact-name" name="name" placeholder="John Doe" required>
+              </div>
+              <div class="col-md-6">
+                <label for="contact-email" class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" id="contact-email" name="email" placeholder="john@example.com" required>
+              </div>
+              <div class="col-12">
+                <label for="contact-subject" class="form-label">Subject <span class="text-danger">*</span></label>
+                <select class="form-select" id="contact-subject" name="subject" required>
+                  <option value="">Choose a topic</option>
+                  <option value="general">General Inquiry</option>
+                  <option value="support">Technical Support</option>
+                  <option value="feedback">Feedback</option>
+                  <option value="partnership">Partnership / Business</option>
+                  <option value="report">Report an Issue</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label for="contact-message" class="form-label">Message <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="contact-message" name="message" rows="5" placeholder="How can we help you?" required data-char-limit="2000"></textarea>
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn btn-gradient btn-lg">
+                  <i class="bi bi-send me-1"></i> Send Message
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/forms.js' %}" defer></script>
+{% endblock %}

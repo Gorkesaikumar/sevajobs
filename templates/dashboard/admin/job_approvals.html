@@ -1,0 +1,49 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% block title %}Job Approvals — Admin — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<h4 class="fw-800 mb-4">Job Approvals</h4>
+{% if pending_jobs %}
+<div class="row g-3">
+{% for job in pending_jobs %}
+<div class="col-12">
+  <div class="sj-card p-4 d-flex align-items-start gap-3 flex-wrap">
+    <div class="sj-logo flex-shrink-0">{{ job.company.name|slice:":1"|upper }}</div>
+    <div class="flex-grow-1 min-w-0">
+      <h5 class="fw-700 mb-1">{{ job.title }} <span class="badge bg-light text-dark border ms-1">{{ job.get_segment_display }}</span></h5>
+      <p class="text-muted-2 fs-sm mb-2">{{ job.company.name }} &middot; {{ job.location }} &middot; {{ job.get_job_type_display }}</p>
+      <p class="text-muted-2 fs-sm mb-0">{{ job.description|truncatechars:200 }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-shrink-0">
+      <form method="post" action="{% url 'admin-panel:job-approvals' %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="job_id" value="{{ job.id }}">
+        <button type="submit" name="action" value="approve" class="btn btn-soft-success btn-sm"><i class="bi bi-check-lg me-1"></i>Approve</button>
+      </form>
+      <form method="post" action="{% url 'admin-panel:job-approvals' %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="job_id" value="{{ job.id }}">
+        <!-- Use a prompt to ask for rejection reason -->
+        <button type="submit" name="action" value="reject" class="btn btn-soft-danger btn-sm" onclick="return confirmReject(this.form)"><i class="bi bi-x-lg me-1"></i>Reject</button>
+        <input type="hidden" name="reason" value="Job rejected by Administrator.">
+      </form>
+      <a href="{% url 'core:job-detail' slug=job.slug %}" class="btn btn-ghost btn-sm" target="_blank"><i class="bi bi-eye me-1"></i>Preview</a>
+    </div>
+  </div>
+</div>
+{% endfor %}
+</div>
+<script>
+function confirmReject(form) {
+    const reason = prompt("Please provide a reason for rejecting this job posting:");
+    if (reason === null) return false;
+    if (reason.trim() !== "") {
+        form.querySelector('input[name="reason"]').value = reason;
+    }
+    return true;
+}
+</script>
+{% include "partials/_pagination.html" %}
+{% else %}
+<div class="sj-empty"><div class="icon"><i class="bi bi-check2-square"></i></div><h5>No pending approvals</h5><p class="text-muted-2 fs-sm">All job listings have been reviewed.</p></div>
+{% endif %}
+{% endblock %}

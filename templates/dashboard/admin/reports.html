@@ -1,0 +1,130 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load humanize %}
+{% block title %}Reports — Admin — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h4 class="fw-800 mb-0">Reports & Analytics</h4>
+  <div class="d-flex gap-2">
+    <a href="?timeframe={{ timeframe }}&export=excel" class="btn btn-outline-success btn-sm fw-semibold">
+      <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+    </a>
+    <a href="?timeframe={{ timeframe }}&export=pdf" class="btn btn-outline-danger btn-sm fw-semibold">
+      <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+    </a>
+  </div>
+</div>
+
+<div class="sj-card p-4 border-0 shadow-sm mb-4" style="border-radius: 16px;">
+  <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3">
+      <div class="avatar shadow-sm d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4338ca; border-radius: 12px;">
+        <i class="bi bi-bar-chart-fill fs-5"></i>
+      </div>
+      <div>
+        <h5 class="fw-800 mb-1 text-dark">Application Analytics</h5>
+        <p class="text-muted fs-sm mb-0">Detailed overview of your platform's job performance.</p>
+      </div>
+    </div>
+    <form class="d-flex gap-2" method="get">
+      <div class="input-group shadow-sm bg-white border" style="border-radius: 10px; overflow: hidden; min-width: 170px;">
+        <span class="input-group-text bg-white border-0 text-primary pe-1"><i class="bi bi-calendar-event"></i></span>
+        <select name="timeframe" class="form-select border-0 fw-semibold text-dark ps-2" onchange="this.form.submit()" style="box-shadow: none; cursor: pointer; background-color: transparent;">
+          <option value="day" {% if timeframe == 'day' %}selected{% endif %}>Last 24 Hours</option>
+          <option value="week" {% if timeframe == 'week' %}selected{% endif %}>Last 7 Days</option>
+          <option value="month" {% if timeframe == 'month' %}selected{% endif %}>Last 30 Days</option>
+          <option value="year" {% if timeframe == 'year' %}selected{% endif %}>Last 12 Months</option>
+        </select>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Card 1: Total Applications -->
+  <div class="col-md-4">
+    <div class="sj-card border-0 shadow-sm position-relative overflow-hidden p-4 transition-all hover-lift" style="border-radius: 16px;">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.04; font-size: 8rem; transition: transform 0.3s ease;">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div class="d-flex align-items-center position-relative z-1">
+        <div class="avatar avatar-lg shadow-sm me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem; background: linear-gradient(135deg, var(--bs-primary), #3b82f6); color: white;">
+          <i class="bi bi-file-earmark-person"></i>
+        </div>
+        <div>
+          <div class="text-muted fs-xs text-uppercase fw-bold mb-1" style="letter-spacing: 0.5px;">Total Applications</div>
+          <h2 class="fw-900 mb-0 text-dark">{{ total_applications_all|default:"0"|intcomma }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Card 2: Selected -->
+  <div class="col-md-4">
+    <div class="sj-card border-0 shadow-sm position-relative overflow-hidden p-4 transition-all hover-lift" style="border-radius: 16px;">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.04; font-size: 8rem; color: #10B981; transition: transform 0.3s ease;">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div class="d-flex align-items-center position-relative z-1">
+        <div class="avatar avatar-lg shadow-sm me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem; background: linear-gradient(135deg, #34d399, #059669); color: white;">
+          <i class="bi bi-check-all"></i>
+        </div>
+        <div>
+          <div class="text-muted fs-xs text-uppercase fw-bold mb-1" style="letter-spacing: 0.5px;">Selected Candidates</div>
+          <h2 class="fw-900 mb-0" style="color: #059669;">{{ total_selected_all|default:"0"|intcomma }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: Rejected -->
+  <div class="col-md-4">
+    <div class="sj-card border-0 shadow-sm position-relative overflow-hidden p-4 transition-all hover-lift" style="border-radius: 16px;">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.04; font-size: 8rem; color: #EF4444; transition: transform 0.3s ease;">
+        <i class="bi bi-x-circle-fill"></i>
+      </div>
+      <div class="d-flex align-items-center position-relative z-1">
+        <div class="avatar avatar-lg shadow-sm me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem; background: linear-gradient(135deg, #f87171, #dc2626); color: white;">
+          <i class="bi bi-x-lg"></i>
+        </div>
+        <div>
+          <div class="text-muted fs-xs text-uppercase fw-bold mb-1" style="letter-spacing: 0.5px;">Rejected Candidates</div>
+          <h2 class="fw-900 mb-0" style="color: #dc2626;">{{ total_rejected_all|default:"0"|intcomma }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Job Posting</th>
+          <th class="text-center">Applied</th>
+          <th class="text-center">Selected</th>
+          <th class="text-center">Rejected</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in reports_data %}
+        <tr>
+          <td class="fw-semibold">{{ row.company_name }}</td>
+          <td>{{ row.job_title }}</td>
+          <td class="text-center fw-bold">{{ row.total_applications }}</td>
+          <td class="text-center text-success fw-bold">{{ row.selected_count }}</td>
+          <td class="text-center text-danger fw-bold">{{ row.rejected_count }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center py-5 text-muted-2">
+            No data available for the selected timeframe.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

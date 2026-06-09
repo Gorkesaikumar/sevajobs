@@ -1,0 +1,49 @@
+{% extends "dashboard/_layout.html" %}
+{% block sidebar_nav %}
+<a class="nav-link {% if sidebar_section == 'dashboard' %}active{% endif %}" href="{% url 'recruiter:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+<a class="nav-link {% if sidebar_section == 'company' %}active{% endif %}" href="{% url 'recruiter:company-profile' %}"><i class="bi bi-buildings"></i> Company Profile</a>
+<div class="sidebar-section">Jobs</div>
+<a class="nav-link {% if sidebar_section == 'post-job' %}active{% endif %}" href="{% url 'recruiter:post-job' %}"><i class="bi bi-plus-circle"></i> Post a Job</a>
+<a class="nav-link {% if sidebar_section == 'manage-jobs' %}active{% endif %}" href="{% url 'recruiter:manage-jobs' %}"><i class="bi bi-briefcase"></i> Manage Jobs</a>
+<div class="sidebar-section">Hiring</div>
+<a class="nav-link {% if sidebar_section == 'applications' %}active{% endif %} d-flex justify-content-between align-items-center" href="{% url 'recruiter:applications' %}">
+  <span><i class="bi bi-inbox"></i> Applications</span>
+  {% if unread_applications_count %}
+    <span class="badge bg-danger rounded-pill">{{ unread_applications_count }}</span>
+  {% endif %}
+</a>
+<a class="nav-link {% if sidebar_section == 'shortlisted' %}active{% endif %}" href="{% url 'recruiter:shortlisted' %}"><i class="bi bi-person-check"></i> Shortlisted</a>
+<a class="nav-link {% if sidebar_section == 'rejected' %}active{% endif %}" href="{% url 'recruiter:rejected' %}"><i class="bi bi-person-x"></i> Rejected</a>
+<div class="sidebar-section">Account</div>
+<a class="nav-link {% if sidebar_section == 'settings' %}active{% endif %}" href="{% url 'recruiter:settings' %}"><i class="bi bi-gear"></i> Settings</a>
+<a class="nav-link text-danger" href="{% url 'accounts:logout' %}"><i class="bi bi-box-arrow-right"></i> Log out</a>
+
+{% if unread_applications_count %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (!sessionStorage.getItem('app_popup_shown_{{ unread_applications_count }}')) {
+      const msg = "You have {{ unread_applications_count }} new application{{ unread_applications_count|pluralize }} to review!";
+      const toastHTML = `
+      <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+        <div id="newAppToast" class="toast align-items-center text-white bg-primary border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body fw-semibold fs-sm">
+              <i class="bi bi-bell-fill me-2"></i> ${msg}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', toastHTML);
+      if (typeof bootstrap !== 'undefined') {
+        const toastEl = document.getElementById('newAppToast');
+        const toast = new bootstrap.Toast(toastEl, { delay: 6000 });
+        toast.show();
+      }
+      sessionStorage.setItem('app_popup_shown_{{ unread_applications_count }}', 'true');
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

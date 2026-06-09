@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}FAQ — SevaJobs{% endblock %}
+{% block breadcrumb %}{% include "partials/_breadcrumb.html" %}{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center mb-5">
+        <span class="sj-badge mb-2">Help Center</span>
+        <h1 class="fw-800">Frequently Asked <span class="text-gradient">Questions</span></h1>
+        <p class="text-muted-2">Find answers to common questions about SevaJobs. Can't find what you're looking for? <a href="{% url 'core:contact' %}">Contact us</a>.</p>
+      </div>
+    </div>
+
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <!-- Job Seekers -->
+        <h5 class="fw-700 mb-3"><i class="bi bi-person me-2 text-primary"></i>For Job Seekers</h5>
+        <div class="accordion mb-4" id="faq-seekers">
+          <div class="accordion-item border rounded-2xl mb-2">
+            <h2 class="accordion-header"><button class="accordion-button fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-s1" aria-expanded="true">How do I create an account?</button></h2>
+            <div id="faq-s1" class="accordion-collapse collapse show" data-bs-parent="#faq-seekers">
+              <div class="accordion-body text-muted-2 fs-sm">Click "Sign up free" in the top navigation bar. Fill in your name, email, and password. Select "Job Seeker" as your role. You'll receive a verification email — click the link to activate your account and start applying to jobs immediately.</div>
+            </div>
+          </div>
+          <div class="accordion-item border rounded-2xl mb-2">
+            <h2 class="accordion-header"><button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-s2">Is SevaJobs free for job seekers?</button></h2>
+            <div id="faq-s2" class="accordion-collapse collapse" data-bs-parent="#faq-seekers">
+              <div class="accordion-body text-muted-2 fs-sm">Yes! SevaJobs is completely free for job seekers. You can create a profile, upload resumes, search jobs, and apply — all without any cost.</div>
+            </div>
+          </div>
+          <div class="accordion-item border rounded-2xl mb-2">
+            <h2 class="accordion-header"><button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-s3">How do I track my applications?</button></h2>
+            <div id="faq-s3" class="accordion-collapse collapse" data-bs-parent="#faq-seekers">
+              <div class="accordion-body text-muted-2 fs-sm">After logging in, go to your Dashboard → Applied Jobs. You'll see a list of all jobs you've applied to, along with their current status (Applied, Under Review, Shortlisted, Interview Scheduled, etc.).</div>
+            </div>
+          </div>
+          <div class="accordion-item border rounded-2xl mb-2">
+            <h2 class="accordion-header"><button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-s4">Can I upload multiple resumes?</button></h2>
+            <div id="faq-s4" class="accordion-collapse collapse" data-bs-parent="#faq-seekers">
+              <div class="accordion-body text-muted-2 fs-sm">Yes, you can upload multiple resumes and set one as your primary resume. When applying, you can choose which resume to send to the recruiter.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recruiters -->
+        <h5 class="fw-700 mb-3"><i class="bi bi-briefcase me-2 text-primary"></i>For Recruiters</h5>
+        <div class="accordion mb-4" id="faq-recruiters">
+          <div class="accordion-item border rounded-2xl mb-2">
+            <h2 class="accordion-header"><button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-r1">How do I post a job?</button></h2>
+            <div id="faq-r1" class="accordion-collapse collapse" data-bs-parent="#faq-recruiters">
+              <div class="accordion-body text-muted-2 fs-sm">Register as a recruiter, complete your company profile, then navigate to Dashboard → Post a Job. Fill in the job details including title, description, requirements, and salary range. Jobs are reviewed by our team and typically approved within 24 hours.</div>
+            </div>
+          </div>
+          <div class="accordion-item border rounded-2xl mb-2">
+            <h2 class="accordion-header"><button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-r2">What is the company verification process?</button></h2>
+            <div id="faq-r2" class="accordion-collapse collapse" data-bs-parent="#faq-recruiters">
+              <div class="accordion-body text-muted-2 fs-sm">After registering your company, our team verifies its legitimacy by checking your business registration, website, and LinkedIn presence. Verified companies receive a blue badge and get higher visibility in search results.</div>
+            </div>
+          </div>
+          <div class="accordion-item border rounded-2xl mb-2">
+            <h2 class="accordion-header"><button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-r3">How long does job approval take?</button></h2>
+            <div id="faq-r3" class="accordion-collapse collapse" data-bs-parent="#faq-recruiters">
+              <div class="accordion-body text-muted-2 fs-sm">Most jobs are reviewed and approved within 12–24 hours. Verified companies may receive expedited approval. You'll receive a notification once your job is live.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- General -->
+        <h5 class="fw-700 mb-3"><i class="bi bi-question-circle me-2 text-primary"></i>General</h5>
+        <div class="accordion mb-4" id="faq-general">
+          <div class="accordion-item border rounded-2xl mb-2">
+            <h2 class="accordion-header"><button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-g1">How do I reset my password?</button></h2>
+            <div id="faq-g1" class="accordion-collapse collapse" data-bs-parent="#faq-general">
+              <div class="accordion-body text-muted-2 fs-sm">Click "Log in", then "Forgot password?". Enter your registered email address and we'll send you a password reset link. The link expires in 24 hours.</div>
+            </div>
+          </div>
+          <div class="accordion-item border rounded-2xl mb-2">
+            <h2 class="accordion-header"><button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-g2">Is my data safe on SevaJobs?</button></h2>
+            <div id="faq-g2" class="accordion-collapse collapse" data-bs-parent="#faq-general">
+              <div class="accordion-body text-muted-2 fs-sm">Absolutely. We use industry-standard encryption (TLS 1.3) for all data transmission, and your personal data is stored securely in compliance with Indian data protection regulations. Read our <a href="{% url 'core:privacy' %}">Privacy Policy</a> for details.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sj-card p-4 text-center">
+          <h5 class="fw-700 mb-2">Still have questions?</h5>
+          <p class="text-muted-2 fs-sm mb-3">Our support team is always here to help you.</p>
+          <a href="{% url 'core:contact' %}" class="btn btn-gradient"><i class="bi bi-envelope me-1"></i> Contact Support</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

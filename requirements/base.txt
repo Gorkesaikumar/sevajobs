@@ -1,0 +1,16 @@
+Django==5.2.2
+djangorestframework==3.15.2
+psycopg2-binary==2.9.12
+python-decouple==3.8
+Pillow>=11.2.1  # use --pre on Python 3.14 (no stable binary wheel yet)
+django-filter==24.3
+django-crispy-forms==2.3
+crispy-bootstrap5==2024.10
+django-cors-headers==4.7.0
+djangorestframework-simplejwt==5.5.0
+drf-spectacular==0.28.0
+celery==5.5.2
+redis==5.2.1
+django-redis==5.4.0
+gunicorn==23.0.0
+whitenoise==6.9.0

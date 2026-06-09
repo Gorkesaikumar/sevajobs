@@ -1,0 +1,78 @@
+{% extends "dashboard/_layout.html" %}
+{% load static sj_extras %}
+
+{% block title %}Dashboard — SevaJobs{% endblock %}
+{% block role_label %}Job Seeker{% endblock %}
+
+{% block sidebar_nav %}
+  <li><a class="nav-link active" href="#"><i class="bi bi-speedometer2" aria-hidden="true"></i>Overview</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-send" aria-hidden="true"></i>My Applications</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-bookmark-heart" aria-hidden="true"></i>Saved Jobs</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-file-earmark-text" aria-hidden="true"></i>Resumes</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-person" aria-hidden="true"></i>Profile</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-bell" aria-hidden="true"></i>Notifications</a></li>
+{% endblock %}
+
+{% block dashboard %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h1 class="h4 mb-1">Welcome back, {{ user.first_name|default:"Jane" }} 👋</h1>
+    <p class="text-muted-2 mb-0">Here's what's happening with your job search.</p>
+  </div>
+  <a href="#" class="btn btn-gradient"><i class="bi bi-search me-1" aria-hidden="true"></i>Find jobs</a>
+</div>
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  {% for s in "Applications|24|bi-send|bg-soft-primary;Shortlisted|6|bi-check2-circle|bg-soft-success;Interviews|2|bi-camera-video|bg-soft-info;Saved jobs|11|bi-bookmark|bg-soft-warning"|pairs %}
+    <div class="col-6 col-md-3">
+      <div class="sj-stat d-flex align-items-center justify-content-between">
+        <div>
+          <div class="num">{{ s.1 }}</div>
+          <small class="text-muted-2">{{ s.0 }}</small>
+        </div>
+        <div class="ico {{ s.3 }}"><i class="bi {{ s.2 }}" aria-hidden="true"></i></div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- Profile completion -->
+<div class="sj-card p-4 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="h6 mb-0">Profile completion</h2>
+    <span class="fw-bold text-primary">{{ profile.profile_completion|default:75 }}%</span>
+  </div>
+  <div class="sj-progress mb-2" role="progressbar" aria-valuenow="{{ profile.profile_completion|default:75 }}"
+       aria-valuemin="0" aria-valuemax="100" aria-label="Profile completion">
+    <div class="bar" style="width: {{ profile.profile_completion|default:75 }}%;"></div>
+  </div>
+  <small class="text-muted-2">Add your skills and a primary resume to reach 100% and rank higher with recruiters.</small>
+</div>
+
+<!-- Applications table -->
+<div class="sj-card p-0 overflow-hidden">
+  <div class="p-4 d-flex justify-content-between align-items-center">
+    <h2 class="h6 mb-0">Recent applications</h2>
+    <a href="#" class="small">View all</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table sj-table mb-0 align-middle">
+      <thead>
+        <tr><th>Job</th><th>Company</th><th>Applied</th><th>Status</th><th class="text-end">Action</th></tr>
+      </thead>
+      <tbody>
+        {% for a in "Senior Python Developer|Acme Technologies|2 days ago|shortlisted;Backend Engineer|Nimbus Cloud|5 days ago|under_review;Data Analyst|Quanta Labs|1 week ago|interview_scheduled;DevOps Engineer|Forge Systems|2 weeks ago|rejected"|pairs %}
+          <tr>
+            <td class="fw-semibold">{{ a.0 }}</td>
+            <td class="text-muted-2">{{ a.1 }}</td>
+            <td class="text-muted-2 small">{{ a.2 }}</td>
+            <td><span class="status-pill {{ a.3|status_class }}">{{ a.3|cut:"_"|title }}</span></td>
+            <td class="text-end"><a href="#" class="btn btn-sm btn-outline-light-brand">View</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

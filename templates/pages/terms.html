@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Terms & Conditions — SevaJobs{% endblock %}
+{% block breadcrumb %}{% include "partials/_breadcrumb.html" %}{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="text-center mb-5">
+          <h1 class="fw-800">Terms & <span class="text-gradient">Conditions</span></h1>
+          <p class="text-muted-2">Last updated: {% now "F j, Y" %}</p>
+        </div>
+
+        <div class="sj-card p-5">
+          <div class="prose">
+            <h4 class="fw-700 mb-3">1. Acceptance of Terms</h4>
+            <p class="text-muted-2 fs-sm">By accessing or using SevaJobs ("the Platform"), you agree to be bound by these Terms & Conditions. If you do not agree, you may not use the Platform.</p>
+
+            <h4 class="fw-700 mb-3 mt-4">2. User Accounts</h4>
+            <p class="text-muted-2 fs-sm">You must provide accurate and complete information when creating an account. You are responsible for maintaining the confidentiality of your login credentials. You must be at least 18 years old to register on the Platform.</p>
+
+            <h4 class="fw-700 mb-3 mt-4">3. Job Seekers</h4>
+            <p class="text-muted-2 fs-sm">Job seekers may create profiles, upload resumes, browse jobs, and submit applications. You agree that all information provided is truthful and accurate. You are responsible for updating your information as needed.</p>
+
+            <h4 class="fw-700 mb-3 mt-4">4. Recruiters & Employers</h4>
+            <p class="text-muted-2 fs-sm">Recruiters may post job listings, review applications, and manage candidates. All job postings must comply with applicable labour laws and anti-discrimination regulations. SevaJobs reserves the right to remove listings that violate these terms.</p>
+
+            <h4 class="fw-700 mb-3 mt-4">5. Prohibited Conduct</h4>
+            <ul class="text-muted-2 fs-sm">
+              <li>Posting false, misleading, or fraudulent job listings</li>
+              <li>Submitting false information in profiles or applications</li>
+              <li>Scraping, harvesting, or collecting user data</li>
+              <li>Uploading malware, viruses, or harmful content</li>
+              <li>Circumventing security measures of the Platform</li>
+              <li>Discriminating on the basis of race, gender, religion, caste, or disability</li>
+            </ul>
+
+            <h4 class="fw-700 mb-3 mt-4">6. Intellectual Property</h4>
+            <p class="text-muted-2 fs-sm">The Platform, including its design, logos, text, and code, is the property of SevaJobs and is protected by intellectual property laws. You may not reproduce, distribute, or create derivative works without permission.</p>
+
+            <h4 class="fw-700 mb-3 mt-4">7. Limitation of Liability</h4>
+            <p class="text-muted-2 fs-sm">SevaJobs acts as a platform connecting job seekers and employers. We do not guarantee employment or the accuracy of any job listing. SevaJobs is not liable for any damages arising from the use of the Platform.</p>
+
+            <h4 class="fw-700 mb-3 mt-4">8. Termination</h4>
+            <p class="text-muted-2 fs-sm">We reserve the right to suspend or terminate accounts that violate these terms, without prior notice. You may delete your account at any time through your settings page.</p>
+
+            <h4 class="fw-700 mb-3 mt-4">9. Governing Law</h4>
+            <p class="text-muted-2 fs-sm">These Terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts of Bengaluru, Karnataka.</p>
+
+            <h4 class="fw-700 mb-3 mt-4">10. Contact</h4>
+            <p class="text-muted-2 fs-sm">For questions about these Terms, contact us at <a href="mailto:legal@sevajobs.in">legal@sevajobs.in</a>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

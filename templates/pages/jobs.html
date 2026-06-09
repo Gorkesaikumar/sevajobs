@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}Find Jobs — SevaJobs{% endblock %}
+{% block nav_jobs %}active{% endblock %}
+{% block breadcrumb %}{% include "partials/_breadcrumb.html" %}{% endblock %}
+
+{% block content %}
+<!-- Search Header -->
+<section class="bg-gradient-hero py-4">
+  <div class="container">
+    <form action="{% url 'core:job-search' %}" method="get" class="sj-search mx-auto" style="max-width:800px;">
+      <div class="d-lg-flex align-items-center gap-0">
+        <div class="flex-grow-1 input-icon-group">
+          <i class="bi bi-search input-icon"></i>
+          <input type="text" class="form-control form-control-lg" name="q" value="{{ search_query|default:'' }}"
+                 placeholder="Job title, keyword, or company" id="q-keyword" autocomplete="off">
+          <div id="search-suggestions" class="dropdown-menu w-100 d-none shadow-lg mt-1 p-0" style="border-radius:var(--sj-radius);overflow:hidden;"></div>
+        </div>
+        <div class="input-divider d-none d-lg-block"></div>
+        <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
+          <div class="input-icon-group">
+            <i class="bi bi-geo-alt input-icon"></i>
+            <input type="text" class="form-control form-control-lg" name="location" value="{{ request.GET.location|default:'' }}" placeholder="Location">
+          </div>
+          <button type="submit" class="btn btn-gradient btn-lg px-4"><i class="bi bi-search"></i></button>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="section-sm">
+  <div class="container">
+    <!-- Results header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+      <div>
+        <h5 class="fw-700 mb-1">
+          {% if search_query %}Results for "{{ search_query }}"{% else %}All Jobs{% endif %}
+        </h5>
+        <p class="text-muted-2 fs-sm mb-0">{{ total_results|intcomma }} {{ total_results|pluralize:"job,jobs" }} found</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-light-brand btn-sm d-lg-none" id="filter-toggle">
+          <i class="bi bi-funnel me-1"></i> Filters
+        </button>
+        <select class="form-select form-select-sm" style="width:auto;" onchange="window.location.search='sort='+this.value">
+          <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>Newest first</option>
+          <option value="-salary_min" {% if request.GET.sort == '-salary_min' %}selected{% endif %}>Salary: High to Low</option>
+          <option value="salary_min" {% if request.GET.sort == 'salary_min' %}selected{% endif %}>Salary: Low to High</option>
+          <option value="deadline" {% if request.GET.sort == 'deadline' %}selected{% endif %}>Deadline</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Filter Sidebar -->
+      <div class="col-lg-3">
+        {% include "partials/_filter_sidebar.html" %}
+      </div>
+
+      <!-- Job Results -->
+      <div class="col-lg-9">
+        {% if jobs %}
+          <div class="row g-3 stagger-children">
+            {% for job in jobs %}
+              <div class="col-md-6 animate-fade-up">
+                {% include "partials/_job_card.html" with job=job %}
+              </div>
+            {% endfor %}
+          </div>
+          {% include "partials/_pagination.html" %}
+        {% else %}
+          <div class="sj-empty">
+            <div class="icon"><i class="bi bi-search"></i></div>
+            <h5>No jobs found</h5>
+            <p class="text-muted-2 fs-sm">Try adjusting your search or filters to find more results.</p>
+            <a href="{% url 'core:job-search' %}" class="btn btn-soft-primary">Clear all filters</a>
+          </div>
+        {% endif %}
+
+        {% include "partials/_ad_sidebar.html" with sidebar_ad=sidebar_ad %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/search.js' %}" defer></script>
+{% endblock %}

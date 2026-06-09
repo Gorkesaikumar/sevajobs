@@ -1,0 +1,16 @@
+{# Stat Card — expects: icon, icon_class, value, label, trend, trend_dir #}
+<div class="sj-stat hover-lift">
+  <div class="ico {{ icon_class|default:'bg-soft-primary' }}">
+    <i class="bi {{ icon|default:'bi-bar-chart' }}"></i>
+  </div>
+  <div>
+    <div class="num" {% if value %}data-counter="{{ value }}"{% endif %}>{{ value|default:"0" }}</div>
+    <div class="label">{{ label|default:"Metric" }}</div>
+    {% if trend %}
+      <div class="trend {{ trend_dir|default:'up' }}">
+        <i class="bi {% if trend_dir == 'down' %}bi-arrow-down-short{% else %}bi-arrow-up-short{% endif %}"></i>
+        {{ trend }}
+      </div>
+    {% endif %}
+  </div>
+</div>

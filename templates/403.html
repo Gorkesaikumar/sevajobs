@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}403 — Forbidden — SevaJobs{% endblock %}
+{% block content %}
+<section class="section d-flex align-items-center" style="min-height:60vh;">
+  <div class="container text-center">
+    <div class="animate-scale-in">
+      <div style="font-size:6rem;font-weight:900;line-height:1;background:linear-gradient(135deg,#f59e0b,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">403</div>
+      <h2 class="fw-800 mt-3 mb-2">Access denied</h2>
+      <p class="text-muted-2 mb-4 mx-auto" style="max-width:400px;">You don't have permission to access this page.</p>
+      <a href="/" class="btn btn-gradient"><i class="bi bi-house me-1"></i> Go Home</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

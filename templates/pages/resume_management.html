@@ -1,0 +1,77 @@
+{% extends "dashboard/_layout.html" %}
+{% load static sj_extras %}
+
+{% block title %}Resume Management — SevaJobs{% endblock %}
+{% block role_label %}Job Seeker{% endblock %}
+
+{% block sidebar_nav %}
+  <li><a class="nav-link" href="#"><i class="bi bi-speedometer2" aria-hidden="true"></i>Overview</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-send" aria-hidden="true"></i>My Applications</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-bookmark-heart" aria-hidden="true"></i>Saved Jobs</a></li>
+  <li><a class="nav-link active" href="#"><i class="bi bi-file-earmark-text" aria-hidden="true"></i>Resumes</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-person" aria-hidden="true"></i>Profile</a></li>
+{% endblock %}
+
+{% block dashboard %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h1 class="h4 mb-1">Resume management</h1>
+    <p class="text-muted-2 mb-0">Upload multiple resumes and pick one as primary.</p>
+  </div>
+</div>
+
+<!-- Upload dropzone -->
+<form method="post" enctype="multipart/form-data" class="sj-card p-4 p-md-5 mb-4 text-center"
+      style="border-style: dashed; border-width: 2px;">
+  {% csrf_token %}
+  <div class="ico bg-soft-primary mx-auto mb-3" style="width:64px;height:64px;border-radius:16px;display:grid;place-items:center;font-size:1.6rem;">
+    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+  </div>
+  <h2 class="h6 mb-1">Drag &amp; drop your resume here</h2>
+  <p class="text-muted-2 small mb-3">PDF, DOC or DOCX — up to 5&nbsp;MB</p>
+  <div class="d-flex justify-content-center gap-2 flex-wrap">
+    <label class="btn btn-gradient mb-0">
+      <i class="bi bi-upload me-1" aria-hidden="true"></i>Choose file
+      <input type="file" name="file" class="d-none" accept=".pdf,.doc,.docx" required>
+    </label>
+  </div>
+</form>
+
+<!-- Resume list -->
+<div class="sj-card p-0 overflow-hidden">
+  <div class="p-4 d-flex justify-content-between align-items-center">
+    <h2 class="h6 mb-0">Your resumes</h2>
+    <span class="text-muted-2 small">{{ resumes|length|default:3 }} files</span>
+  </div>
+  <div class="divider"></div>
+
+  {% if resumes %}
+    {% for r in resumes %}
+      {% include "partials/_resume_row.html" with r=r %}
+    {% endfor %}
+  {% else %}
+    {% for r in "My_Resume_2026.pdf|245 KB|1|2 days ago;Backend_Resume.pdf|198 KB|0|1 week ago;Internship_CV.docx|320 KB|0|3 weeks ago"|pairs %}
+      <div class="d-flex align-items-center gap-3 p-4 {% if not forloop.last %}border-bottom{% endif %}">
+        <div class="ico bg-soft-danger" style="width:48px;height:48px;border-radius:12px;display:grid;place-items:center;font-size:1.4rem;background:#fee2e2;color:#b91c1c;">
+          <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+        </div>
+        <div class="flex-grow-1 min-w-0">
+          <div class="d-flex align-items-center gap-2">
+            <span class="fw-semibold text-truncate">{{ r.0 }}</span>
+            {% if r.2 == "1" %}<span class="sj-badge"><i class="bi bi-star-fill me-1"></i>Primary</span>{% endif %}
+          </div>
+          <small class="text-muted-2">{{ r.1 }} · Uploaded {{ r.3 }}</small>
+        </div>
+        <div class="d-flex gap-1">
+          <a href="#" class="btn btn-sm btn-outline-light-brand" aria-label="Preview {{ r.0 }}"><i class="bi bi-eye"></i></a>
+          <a href="#" class="btn btn-sm btn-outline-light-brand" aria-label="Download {{ r.0 }}"><i class="bi bi-download"></i></a>
+          {% if r.2 != "1" %}
+            <button class="btn btn-sm btn-outline-light-brand" aria-label="Set {{ r.0 }} as primary"><i class="bi bi-star"></i></button>
+          {% endif %}
+          <button class="btn btn-sm btn-outline-danger" aria-label="Delete {{ r.0 }}"><i class="bi bi-trash"></i></button>
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

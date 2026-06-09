@@ -1,0 +1,69 @@
+{# Filter Sidebar — for job search page. Expects filter form fields. #}
+<aside class="sj-filter-sidebar" id="filter-sidebar" aria-label="Job filters">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h5 class="mb-0 fw-bold"><i class="bi bi-funnel me-2"></i>Filters</h5>
+    <div class="d-flex gap-2">
+      <a href="{% url 'core:job-search' %}" class="btn btn-ghost btn-sm">Clear all</a>
+      <button class="btn btn-ghost btn-sm d-lg-none filter-close" aria-label="Close filters"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </div>
+
+  <form id="job-filter-form" method="get" action="{% url 'core:job-search' %}">
+    <!-- Job Type -->
+    <div class="filter-group">
+      <div class="filter-title">Job Type</div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="job_type" value="full_time" id="ft-full"><label class="form-check-label" for="ft-full">Full Time</label></div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="job_type" value="part_time" id="ft-part"><label class="form-check-label" for="ft-part">Part Time</label></div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="job_type" value="contract" id="ft-contract"><label class="form-check-label" for="ft-contract">Contract</label></div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="job_type" value="freelance" id="ft-freelance"><label class="form-check-label" for="ft-freelance">Freelance</label></div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="job_type" value="internship" id="ft-intern"><label class="form-check-label" for="ft-intern">Internship</label></div>
+    </div>
+
+    <!-- Experience Level -->
+    <div class="filter-group">
+      <div class="filter-title">Experience Level</div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="experience_level" value="fresher" id="el-fresh"><label class="form-check-label" for="el-fresh">Fresher</label></div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="experience_level" value="junior" id="el-junior"><label class="form-check-label" for="el-junior">Junior (1–3 yrs)</label></div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="experience_level" value="mid" id="el-mid"><label class="form-check-label" for="el-mid">Mid (3–6 yrs)</label></div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="experience_level" value="senior" id="el-senior"><label class="form-check-label" for="el-senior">Senior (6+ yrs)</label></div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="experience_level" value="lead" id="el-lead"><label class="form-check-label" for="el-lead">Lead / Principal</label></div>
+    </div>
+
+    <!-- Salary Range -->
+    <div class="filter-group">
+      <div class="filter-title">Salary Range (₹ LPA)</div>
+      <div class="row g-2">
+        <div class="col-6">
+          <input type="number" class="form-control form-control-sm" name="salary_min" placeholder="Min" min="0">
+        </div>
+        <div class="col-6">
+          <input type="number" class="form-control form-control-sm" name="salary_max" placeholder="Max" min="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- Remote -->
+    <div class="filter-group">
+      <div class="filter-title">Work Mode</div>
+      <div class="form-check"><input class="form-check-input" type="checkbox" name="is_remote" value="true" id="remote-yes"><label class="form-check-label" for="remote-yes">Remote</label></div>
+    </div>
+
+    <!-- Category -->
+    {% if categories %}
+    <div class="filter-group">
+      <div class="filter-title">Category</div>
+      {% for cat in categories %}
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="category" value="{{ cat.id }}" id="cat-{{ cat.id }}">
+          <label class="form-check-label" for="cat-{{ cat.id }}">{{ cat.name }}</label>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary w-100 mt-2">
+      <i class="bi bi-funnel me-1"></i> Apply Filters
+    </button>
+  </form>
+</aside>
+<div id="filter-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-none d-lg-none" style="background:rgba(0,0,0,.4);z-index:1040;"></div>

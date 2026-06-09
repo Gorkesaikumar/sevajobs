@@ -1,0 +1,14 @@
+{% extends "dashboard/_layout.html" %}
+
+{% block sidebar_nav %}
+<a class="nav-link {% if sidebar_section == 'dashboard' %}active{% endif %}" href="{% url 'seeker:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+<a class="nav-link {% if sidebar_section == 'profile' %}active{% endif %}" href="{% url 'seeker:profile' %}"><i class="bi bi-person"></i> My Profile</a>
+<a class="nav-link {% if sidebar_section == 'resumes' %}active{% endif %}" href="{% url 'seeker:resumes' %}"><i class="bi bi-file-earmark-text"></i> Resumes</a>
+<div class="sidebar-section">Jobs</div>
+<a class="nav-link {% if sidebar_section == 'applied' %}active{% endif %}" href="{% url 'seeker:applied-jobs' %}"><i class="bi bi-send-check"></i> Applied Jobs</a>
+<a class="nav-link {% if sidebar_section == 'saved' %}active{% endif %}" href="{% url 'seeker:saved-jobs' %}"><i class="bi bi-bookmark"></i> Saved Jobs</a>
+<a class="nav-link {% if sidebar_section == 'alerts' %}active{% endif %}" href="{% url 'seeker:job-alerts' %}"><i class="bi bi-bell"></i> Job Alerts</a>
+<div class="sidebar-section">Account</div>
+<a class="nav-link {% if sidebar_section == 'settings' %}active{% endif %}" href="{% url 'seeker:settings' %}"><i class="bi bi-gear"></i> Settings</a>
+<a class="nav-link text-danger" href="{% url 'accounts:logout' %}"><i class="bi bi-box-arrow-right"></i> Log out</a>
+{% endblock %}

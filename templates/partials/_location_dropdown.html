@@ -1,0 +1,60 @@
+{# India Location Cascading Dropdown #}
+<div class="sj-location-select">
+  <div class="row g-3">
+    <div class="col-md-6 col-lg-3">
+      <label for="id_state" class="form-label">State</label>
+      <select class="form-select" id="id_state" name="state">
+        <option value="">Select state</option>
+        <option value="Maharashtra">Maharashtra</option>
+        <option value="Karnataka">Karnataka</option>
+        <option value="Tamil Nadu">Tamil Nadu</option>
+        <option value="Delhi">Delhi</option>
+        <option value="Uttar Pradesh">Uttar Pradesh</option>
+        <option value="Gujarat">Gujarat</option>
+        <option value="Rajasthan">Rajasthan</option>
+        <option value="West Bengal">West Bengal</option>
+        <option value="Madhya Pradesh">Madhya Pradesh</option>
+        <option value="Kerala">Kerala</option>
+        <option value="Telangana">Telangana</option>
+        <option value="Andhra Pradesh">Andhra Pradesh</option>
+        <option value="Bihar">Bihar</option>
+        <option value="Punjab">Punjab</option>
+        <option value="Haryana">Haryana</option>
+        <option value="Odisha">Odisha</option>
+        <option value="Assam">Assam</option>
+        <option value="Jharkhand">Jharkhand</option>
+        <option value="Chhattisgarh">Chhattisgarh</option>
+        <option value="Uttarakhand">Uttarakhand</option>
+        <option value="Goa">Goa</option>
+        <option value="Himachal Pradesh">Himachal Pradesh</option>
+        <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+      </select>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <label for="id_district" class="form-label">District</label>
+      <input type="text" class="form-control" id="id_district" name="district" placeholder="Enter district" value="{{ profile.district|default:'' }}">
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <label for="id_taluka" class="form-label">Taluka</label>
+      <input type="text" class="form-control" id="id_taluka" name="taluka" placeholder="Enter taluka" value="{{ profile.taluka|default:'' }}">
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <label for="id_city" class="form-label">City</label>
+      <input type="text" class="form-control" id="id_city" name="city" placeholder="Enter city" value="{{ profile.city|default:'' }}">
+    </div>
+  </div>
+</div>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const stateSelect = document.getElementById("id_state");
+    const savedState = "{{ profile.state|escapejs }}";
+    if (savedState && stateSelect) {
+      for (let i = 0; i < stateSelect.options.length; i++) {
+        if (stateSelect.options[i].value === savedState) {
+          stateSelect.selectedIndex = i;
+          break;
+        }
+      }
+    }
+  });
+</script>

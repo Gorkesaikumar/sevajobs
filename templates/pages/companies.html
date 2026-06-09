@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}Companies — SevaJobs{% endblock %}
+{% block nav_companies %}active{% endblock %}
+{% block breadcrumb %}{% include "partials/_breadcrumb.html" %}{% endblock %}
+
+{% block content %}
+<section class="section-sm">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="sj-badge is-verified mb-2"><i class="bi bi-patch-check-fill me-1"></i>Verified</span>
+      <h1 class="fw-800">Discover <span class="text-gradient">companies</span></h1>
+      <p class="text-muted-2 mx-auto" style="max-width:480px;">Explore verified employers and find companies that match your career goals.</p>
+    </div>
+
+    <!-- Search bar -->
+    <form class="sj-search mx-auto mb-4" style="max-width:600px;" method="get">
+      <div class="d-flex align-items-center gap-0">
+        <div class="flex-grow-1 input-icon-group">
+          <i class="bi bi-search input-icon"></i>
+          <input type="text" class="form-control form-control-lg" name="q" value="{{ search_query|default:'' }}" placeholder="Search by company name or industry">
+        </div>
+        <button type="submit" class="btn btn-gradient btn-lg px-4"><i class="bi bi-search"></i></button>
+      </div>
+    </form>
+
+    {% if companies %}
+      <div class="row g-3 stagger-children">
+        {% for company in companies %}
+          <div class="col-md-6 col-xl-4 animate-fade-up">
+            {% include "partials/_company_card.html" with company=company %}
+          </div>
+        {% endfor %}
+      </div>
+      {% include "partials/_pagination.html" %}
+    {% else %}
+      <div class="sj-empty">
+        <div class="icon"><i class="bi bi-buildings"></i></div>
+        <h5>No companies found</h5>
+        <p class="text-muted-2 fs-sm">Try a different search query.</p>
+        <a href="{% url 'core:company-list' %}" class="btn btn-soft-primary">Show all companies</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

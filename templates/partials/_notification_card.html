@@ -1,0 +1,26 @@
+{# Notification Card — expects `notification` in context #}
+<div class="notif-item {% if not notification.is_read %}unread{% endif %}">
+  <div class="sj-logo-sm flex-shrink-0
+    {% if notification.notification_type == 'application_received' %}bg-soft-primary
+    {% elif notification.notification_type == 'status_changed' %}bg-soft-info
+    {% elif notification.notification_type == 'job_approved' %}bg-soft-success
+    {% elif notification.notification_type == 'job_rejected' %}bg-soft-danger
+    {% else %}bg-soft-accent{% endif %}">
+    <i class="bi
+      {% if notification.notification_type == 'application_received' %}bi-send-check
+      {% elif notification.notification_type == 'status_changed' %}bi-arrow-repeat
+      {% elif notification.notification_type == 'job_approved' %}bi-check-circle
+      {% elif notification.notification_type == 'job_rejected' %}bi-x-circle
+      {% elif notification.notification_type == 'job_expiring' %}bi-clock
+      {% elif notification.notification_type == 'profile_viewed' %}bi-eye
+      {% else %}bi-bell{% endif %}"></i>
+  </div>
+  <div class="flex-grow-1 min-w-0">
+    <div class="fs-sm fw-semibold text-ink text-truncate">{{ notification.title }}</div>
+    {% if notification.message %}<div class="fs-xs text-muted-2 text-truncate">{{ notification.message }}</div>{% endif %}
+    <div class="fs-xs text-subtle mt-1">{{ notification.created_at|timesince }} ago</div>
+  </div>
+  {% if not notification.is_read %}
+    <span class="d-inline-block rounded-circle bg-primary" style="width:8px;height:8px;margin-top:6px;flex-shrink:0;"></span>
+  {% endif %}
+</div>

@@ -1,0 +1,140 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load static %}
+{% block title %}Post a Job — SevaJobs{% endblock %}
+{% block dashboard_content %}
+
+<div id="step-1-segment">
+  <h4 class="fw-800 mb-2">Step 1: Select Job Segment</h4>
+  <p class="text-muted-2 mb-4">Choose the primary segment for your new job posting.</p>
+  <div class="row g-4">
+    <!-- Segment Cards -->
+    <div class="col-md-4 col-sm-6">
+      <div class="sj-card text-center p-4 cursor-pointer segment-card hover-lift" onclick="selectSegment('teaching')">
+        <div class="fs-1 text-primary mb-3"><i class="bi bi-book"></i></div>
+        <h5 class="fw-bold">Teaching</h5>
+      </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+      <div class="sj-card text-center p-4 cursor-pointer segment-card hover-lift" onclick="selectSegment('healthcare')">
+        <div class="fs-1 text-danger mb-3"><i class="bi bi-heart-pulse"></i></div>
+        <h5 class="fw-bold">Healthcare</h5>
+      </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+      <div class="sj-card text-center p-4 cursor-pointer segment-card hover-lift" onclick="selectSegment('manufacturing')">
+        <div class="fs-1 text-warning mb-3"><i class="bi bi-gear"></i></div>
+        <h5 class="fw-bold">Manufacturing</h5>
+      </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+      <div class="sj-card text-center p-4 cursor-pointer segment-card hover-lift" onclick="selectSegment('real_estate')">
+        <div class="fs-1 text-success mb-3"><i class="bi bi-buildings"></i></div>
+        <h5 class="fw-bold">Real Estate</h5>
+      </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+      <div class="sj-card text-center p-4 cursor-pointer segment-card hover-lift" onclick="selectSegment('it')">
+        <div class="fs-1 text-info mb-3"><i class="bi bi-laptop"></i></div>
+        <h5 class="fw-bold">IT / Software</h5>
+      </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+      <div class="sj-card text-center p-4 cursor-pointer segment-card hover-lift" onclick="selectSegment('other')">
+        <div class="fs-1 text-muted-2 mb-3"><i class="bi bi-three-dots"></i></div>
+        <h5 class="fw-bold">Other</h5>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="step-2-form" style="display: none;">
+  <div class="d-flex align-items-center mb-4">
+    <button class="btn btn-sm btn-outline-secondary rounded-circle me-3" onclick="backToStep1()"><i class="bi bi-arrow-left"></i></button>
+    <div>
+      <h4 class="fw-800 mb-0">Step 2: Job Details</h4>
+      <p class="text-muted-2 fs-sm mb-0">Segment: <span id="display-selected-segment" class="fw-bold text-primary"></span></p>
+    </div>
+  </div>
+
+  <form method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="segment" id="hidden-segment-input" value="other">
+    
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-700 mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Job Details</h5>
+      <div class="row g-3">
+        <div class="col-md-8"><label class="form-label">Job Title *</label><input type="text" class="form-control" name="title" placeholder="e.g., Senior Python Developer" required></div>
+        <div class="col-md-4"><label class="form-label">Category *</label><input type="text" class="form-control" name="category" placeholder="e.g., Software Engineering" required></div>
+        <div class="col-12"><label class="form-label">Description *</label><textarea class="form-control" name="description" rows="6" placeholder="Detailed job description…" required data-char-limit="5000"></textarea></div>
+        <div class="col-12"><label class="form-label">Responsibilities</label><textarea class="form-control" name="responsibilities" rows="4" placeholder="Key responsibilities…"></textarea></div>
+        <div class="col-12"><label class="form-label">Requirements</label><textarea class="form-control" name="requirements" rows="4" placeholder="Skills, qualifications, experience…"></textarea></div>
+        <div class="col-12"><label class="form-label">Benefits</label><textarea class="form-control" name="benefits" rows="3" placeholder="Compensation, perks, culture…"></textarea></div>
+      </div>
+    </div>
+    
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-700 mb-3"><i class="bi bi-gear me-2 text-primary"></i>Job Configuration</h5>
+      <div class="row g-3">
+        <div class="col-md-4"><label class="form-label">Job Type *</label><select class="form-select" name="job_type" required><option value="full_time">Full Time</option><option value="part_time">Part Time</option><option value="contract">Contract</option><option value="freelance">Freelance</option><option value="internship">Internship</option></select></div>
+        <div class="col-md-4"><label class="form-label">Experience Level *</label><select class="form-select" name="experience_level" required><option value="fresher">Fresher</option><option value="junior">Junior</option><option value="mid">Mid Level</option><option value="senior">Senior</option><option value="lead">Lead / Principal</option></select></div>
+        <div class="col-md-4"><label class="form-label">Vacancies</label><input type="number" class="form-control" name="vacancies" min="1" value="1"></div>
+        <div class="col-md-6"><label class="form-label">Location *</label><input type="text" class="form-control" name="location" placeholder="e.g., Bengaluru, Karnataka" required></div>
+        <div class="col-md-3"><label class="form-label">Salary Min (₹)</label><input type="number" class="form-control" name="salary_min" min="0"></div>
+        <div class="col-md-3"><label class="form-label">Salary Max (₹)</label><input type="number" class="form-control" name="salary_max" min="0"></div>
+        <div class="col-md-4"><label class="form-label">Application Deadline</label><input type="date" class="form-control" name="deadline"></div>
+        <div class="col-md-4 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" id="is_remote" name="is_remote"><label class="form-check-label" for="is_remote">Remote position</label></div></div>
+        <div class="col-12"><label class="form-label">Required Skills</label><div class="sj-tag-input"><input type="hidden" name="skills"><input type="text" placeholder="Type skill and press Enter"></div></div>
+      </div>
+    </div>
+    
+    <div class="d-flex gap-2">
+      <button type="submit" name="action" value="publish" class="btn btn-gradient"><i class="bi bi-send me-1"></i> Submit for Approval</button>
+      <button type="submit" name="action" value="draft" class="btn btn-outline-light-brand"><i class="bi bi-file-earmark me-1"></i> Save as Draft</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block dashboard_js %}
+<script src="{% static 'js/forms.js' %}" defer></script>
+<style>
+  .cursor-pointer { cursor: pointer; }
+  .segment-card { transition: all 0.2s ease; border: 2px solid transparent; }
+  .segment-card:hover { transform: translateY(-5px); border-color: var(--sj-primary-100); background-color: var(--sj-bg-white); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+</style>
+<script>
+  function selectSegment(segmentCode) {
+    if (segmentCode === 'teaching') {
+      window.location.href = "{% url 'recruiter:post-teaching-job' %}";
+      return;
+    }
+
+    // Map codes to display labels
+    const labels = {
+      'teaching': 'Teaching',
+      'healthcare': 'Healthcare',
+      'manufacturing': 'Manufacturing',
+      'real_estate': 'Real Estate',
+      'it': 'Information Technology',
+      'other': 'Other'
+    };
+    
+    // Set hidden input value and display label
+    document.getElementById('hidden-segment-input').value = segmentCode;
+    document.getElementById('display-selected-segment').innerText = labels[segmentCode] || segmentCode;
+    
+    // Switch views
+    document.getElementById('step-1-segment').style.display = 'none';
+    document.getElementById('step-2-form').style.display = 'block';
+    
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  
+  function backToStep1() {
+    document.getElementById('step-2-form').style.display = 'none';
+    document.getElementById('step-1-segment').style.display = 'block';
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}About Us — SevaJobs{% endblock %}
+{% block breadcrumb %}{% include "partials/_breadcrumb.html" %}{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center mb-5">
+        <span class="sj-badge mb-2">Our Story</span>
+        <h1 class="fw-800">Making <span class="text-gradient">employment accessible</span> to every Indian</h1>
+        <p class="text-muted-2 lead">SevaJobs was founded with a singular mission — to bridge the gap between India's incredible talent and the companies building our future.</p>
+      </div>
+    </div>
+
+    <!-- Mission / Vision / Values -->
+    <div class="row g-4 mb-5">
+      <div class="col-md-4 reveal">
+        <div class="sj-card p-5 text-center h-100">
+          <div class="ico ico-gradient-primary mx-auto mb-3" style="width:64px;height:64px;border-radius:18px;font-size:1.5rem;">
+            <i class="bi bi-bullseye"></i>
+          </div>
+          <h4 class="fw-700">Our Mission</h4>
+          <p class="text-muted-2 fs-sm mb-0">To democratize access to quality employment by leveraging technology that connects talent with opportunity, regardless of background or location.</p>
+        </div>
+      </div>
+      <div class="col-md-4 reveal" style="animation-delay:.15s;">
+        <div class="sj-card p-5 text-center h-100">
+          <div class="ico ico-gradient-cool mx-auto mb-3" style="width:64px;height:64px;border-radius:18px;font-size:1.5rem;">
+            <i class="bi bi-eye"></i>
+          </div>
+          <h4 class="fw-700">Our Vision</h4>
+          <p class="text-muted-2 fs-sm mb-0">To become India's most trusted and impactful job platform — one that transforms lives through meaningful career connections at scale.</p>
+        </div>
+      </div>
+      <div class="col-md-4 reveal" style="animation-delay:.3s;">
+        <div class="sj-card p-5 text-center h-100">
+          <div class="ico ico-gradient-green mx-auto mb-3" style="width:64px;height:64px;border-radius:18px;font-size:1.5rem;">
+            <i class="bi bi-heart"></i>
+          </div>
+          <h4 class="fw-700">Our Values</h4>
+          <p class="text-muted-2 fs-sm mb-0">Integrity, inclusivity, innovation, and impact. We believe every job seeker deserves a fair chance and every recruiter deserves quality talent.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="sj-card p-4 mb-5" style="background:var(--sj-gradient);border:0;">
+      <div class="row g-4 text-center text-white">
+        <div class="col-6 col-md-3">
+          <div style="font-size:2rem;font-weight:800;line-height:1;" data-counter="10000">10,000</div>
+          <div class="mt-1 fs-sm" style="color:rgba(255,255,255,.7);">Active Jobs</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div style="font-size:2rem;font-weight:800;line-height:1;" data-counter="500">500</div>
+          <div class="mt-1 fs-sm" style="color:rgba(255,255,255,.7);">Top Companies</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div style="font-size:2rem;font-weight:800;line-height:1;" data-counter="50000">50,000</div>
+          <div class="mt-1 fs-sm" style="color:rgba(255,255,255,.7);">Candidates</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div style="font-size:2rem;font-weight:800;line-height:1;" data-counter="12000">12,000</div>
+          <div class="mt-1 fs-sm" style="color:rgba(255,255,255,.7);">Successful Placements</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Why SevaJobs -->
+    <div class="row align-items-center g-5 mb-5">
+      <div class="col-lg-6">
+        <span class="sj-badge mb-2">Why SevaJobs?</span>
+        <h2 class="fw-800">Built for India's<br><span class="text-gradient">dynamic workforce</span></h2>
+        <p class="text-muted-2">We understand the Indian job market deeply — from Tier 1 metros to growing Tier 2 & 3 cities.</p>
+        <div class="d-grid gap-3 mt-4">
+          <div class="d-flex gap-3 align-items-start">
+            <div class="ico bg-soft-primary flex-shrink-0" style="width:42px;height:42px;border-radius:10px;"><i class="bi bi-shield-check"></i></div>
+            <div><h6 class="fw-700 mb-1">Verified Employers</h6><p class="text-muted-2 fs-sm mb-0">Every company is verified before listing jobs, ensuring a fraud-free experience.</p></div>
+          </div>
+          <div class="d-flex gap-3 align-items-start">
+            <div class="ico bg-soft-success flex-shrink-0" style="width:42px;height:42px;border-radius:10px;"><i class="bi bi-lightning-charge"></i></div>
+            <div><h6 class="fw-700 mb-1">AI-Powered Matching</h6><p class="text-muted-2 fs-sm mb-0">Smart algorithms match your skills to the most relevant opportunities.</p></div>
+          </div>
+          <div class="d-flex gap-3 align-items-start">
+            <div class="ico bg-soft-warning flex-shrink-0" style="width:42px;height:42px;border-radius:10px;"><i class="bi bi-translate"></i></div>
+            <div><h6 class="fw-700 mb-1">Multilingual Support</h6><p class="text-muted-2 fs-sm mb-0">Access the platform in Hindi, English, Tamil, Telugu, and more regional languages.</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="sj-card p-3" style="background:var(--sj-gradient-dark);border:0;">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1);">
+                <i class="bi bi-graph-up-arrow text-info mb-2" style="font-size:1.5rem;"></i>
+                <div class="fw-800 text-white">98%</div>
+                <div class="fs-xs" style="color:rgba(255,255,255,.6);">Employer satisfaction</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1);">
+                <i class="bi bi-clock-history text-warning mb-2" style="font-size:1.5rem;"></i>
+                <div class="fw-800 text-white">72hr</div>
+                <div class="fs-xs" style="color:rgba(255,255,255,.6);">Avg. response time</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1);">
+                <i class="bi bi-geo-alt text-success mb-2" style="font-size:1.5rem;"></i>
+                <div class="fw-800 text-white">28+</div>
+                <div class="fs-xs" style="color:rgba(255,255,255,.6);">States covered</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1);">
+                <i class="bi bi-award text-danger mb-2" style="font-size:1.5rem;"></i>
+                <div class="fw-800 text-white">4.8★</div>
+                <div class="fs-xs" style="color:rgba(255,255,255,.6);">User rating</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

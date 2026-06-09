@@ -1,0 +1,31 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load humanize sj_extras %}
+{% block title %}Manage Jobs — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4"><h4 class="fw-800 mb-0">Manage Jobs</h4><a href="{% url 'recruiter:post-job' %}" class="btn btn-gradient btn-sm"><i class="bi bi-plus-circle me-1"></i> Post Job</a></div>
+{% if jobs %}
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead><tr><th class="sortable">Title</th><th>Status</th><th>Approval</th><th class="sortable">Applications</th><th class="sortable">Views</th><th class="sortable">Posted</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for job in jobs %}
+        <tr>
+          <td><div class="fw-semibold text-ink">{{ job.title }}</div><div class="fs-xs text-muted-2">{{ job.location }}</div></td>
+          <td><span class="status-pill status-{{ job.status }}">{{ job.get_status_display }}</span></td>
+          <td><span class="status-pill status-{{ job.approval_status }}">{{ job.get_approval_status_display }}</span></td>
+          <td class="fw-semibold">{{ job.app_count }}</td>
+          <td>{{ job.views_count|intcomma }}</td>
+          <td class="fs-sm text-muted-2">{{ job.created_at|date:"M j" }}</td>
+          <td><div class="sj-table-actions"><a href="{% url 'core:job-detail' slug=job.slug %}" class="btn btn-ghost btn-sm" title="View"><i class="bi bi-eye"></i></a><a href="#" class="btn btn-ghost btn-sm" title="Edit"><i class="bi bi-pencil"></i></a></div></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/_pagination.html" %}
+{% else %}
+<div class="sj-empty"><div class="icon"><i class="bi bi-briefcase"></i></div><h5>No jobs posted</h5><p class="text-muted-2 fs-sm">Create your first job listing to start receiving applications.</p><a href="{% url 'recruiter:post-job' %}" class="btn btn-gradient btn-sm">Post a Job</a></div>
+{% endif %}
+{% endblock %}

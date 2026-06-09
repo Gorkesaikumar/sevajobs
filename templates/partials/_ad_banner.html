@@ -1,0 +1,9 @@
+{# Ad Banner — expects `ads` queryset or single `ad` object and `placement` variable #}
+{% if ad %}
+<div class="sj-ad-banner mb-4" data-ad-id="{{ ad.id }}">
+  <a href="{{ ad.target_url }}" target="_blank" rel="noopener sponsored">
+    <img src="{{ ad.image.url }}" alt="{{ ad.title }}" loading="lazy">
+    <span class="ad-label">Ad</span>
+  </a>
+</div>
+{% endif %}

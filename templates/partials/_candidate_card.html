@@ -1,0 +1,47 @@
+{# Candidate Card — expects `candidate` (User with job_seeker_profile) in context #}
+<article class="sj-card p-4 h-100 d-flex flex-column">
+  <div class="d-flex align-items-center gap-3 mb-3">
+    <div class="sj-user-avatar" style="width:48px;height:48px;font-size:.95rem;">
+      {% if candidate.avatar %}
+        <img src="{{ candidate.avatar.url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+      {% else %}
+        {{ candidate.first_name|default:"U"|slice:":1"|upper }}
+      {% endif %}
+    </div>
+    <div class="flex-grow-1 min-w-0">
+      <h4 class="h6 mb-0 text-truncate">{{ candidate.full_name }}</h4>
+      {% if candidate.job_seeker_profile.headline %}
+        <p class="text-muted-2 fs-sm mb-0 text-truncate">{{ candidate.job_seeker_profile.headline }}</p>
+      {% endif %}
+    </div>
+    {% if candidate.job_seeker_profile.is_open_to_work %}
+      <span class="sj-badge is-new">Open to work</span>
+    {% endif %}
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    {% if candidate.job_seeker_profile.current_location %}
+      <span class="sj-chip"><i class="bi bi-geo-alt"></i> {{ candidate.job_seeker_profile.current_location|truncatechars:20 }}</span>
+    {% endif %}
+    <span class="sj-chip"><i class="bi bi-calendar3"></i> {{ candidate.job_seeker_profile.experience_years }} yr{{ candidate.job_seeker_profile.experience_years|pluralize }} exp</span>
+    {% if candidate.job_seeker_profile.get_availability_display %}
+      <span class="sj-chip"><i class="bi bi-clock"></i> {{ candidate.job_seeker_profile.get_availability_display }}</span>
+    {% endif %}
+  </div>
+
+  {% if candidate.job_seeker_profile.skills.all %}
+  <div class="d-flex flex-wrap gap-1 mb-3">
+    {% for skill in candidate.job_seeker_profile.skills.all|slice:":4" %}
+      <span class="sj-badge">{{ skill.name }}</span>
+    {% endfor %}
+    {% if candidate.job_seeker_profile.skills.count > 4 %}
+      <span class="sj-badge">+{{ candidate.job_seeker_profile.skills.count|add:"-4" }}</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="mt-auto d-flex gap-2 pt-3 border-top">
+    <a href="#" class="btn btn-soft-primary btn-sm flex-fill"><i class="bi bi-eye me-1"></i> View Profile</a>
+    <a href="#" class="btn btn-outline-light-brand btn-sm flex-fill"><i class="bi bi-envelope me-1"></i> Contact</a>
+  </div>
+</article>

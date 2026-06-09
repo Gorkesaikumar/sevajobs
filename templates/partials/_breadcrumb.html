@@ -1,0 +1,19 @@
+{# Breadcrumb — expects `breadcrumbs` list of dicts: [{label, url}]. Last item has no url. #}
+{% if breadcrumbs %}
+<div class="sj-breadcrumb">
+  <div class="container">
+    <nav aria-label="Breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'core:home' %}"><i class="bi bi-house-door"></i></a></li>
+        {% for crumb in breadcrumbs %}
+          {% if forloop.last %}
+            <li class="breadcrumb-item active" aria-current="page">{{ crumb.label }}</li>
+          {% else %}
+            <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.label }}</a></li>
+          {% endif %}
+        {% endfor %}
+      </ol>
+    </nav>
+  </div>
+</div>
+{% endif %}

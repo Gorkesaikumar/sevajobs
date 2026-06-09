@@ -1,0 +1,66 @@
+{% extends "dashboard/seeker/_layout.html" %}
+{% load humanize sj_extras %}
+{% block title %}Applied Jobs — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<h4 class="fw-800 mb-4">Applied Jobs</h4>
+
+<!-- Status Tabs -->
+<div class="sj-tabs mb-4">
+  <a class="tab-item {% if active_status == 'all' %}active{% endif %}" href="{% url 'seeker:applied-jobs' %}">All</a>
+  <a class="tab-item {% if active_status == 'applied' %}active{% endif %}" href="?status=applied">Applied <span class="tab-count">{{ status_counts.applied }}</span></a>
+  <a class="tab-item {% if active_status == 'under_review' %}active{% endif %}" href="?status=under_review">Under Review <span class="tab-count">{{ status_counts.under_review }}</span></a>
+  <a class="tab-item {% if active_status == 'shortlisted' %}active{% endif %}" href="?status=shortlisted">Shortlisted <span class="tab-count">{{ status_counts.shortlisted }}</span></a>
+  <a class="tab-item {% if active_status == 'interview_scheduled' %}active{% endif %}" href="?status=interview_scheduled">Interview <span class="tab-count">{{ status_counts.interview_scheduled }}</span></a>
+  <a class="tab-item {% if active_status == 'selected' %}active{% endif %}" href="?status=selected">Selected <span class="tab-count">{{ status_counts.selected }}</span></a>
+  <a class="tab-item {% if active_status == 'rejected' %}active{% endif %}" href="?status=rejected">Rejected <span class="tab-count">{{ status_counts.rejected }}</span></a>
+</div>
+
+{% if applications %}
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th class="sortable">Job Title</th>
+          <th>Company</th>
+          <th class="sortable">Applied Date</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td><a href="{% url 'core:job-detail' slug=app.job.slug %}" class="fw-semibold text-ink">{{ app.job.title }}</a></td>
+          <td>
+            <div class="candidate-inline">
+              <div class="avatar" style="width:28px;height:28px;font-size:.65rem;">{{ app.job.company.name|slice:":1"|upper }}</div>
+              <span class="fs-sm">{{ app.job.company.name }}</span>
+            </div>
+          </td>
+          <td class="fs-sm text-muted-2">{{ app.applied_at|date:"M j, Y" }}</td>
+          <td><span class="status-pill {{ app.status|status_class }}">{{ app.get_status_display }}</span></td>
+          <td>
+            {% if app.status == 'applied' %}
+              <button class="btn btn-soft-danger btn-sm" data-ajax-action="#" data-confirm="Withdraw this application?"><i class="bi bi-x me-1"></i>Withdraw</button>
+            {% else %}
+              <a href="{% url 'core:job-detail' slug=app.job.slug %}" class="btn btn-ghost btn-sm"><i class="bi bi-eye me-1"></i>View</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/_pagination.html" %}
+{% else %}
+<div class="sj-empty">
+  <div class="icon"><i class="bi bi-send"></i></div>
+  <h5>No applications{% if active_status != 'all' %} with this status{% endif %}</h5>
+  <p class="text-muted-2 fs-sm">{% if active_status == 'all' %}Start applying to jobs to see your applications here.{% else %}No applications found with this status.{% endif %}</p>
+  <a href="{% url 'core:job-search' %}" class="btn btn-gradient btn-sm">Browse Jobs</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{# Share Job Modal — expects `job` in context #}
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="shareModalLabel"><i class="bi bi-share me-2"></i>Share this job</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-grid gap-2">
+          <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" target="_blank" rel="noopener" class="btn btn-outline-light-brand">
+            <i class="bi bi-linkedin me-2"></i> LinkedIn
+          </a>
+          <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text=Check out this job: {{ job.title }}" target="_blank" rel="noopener" class="btn btn-outline-light-brand">
+            <i class="bi bi-twitter-x me-2"></i> Twitter / X
+          </a>
+          <a href="https://wa.me/?text=Check out this job: {{ job.title }} {{ request.build_absolute_uri }}" target="_blank" rel="noopener" class="btn btn-outline-light-brand">
+            <i class="bi bi-whatsapp me-2"></i> WhatsApp
+          </a>
+          <a href="mailto:?subject=Job: {{ job.title }}&body=Check out this job: {{ request.build_absolute_uri }}" class="btn btn-outline-light-brand">
+            <i class="bi bi-envelope me-2"></i> Email
+          </a>
+        </div>
+        <hr>
+        <label class="form-label fs-sm">Or copy link</label>
+        <div class="input-group">
+          <input type="text" class="form-control form-control-sm" value="{{ request.build_absolute_uri }}" readonly id="share-url">
+          <button class="btn btn-primary btn-sm" data-copy="{{ request.build_absolute_uri }}" type="button">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

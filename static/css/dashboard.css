@@ -1,0 +1,396 @@
+/* ==========================================================================
+   SevaJobs — Dashboard-specific styles
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   DASHBOARD CHROME
+   -------------------------------------------------------------------------- */
+.sj-dashboard-header {
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-line);
+  border-radius: var(--sj-radius-lg);
+  box-shadow: var(--sj-shadow-sm);
+  padding: var(--sj-sp-6) var(--sj-sp-6);
+  position: relative;
+  overflow: hidden;
+}
+.sj-dashboard-header::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--sj-gradient);
+}
+.sj-dashboard-header h1 {
+  font-size: var(--sj-fs-2xl);
+  font-weight: 800;
+  margin: 0;
+  color: var(--sj-ink);
+}
+.sj-dashboard-header .subtitle {
+  color: var(--sj-muted);
+  font-size: var(--sj-fs-sm);
+  margin: var(--sj-sp-1) 0 0;
+}
+
+/* --------------------------------------------------------------------------
+   KPI CARD VARIANTS
+   -------------------------------------------------------------------------- */
+.sj-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--sj-sp-4);
+}
+
+.sj-kpi {
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-line);
+  border-radius: var(--sj-radius);
+  padding: var(--sj-sp-5);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sj-sp-4);
+  transition: all var(--sj-duration-md) var(--sj-ease);
+  position: relative;
+  overflow: hidden;
+}
+.sj-kpi::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--sj-gradient);
+  opacity: 0;
+  transition: opacity var(--sj-duration-md) var(--sj-ease);
+}
+.sj-kpi:hover {
+  box-shadow: var(--sj-shadow);
+  transform: translateY(-2px);
+}
+.sj-kpi:hover::after { opacity: 1; }
+
+.sj-kpi .kpi-icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+.sj-kpi .kpi-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--sj-ink);
+  line-height: 1;
+  letter-spacing: -.02em;
+}
+.sj-kpi .kpi-label {
+  font-size: var(--sj-fs-sm);
+  color: var(--sj-muted);
+  font-weight: 500;
+  margin-top: var(--sj-sp-1);
+}
+.sj-kpi .kpi-trend {
+  font-size: var(--sj-fs-xs);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  margin-top: var(--sj-sp-2);
+  padding: .15rem .4rem;
+  border-radius: var(--sj-radius-full);
+}
+.sj-kpi .kpi-trend.up { background: var(--sj-success-50); color: var(--sj-success); }
+.sj-kpi .kpi-trend.down { background: var(--sj-danger-50); color: var(--sj-danger); }
+
+/* --------------------------------------------------------------------------
+   CHART CONTAINERS
+   -------------------------------------------------------------------------- */
+.sj-chart-card {
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-line);
+  border-radius: var(--sj-radius);
+  padding: var(--sj-sp-5);
+}
+.sj-chart-card .chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sj-sp-5);
+}
+.sj-chart-card .chart-title {
+  font-size: var(--sj-fs-md);
+  font-weight: 700;
+  color: var(--sj-ink);
+}
+.sj-chart-card .chart-subtitle {
+  font-size: var(--sj-fs-xs);
+  color: var(--sj-muted);
+}
+.sj-chart-card canvas {
+  max-height: 300px;
+}
+
+/* Mini bar chart (inline) */
+.mini-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 32px;
+}
+.mini-bar-chart .bar {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  background: var(--sj-primary-200);
+  transition: height .5s var(--sj-ease), background .2s;
+  min-height: 3px;
+}
+.mini-bar-chart .bar:hover {
+  background: var(--sj-primary);
+}
+
+/* --------------------------------------------------------------------------
+   ACTIVITY FEED
+   -------------------------------------------------------------------------- */
+.sj-activity-feed {
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-line);
+  border-radius: var(--sj-radius);
+}
+.sj-activity-feed .feed-header {
+  padding: var(--sj-sp-4) var(--sj-sp-5);
+  border-bottom: 1px solid var(--sj-line);
+  font-weight: 700;
+  color: var(--sj-ink);
+}
+.sj-activity-item {
+  display: flex;
+  gap: var(--sj-sp-3);
+  padding: var(--sj-sp-3) var(--sj-sp-5);
+  border-bottom: 1px solid var(--sj-line-2);
+  transition: background var(--sj-duration) var(--sj-ease);
+}
+.sj-activity-item:hover { background: var(--sj-bg); }
+.sj-activity-item:last-child { border-bottom: 0; }
+
+.sj-activity-item .activity-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--sj-primary);
+  margin-top: 6px; flex-shrink: 0;
+}
+.sj-activity-item .activity-text {
+  font-size: var(--sj-fs-sm);
+  color: var(--sj-body);
+  line-height: 1.5;
+}
+.sj-activity-item .activity-time {
+  font-size: var(--sj-fs-xs);
+  color: var(--sj-subtle);
+  margin-top: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   PIPELINE / KANBAN
+   -------------------------------------------------------------------------- */
+.sj-pipeline {
+  display: flex;
+  gap: var(--sj-sp-2);
+  overflow-x: auto;
+  padding-bottom: var(--sj-sp-2);
+}
+.sj-pipeline-stage {
+  flex: 1;
+  min-width: 160px;
+  text-align: center;
+  padding: var(--sj-sp-4) var(--sj-sp-3);
+  border-radius: var(--sj-radius-sm);
+  background: var(--sj-bg);
+  border: 1px solid var(--sj-line);
+}
+.sj-pipeline-stage .stage-count {
+  font-size: var(--sj-fs-3xl);
+  font-weight: 800;
+  color: var(--sj-ink);
+  line-height: 1;
+}
+.sj-pipeline-stage .stage-label {
+  font-size: var(--sj-fs-xs);
+  font-weight: 600;
+  color: var(--sj-muted);
+  margin-top: var(--sj-sp-1);
+}
+
+/* --------------------------------------------------------------------------
+   PROFILE COMPLETION WIDGET
+   -------------------------------------------------------------------------- */
+.sj-profile-completion {
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-line);
+  border-radius: var(--sj-radius);
+  padding: var(--sj-sp-5);
+}
+.sj-profile-completion .completion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sj-sp-3);
+}
+.sj-profile-completion .completion-pct {
+  font-size: var(--sj-fs-2xl);
+  font-weight: 800;
+  color: var(--sj-ink);
+}
+.sj-profile-completion .completion-steps {
+  margin-top: var(--sj-sp-4);
+}
+.sj-profile-completion .step {
+  display: flex;
+  align-items: center;
+  gap: var(--sj-sp-3);
+  padding: var(--sj-sp-2) 0;
+  font-size: var(--sj-fs-sm);
+}
+.sj-profile-completion .step .step-check {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; flex-shrink: 0;
+}
+.sj-profile-completion .step .step-check.done {
+  background: var(--sj-success-100); color: var(--sj-success);
+}
+.sj-profile-completion .step .step-check.pending {
+  background: var(--sj-line); color: var(--sj-subtle);
+}
+
+/* --------------------------------------------------------------------------
+   QUICK ACTIONS
+   -------------------------------------------------------------------------- */
+.sj-quick-actions {
+  display: flex;
+  gap: var(--sj-sp-3);
+  flex-wrap: wrap;
+}
+.sj-quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sj-sp-2);
+  padding: var(--sj-sp-4);
+  border: 1px solid var(--sj-line);
+  border-radius: var(--sj-radius);
+  background: var(--sj-surface);
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+  transition: all var(--sj-duration) var(--sj-ease);
+  cursor: pointer;
+  color: var(--sj-body);
+}
+.sj-quick-action:hover {
+  border-color: var(--sj-primary-200);
+  background: var(--sj-primary-50);
+  color: var(--sj-primary);
+}
+.sj-quick-action .action-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+}
+.sj-quick-action .action-label {
+  font-size: var(--sj-fs-xs);
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   TABLE ENHANCEMENTS
+   -------------------------------------------------------------------------- */
+.sj-table-actions {
+  display: flex;
+  gap: var(--sj-sp-1);
+}
+.sj-table-actions .btn {
+  padding: .3rem .5rem;
+  font-size: var(--sj-fs-xs);
+}
+
+/* Candidate inline info */
+.candidate-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--sj-sp-3);
+}
+.candidate-inline .avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--sj-gradient);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  font-size: var(--sj-fs-xs);
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   DASHBOARD TABS
+   -------------------------------------------------------------------------- */
+.sj-tabs {
+  border-bottom: 2px solid var(--sj-line);
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+}
+.sj-tabs .tab-item {
+  padding: var(--sj-sp-3) var(--sj-sp-5);
+  font-size: var(--sj-fs-sm);
+  font-weight: 600;
+  color: var(--sj-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all var(--sj-duration) var(--sj-ease);
+}
+.sj-tabs .tab-item:hover { color: var(--sj-primary); }
+.sj-tabs .tab-item.active {
+  color: var(--sj-primary);
+  border-bottom-color: var(--sj-primary);
+}
+.sj-tabs .tab-item .tab-count {
+  font-size: var(--sj-fs-xs);
+  background: var(--sj-bg);
+  padding: .1rem .4rem;
+  border-radius: var(--sj-radius-full);
+  margin-left: var(--sj-sp-2);
+}
+.sj-tabs .tab-item.active .tab-count {
+  background: var(--sj-primary-50);
+  color: var(--sj-primary);
+}
+
+/* --------------------------------------------------------------------------
+   MOBILE SIDEBAR TOGGLE
+   -------------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+  .sj-sidebar-mobile-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--sj-sp-2);
+    padding: var(--sj-sp-3) var(--sj-sp-4);
+    background: var(--sj-surface);
+    border: 1px solid var(--sj-line);
+    border-radius: var(--sj-radius-sm);
+    margin-bottom: var(--sj-sp-4);
+    font-weight: 600;
+    font-size: var(--sj-fs-sm);
+    color: var(--sj-ink);
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .sj-sidebar-collapse {
+    transition: max-height var(--sj-duration-md) var(--sj-ease);
+  }
+}
+
+@media (min-width: 992px) {
+  .sj-sidebar-mobile-toggle { display: none; }
+}

@@ -1,0 +1,41 @@
+{# Profile Card — expects `profile_user` and optionally `profile` (JobSeekerProfile) #}
+<div class="sj-card p-4">
+  <div class="text-center mb-3">
+    <div class="sj-user-avatar mx-auto mb-3" style="width:72px;height:72px;font-size:1.5rem;">
+      {% if profile_user.avatar %}
+        <img src="{{ profile_user.avatar.url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+      {% else %}
+        {{ profile_user.first_name|default:"U"|slice:":1"|upper }}
+      {% endif %}
+    </div>
+    <h5 class="mb-1">{{ profile_user.full_name }}</h5>
+    {% if profile.headline %}
+      <p class="text-muted-2 fs-sm mb-2">{{ profile.headline }}</p>
+    {% endif %}
+    <span class="sj-badge">{{ profile_user.get_role_display }}</span>
+  </div>
+
+  {% if profile %}
+  <div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+      <span class="fs-sm fw-semibold text-ink">Profile completion</span>
+      <span class="fs-sm fw-bold text-primary">{{ profile.profile_completion }}%</span>
+    </div>
+    <div class="sj-progress">
+      <div class="bar" style="width:{{ profile.profile_completion }}%"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <ul class="list-unstyled d-grid gap-2 mb-0">
+    {% if profile_user.email %}
+      <li class="d-flex align-items-center gap-2 fs-sm"><i class="bi bi-envelope text-muted" style="width:1.2rem;"></i> {{ profile_user.email }}</li>
+    {% endif %}
+    {% if profile_user.phone %}
+      <li class="d-flex align-items-center gap-2 fs-sm"><i class="bi bi-telephone text-muted" style="width:1.2rem;"></i> {{ profile_user.phone }}</li>
+    {% endif %}
+    {% if profile.current_location %}
+      <li class="d-flex align-items-center gap-2 fs-sm"><i class="bi bi-geo-alt text-muted" style="width:1.2rem;"></i> {{ profile.current_location }}</li>
+    {% endif %}
+  </ul>
+</div>

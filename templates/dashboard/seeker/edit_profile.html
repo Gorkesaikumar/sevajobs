@@ -1,0 +1,60 @@
+{% extends "dashboard/seeker/_layout.html" %}
+{% load static %}
+{% block title %}Edit Profile — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="mb-4">
+  <h4 class="fw-800 mb-0">Edit Profile</h4>
+  <p class="text-muted-2 fs-sm">Update your personal and professional information</p>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+  {% csrf_token %}
+  <!-- Personal Info -->
+  <div class="sj-card p-4 mb-4">
+    <h5 class="fw-700 mb-3"><i class="bi bi-person me-2 text-primary"></i>Personal Information</h5>
+    <div class="row g-3">
+      <div class="col-md-6"><label for="first_name" class="form-label">First Name *</label><input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required></div>
+      <div class="col-md-6"><label for="last_name" class="form-label">Last Name</label><input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}"></div>
+      <div class="col-md-6"><label for="phone" class="form-label">Phone</label><input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone }}"></div>
+      <div class="col-md-6"><label for="dob" class="form-label">Date of Birth</label><input type="date" class="form-control" id="dob" name="date_of_birth" value="{{ profile.date_of_birth|date:'Y-m-d' }}"></div>
+      <div class="col-12"><label for="bio" class="form-label">Bio / About Me</label><textarea class="form-control" id="bio" name="bio" rows="4" data-char-limit="500">{{ profile.summary }}</textarea></div>
+    </div>
+  </div>
+
+  <!-- Location -->
+  <div class="sj-card p-4 mb-4">
+    <h5 class="fw-700 mb-3"><i class="bi bi-geo-alt me-2 text-primary"></i>Location</h5>
+    {% include "partials/_location_dropdown.html" %}
+  </div>
+
+  <!-- Professional -->
+  <div class="sj-card p-4 mb-4">
+    <h5 class="fw-700 mb-3"><i class="bi bi-briefcase me-2 text-primary"></i>Professional</h5>
+    <div class="row g-3">
+      <div class="col-md-6"><label for="headline" class="form-label">Headline</label><input type="text" class="form-control" id="headline" name="headline" value="{{ profile.headline }}" placeholder="e.g., Senior Python Developer"></div>
+      <div class="col-md-6"><label for="experience" class="form-label">Years of Experience</label><input type="number" class="form-control" id="experience" name="experience_years" value="{{ profile.experience_years }}" min="0"></div>
+      <div class="col-12"><label for="skills" class="form-label">Skills</label>
+        <div class="sj-tag-input"><input type="hidden" name="skills" value="{{ profile.skills_list }}"><input type="text" placeholder="Type a skill and press Enter"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Social -->
+  <div class="sj-card p-4 mb-4">
+    <h5 class="fw-700 mb-3"><i class="bi bi-link-45deg me-2 text-primary"></i>Social Links</h5>
+    <div class="row g-3">
+      <div class="col-md-6"><label class="form-label">LinkedIn</label><div class="input-group"><span class="input-group-text"><i class="bi bi-linkedin"></i></span><input type="url" class="form-control" name="linkedin" value="{{ profile.linkedin_url }}" placeholder="https://linkedin.com/in/..."></div></div>
+      <div class="col-md-6"><label class="form-label">GitHub</label><div class="input-group"><span class="input-group-text"><i class="bi bi-github"></i></span><input type="url" class="form-control" name="github" value="{{ profile.github_url }}" placeholder="https://github.com/..."></div></div>
+      <div class="col-md-6"><label class="form-label">Portfolio</label><div class="input-group"><span class="input-group-text"><i class="bi bi-globe"></i></span><input type="url" class="form-control" name="portfolio" value="{{ profile.portfolio_url }}" placeholder="https://..."></div></div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-gradient"><i class="bi bi-check-lg me-1"></i> Save Changes</button>
+    <a href="{% url 'seeker:profile' %}" class="btn btn-outline-light-brand">Cancel</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block dashboard_js %}<script src="{% static 'js/forms.js' %}" defer></script>{% endblock %}

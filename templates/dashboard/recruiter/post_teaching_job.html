@@ -1,0 +1,85 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load static %}
+{% block title %}Post a Teaching Job — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<div class="d-flex align-items-center mb-4">
+  <a href="{% url 'recruiter:post-job' %}" class="btn btn-sm btn-outline-secondary rounded-circle me-3"><i class="bi bi-arrow-left"></i></a>
+  <div>
+    <h4 class="fw-800 mb-0">Post a Teaching Job</h4>
+    <p class="text-muted-2 fs-sm mb-0">Segment: <span class="fw-bold text-primary">Teaching</span></p>
+  </div>
+</div>
+
+<form method="post" action="{% url 'recruiter:post-teaching-job' %}" class="needs-validation" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="segment" value="teaching">
+  
+  <div class="sj-card p-4 mb-4" style="border-top: 4px solid var(--sj-primary);">
+    <h5 class="fw-700 mb-3"><i class="bi bi-book me-2 text-primary"></i>Teaching Role Details</h5>
+    <div class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label">Job Title *</label>
+        <input type="text" class="form-control" name="title" placeholder="e.g., Senior PGT Physics Teacher" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Category *</label>
+        <input type="text" class="form-control" name="category" placeholder="e.g., High School Education" required>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Job Description *</label>
+        <textarea class="form-control" name="description" rows="5" placeholder="Describe the institution, the grade level, and overall expectations…" required></textarea>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Subject & Curriculum Responsibilities</label>
+        <textarea class="form-control" name="responsibilities" rows="4" placeholder="e.g., Teach Physics for 11th and 12th CBSE, prepare lesson plans, conduct labs…"></textarea>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Required Teaching Qualifications & Certifications</label>
+        <textarea class="form-control" name="requirements" rows="4" placeholder="e.g., B.Ed required, Minimum 5 years teaching experience, CTET qualified preferred…"></textarea>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Benefits</label>
+        <textarea class="form-control" name="benefits" rows="2" placeholder="e.g., PF, Medical, Free transport, Staff child concession…"></textarea>
+      </div>
+    </div>
+  </div>
+  
+  <div class="sj-card p-4 mb-4">
+    <h5 class="fw-700 mb-3"><i class="bi bi-gear me-2 text-primary"></i>Configuration</h5>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Employment Type *</label>
+        <select class="form-select" name="job_type" required>
+          <option value="full_time">Full Time</option>
+          <option value="part_time">Part Time</option>
+          <option value="contract">Contract (Academic Year)</option>
+          <option value="freelance">Guest Faculty</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Experience Level *</label>
+        <select class="form-select" name="experience_level" required>
+          <option value="fresher">Fresher</option>
+          <option value="junior">Junior (1-3 yrs)</option>
+          <option value="mid">Mid Level (3-6 yrs)</option>
+          <option value="senior">Senior (6+ yrs)</option>
+          <option value="lead">HOD / Principal</option>
+        </select>
+      </div>
+      <div class="col-md-4"><label class="form-label">Vacancies</label><input type="number" class="form-control" name="vacancies" min="1" value="1"></div>
+      <div class="col-md-6"><label class="form-label">Institution Location *</label><input type="text" class="form-control" name="location" placeholder="e.g., Bengaluru, Karnataka" required></div>
+      <div class="col-md-3"><label class="form-label">Salary Min (₹)</label><input type="number" class="form-control" name="salary_min" min="0"></div>
+      <div class="col-md-3"><label class="form-label">Salary Max (₹)</label><input type="number" class="form-control" name="salary_max" min="0"></div>
+      <div class="col-md-4"><label class="form-label">Application Deadline</label><input type="date" class="form-control" name="deadline"></div>
+      <div class="col-md-4 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" id="is_remote" name="is_remote"><label class="form-check-label" for="is_remote">Online Teaching / Remote</label></div></div>
+      <div class="col-12"><label class="form-label">Required Skills</label><div class="sj-tag-input"><input type="hidden" name="skills"><input type="text" placeholder="Type skill (e.g. Smartboard, Zoom, Lesson Planning) and press Enter"></div></div>
+    </div>
+  </div>
+  
+  <div class="d-flex gap-2">
+    <button type="submit" name="action" value="publish" class="btn btn-gradient"><i class="bi bi-send me-1"></i> Submit for Approval</button>
+    <button type="submit" name="action" value="draft" class="btn btn-outline-light-brand"><i class="bi bi-file-earmark me-1"></i> Save as Draft</button>
+  </div>
+</form>
+{% endblock %}
+{% block dashboard_js %}<script src="{% static 'js/forms.js' %}" defer></script>{% endblock %}

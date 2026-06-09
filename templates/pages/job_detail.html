@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}{{ job.title }} at {{ job.company.name }} — SevaJobs{% endblock %}
+{% block meta_description %}{{ job.description|truncatechars:160 }}{% endblock %}
+{% block breadcrumb %}{% include "partials/_breadcrumb.html" %}{% endblock %}
+
+{% block content %}
+<section class="section-sm">
+  <div class="container">
+    <div class="row g-4">
+      <!-- Main Content -->
+      <div class="col-lg-8">
+        <!-- Job Header -->
+        <div class="sj-card p-4 p-md-5 mb-4">
+          <div class="d-flex align-items-start gap-3 mb-4">
+            <div class="sj-logo-lg flex-shrink-0">
+              {% if job.company.logo %}
+                <img src="{{ job.company.logo.url }}" alt="{{ job.company.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">
+              {% else %}
+                {{ job.company.name|slice:":1"|upper }}
+              {% endif %}
+            </div>
+            <div class="flex-grow-1 min-w-0">
+              <div class="d-flex flex-wrap gap-2 mb-2">
+                {% if job.is_currently_featured %}<span class="sj-badge is-featured"><i class="bi bi-star-fill"></i> Featured</span>{% endif %}
+                {% if job.is_remote %}<span class="sj-badge is-remote"><i class="bi bi-laptop"></i> Remote</span>{% endif %}
+                <span class="sj-badge"><i class="bi bi-clock"></i> {{ job.get_job_type_display }}</span>
+              </div>
+              <h1 class="h3 fw-800 mb-1">{{ job.title }}</h1>
+              <p class="text-muted-2 mb-0">
+                <a href="{% url 'core:company-detail' slug=job.company.slug %}" class="text-reset fw-semibold">{{ job.company.name }}</a>
+                {% if job.company.is_verified %}<i class="bi bi-patch-check-fill text-primary ms-1"></i>{% endif %}
+              </p>
+            </div>
+          </div>
+
+          <!-- Meta chips -->
+          <div class="d-flex flex-wrap gap-2 mb-4">
+            <span class="sj-chip"><i class="bi bi-geo-alt"></i> {{ job.location }}</span>
+            <span class="sj-chip"><i class="bi bi-bar-chart"></i> {{ job.get_experience_level_display }}</span>
+            {% if job.salary_is_disclosed and job.salary_min %}
+              <span class="sj-chip"><i class="bi bi-currency-rupee"></i> ₹{{ job.salary_min|intcomma }}{% if job.salary_max %} – ₹{{ job.salary_max|intcomma }}{% endif %}/yr</span>
+            {% endif %}
+            {% if job.deadline %}
+              <span class="sj-chip"><i class="bi bi-calendar-event"></i> Deadline: {{ job.deadline|date:"M j, Y" }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Action buttons -->
+          <div class="d-flex flex-wrap gap-2">
+            {% if user.is_authenticated and user.is_job_seeker %}
+              {% if has_applied %}
+                <button class="btn btn-soft-success btn-lg" disabled><i class="bi bi-check-circle me-1"></i> Already Applied</button>
+              {% else %}
+                <button class="btn btn-gradient btn-lg" data-bs-toggle="modal" data-bs-target="#applyModal">
+                  <i class="bi bi-send me-1"></i> Apply Now
+                </button>
+              {% endif %}
+              <button class="sj-save-btn {% if is_saved %}saved{% endif %}" data-job-id="{{ job.id }}" style="position:static;width:48px;height:48px;">
+                <i class="bi {% if is_saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i>
+              </button>
+            {% elif not user.is_authenticated %}
+              <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-gradient btn-lg">
+                <i class="bi bi-send me-1"></i> Login to Apply
+              </a>
+            {% endif %}
+            <button class="btn btn-outline-light-brand btn-lg" data-bs-toggle="modal" data-bs-target="#shareModal">
+              <i class="bi bi-share me-1"></i> Share
+            </button>
+          </div>
+        </div>
+
+        <!-- Job Description -->
+        <div class="sj-card p-4 p-md-5 mb-4">
+          <h4 class="fw-700 mb-3">Job Description</h4>
+          <div class="text-muted-2 lh-lg">{{ job.description|linebreaksbr }}</div>
+
+          {% if job.responsibilities %}
+          <h5 class="fw-700 mt-4 mb-3">Key Responsibilities</h5>
+          <div class="text-muted-2 lh-lg">{{ job.responsibilities|linebreaksbr }}</div>
+          {% endif %}
+
+          {% if job.requirements %}
+          <h5 class="fw-700 mt-4 mb-3">Requirements</h5>
+          <div class="text-muted-2 lh-lg">{{ job.requirements|linebreaksbr }}</div>
+          {% endif %}
+
+          {% if job.benefits %}
+          <h5 class="fw-700 mt-4 mb-3">Benefits & Perks</h5>
+          <div class="text-muted-2 lh-lg">{{ job.benefits|linebreaksbr }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Skills -->
+        {% if job.skills_required.all %}
+        <div class="sj-card p-4 p-md-5 mb-4">
+          <h5 class="fw-700 mb-3">Required Skills</h5>
+          <div class="d-flex flex-wrap gap-2">
+            {% for skill in job.skills_required.all %}
+              <span class="sj-badge">{{ skill.name }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Similar Jobs -->
+        {% if similar_jobs %}
+        <div class="mb-4">
+          <h5 class="fw-700 mb-3">Similar Jobs</h5>
+          <div class="row g-3">
+            {% for sj in similar_jobs %}
+              <div class="col-md-6">
+                {% include "partials/_job_card.html" with job=sj %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Sidebar -->
+      <div class="col-lg-4">
+        <!-- Company Info -->
+        <div class="sj-card p-4 mb-4">
+          <h6 class="fw-700 mb-3">About the Company</h6>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="sj-logo flex-shrink-0">
+              {% if job.company.logo %}
+                <img src="{{ job.company.logo.url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+              {% else %}
+                {{ job.company.name|slice:":1"|upper }}
+              {% endif %}
+            </div>
+            <div>
+              <h6 class="mb-0">{{ job.company.name }}</h6>
+              {% if job.company.industry %}<small class="text-muted-2">{{ job.company.industry }}</small>{% endif %}
+            </div>
+          </div>
+          {% if job.company.description %}
+            <p class="text-muted-2 fs-sm mb-3">{{ job.company.description|truncatechars:200 }}</p>
+          {% endif %}
+          <ul class="list-unstyled d-grid gap-2 mb-3">
+            {% if job.company.location %}<li class="fs-sm"><i class="bi bi-geo-alt text-muted me-2"></i>{{ job.company.location }}</li>{% endif %}
+            {% if job.company.website %}<li class="fs-sm"><i class="bi bi-globe text-muted me-2"></i><a href="{{ job.company.website }}" target="_blank" rel="noopener">{{ job.company.website|cut:"https://"|truncatechars:30 }}</a></li>{% endif %}
+          </ul>
+          <a href="{% url 'core:company-detail' slug=job.company.slug %}" class="btn btn-outline-light-brand btn-sm w-100">
+            View Company Profile <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+        </div>
+
+        <!-- Job Summary -->
+        <div class="sj-card p-4 mb-4">
+          <h6 class="fw-700 mb-3">Job Summary</h6>
+          <ul class="list-unstyled d-grid gap-3 mb-0">
+            <li class="d-flex align-items-center gap-2 fs-sm">
+              <i class="bi bi-calendar3 text-muted" style="width:1.2rem;"></i>
+              <span class="text-muted-2">Posted:</span>
+              <span class="fw-semibold ms-auto">{{ job.created_at|date:"M j, Y" }}</span>
+            </li>
+            <li class="d-flex align-items-center gap-2 fs-sm">
+              <i class="bi bi-briefcase text-muted" style="width:1.2rem;"></i>
+              <span class="text-muted-2">Type:</span>
+              <span class="fw-semibold ms-auto">{{ job.get_job_type_display }}</span>
+            </li>
+            <li class="d-flex align-items-center gap-2 fs-sm">
+              <i class="bi bi-bar-chart text-muted" style="width:1.2rem;"></i>
+              <span class="text-muted-2">Level:</span>
+              <span class="fw-semibold ms-auto">{{ job.get_experience_level_display }}</span>
+            </li>
+            {% if job.vacancies %}
+            <li class="d-flex align-items-center gap-2 fs-sm">
+              <i class="bi bi-people text-muted" style="width:1.2rem;"></i>
+              <span class="text-muted-2">Vacancies:</span>
+              <span class="fw-semibold ms-auto">{{ job.vacancies }}</span>
+            </li>
+            {% endif %}
+            <li class="d-flex align-items-center gap-2 fs-sm">
+              <i class="bi bi-eye text-muted" style="width:1.2rem;"></i>
+              <span class="text-muted-2">Views:</span>
+              <span class="fw-semibold ms-auto">{{ job.views_count|intcomma }}</span>
+            </li>
+            <li class="d-flex align-items-center gap-2 fs-sm">
+              <i class="bi bi-send text-muted" style="width:1.2rem;"></i>
+              <span class="text-muted-2">Applications:</span>
+              <span class="fw-semibold ms-auto">{{ job.application_count|default:"0" }}</span>
+            </li>
+          </ul>
+        </div>
+
+        {% include "partials/_ad_sidebar.html" with sidebar_ad=sidebar_ad %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block modals %}
+{% include "partials/_apply_modal.html" %}
+{% include "partials/_share_modal.html" %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/forms.js' %}" defer></script>
+<script src="{% static 'js/search.js' %}" defer></script>
+{% endblock %}

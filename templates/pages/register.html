@@ -1,0 +1,163 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sign Up — SevaJobs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="{% static 'css/main.css' %}" rel="stylesheet">
+  <link href="{% static 'css/animations.css' %}" rel="stylesheet">
+</head>
+<body>
+  {% include "partials/_messages.html" %}
+
+  <div class="sj-auth">
+    <!-- Left: Brand Panel -->
+    <div class="sj-auth-aside d-none d-lg-flex col-lg-5 col-xl-5">
+      <div class="aside-content animate-fade-up">
+        <div class="sj-brand text-white mb-4" style="font-size:2rem;">Seva<span class="dot" style="color:#a5f3fc;">Jobs</span></div>
+        <h2>Start your journey</h2>
+        <p>Join 50,000+ professionals who trust SevaJobs for their career growth. Create your free account and start applying today.</p>
+        <div class="mt-4 d-grid gap-3" style="max-width:280px;margin:0 auto;">
+          <div class="d-flex align-items-center gap-3">
+            <div class="ico bg-soft-success flex-shrink-0" style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;"><i class="bi bi-lightning-charge"></i></div>
+            <div class="text-start"><div class="fw-bold text-white fs-sm">One-click Apply</div><div class="fs-xs" style="color:rgba(255,255,255,.6);">Apply to jobs instantly</div></div>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <div class="ico flex-shrink-0" style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;"><i class="bi bi-bell"></i></div>
+            <div class="text-start"><div class="fw-bold text-white fs-sm">Smart Alerts</div><div class="fs-xs" style="color:rgba(255,255,255,.6);">Get notified for matching jobs</div></div>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <div class="ico flex-shrink-0" style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;"><i class="bi bi-shield-check"></i></div>
+            <div class="text-start"><div class="fw-bold text-white fs-sm">100% Free</div><div class="fs-xs" style="color:rgba(255,255,255,.6);">No hidden charges for seekers</div></div>
+          </div>
+        </div>
+      </div>
+    </div>    <!-- Right: Form -->
+    <div class="sj-auth-form-panel col-12 col-lg-7 col-xl-7 px-3" style="padding-top:1rem;padding-bottom:1rem;">
+      <div class="w-100" style="max-width:480px;">
+        <div class="text-center mb-3 d-lg-none">
+          <a href="/" class="sj-brand" style="font-size:1.5rem;">Seva<span class="dot">Jobs</span></a>
+        </div>
+
+        <div class="sj-auth-card animate-fade-up" style="padding:1.5rem;">
+          <h5 class="fw-800 mb-0">Create your free account</h5>
+          <p class="text-muted-2 mb-2" style="font-size:0.8rem;">Join thousands of professionals on SevaJobs</p>
+
+          <!-- Role selector -->
+          <div class="d-flex gap-2 mb-3 p-1 rounded" style="background:var(--sj-bg);">
+            <button type="button" class="btn btn-sm flex-fill role-btn {% if selected_role == 'job_seeker' %}btn-primary{% else %}btn-ghost{% endif %}"
+                    data-role="job_seeker" onclick="selectRole('job_seeker')">
+              <i class="bi bi-person me-1"></i> Job Seeker
+            </button>
+            <button type="button" class="btn btn-sm flex-fill role-btn {% if selected_role == 'recruiter' %}btn-primary{% else %}btn-ghost{% endif %}"
+                    data-role="recruiter" onclick="selectRole('recruiter')">
+              <i class="bi bi-briefcase me-1"></i> Recruiter
+            </button>
+          </div>
+
+          <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="role" id="role-input" value="{{ selected_role|default:'job_seeker' }}">
+
+            <!-- Name + Phone in a 2x2 grid to save vertical space -->
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label for="first_name" class="form-label mb-1" style="font-size:0.8rem;">First Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" id="first_name" name="first_name"
+                       value="{{ first_name|default:'' }}" placeholder="John" required>
+              </div>
+              <div class="col-6">
+                <label for="last_name" class="form-label mb-1" style="font-size:0.8rem;">Last Name</label>
+                <input type="text" class="form-control form-control-sm" id="last_name" name="last_name"
+                       value="{{ last_name|default:'' }}" placeholder="Doe">
+              </div>
+              <div class="col-6">
+                <label for="email" class="form-label mb-1" style="font-size:0.8rem;">Email <span class="text-danger">*</span></label>
+                <div class="input-icon-group">
+                  <i class="bi bi-envelope input-icon" style="font-size:0.75rem;"></i>
+                  <input type="email" class="form-control form-control-sm" id="email" name="email"
+                         value="{{ email|default:'' }}" placeholder="you@example.com" required>
+                </div>
+              </div>
+              <div class="col-6">
+                <label for="phone" class="form-label mb-1" style="font-size:0.8rem;">Phone</label>
+                <div class="input-icon-group">
+                  <i class="bi bi-telephone input-icon" style="font-size:0.75rem;"></i>
+                  <input type="tel" class="form-control form-control-sm" id="phone" name="phone"
+                         value="{{ phone|default:'' }}" placeholder="+91 98765 43210">
+                </div>
+              </div>
+            </div>
+
+            <!-- Password row side by side -->
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label for="reg-password" class="form-label mb-1" style="font-size:0.8rem;">Password <span class="text-danger">*</span></label>
+                <div class="input-icon-group position-relative">
+                  <i class="bi bi-lock input-icon" style="font-size:0.75rem;"></i>
+                  <input type="password" class="form-control form-control-sm" id="reg-password" name="password"
+                         placeholder="Min. 8 chars" required minlength="8" data-password-strength="pwd-meter">
+                  <button type="button" class="btn btn-ghost position-absolute end-0 top-50 translate-middle-y p-0 pe-2"
+                          data-toggle-password="reg-password" aria-label="Toggle password" style="font-size:0.75rem;">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-6">
+                <label for="password2" class="form-label mb-1" style="font-size:0.8rem;">Confirm Password <span class="text-danger">*</span></label>
+                <div class="input-icon-group">
+                  <i class="bi bi-lock input-icon" style="font-size:0.75rem;"></i>
+                  <input type="password" class="form-control form-control-sm" id="password2" name="password2"
+                         placeholder="Re-enter" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- Strength bar — compact -->
+            <div class="pwd-strength mb-2" id="pwd-meter" style="gap:3px;">
+              <span class="bar" style="height:3px;"></span>
+              <span class="bar" style="height:3px;"></span>
+              <span class="bar" style="height:3px;"></span>
+              <span class="bar" style="height:3px;"></span>
+            </div>
+
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="accept_terms" required>
+              <label class="form-check-label" for="accept_terms" style="font-size:0.78rem;">
+                I agree to the <a href="/terms/" target="_blank">Terms &amp; Conditions</a> and <a href="/privacy/" target="_blank">Privacy Policy</a>
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-gradient w-100 mb-2" style="padding:.55rem 1rem;">
+              <i class="bi bi-person-plus me-1"></i> Create Account
+            </button>
+          </form>
+
+          <p class="text-center text-muted-2 mb-0" style="font-size:0.8rem;">
+            Already have an account? <a href="{% url 'accounts:login' %}" class="fw-semibold text-primary">Log in</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="{% static 'js/main.js' %}" defer></script>
+  <script src="{% static 'js/forms.js' %}" defer></script>
+  <script>
+    function selectRole(role) {
+      document.getElementById('role-input').value = role;
+      document.querySelectorAll('.role-btn').forEach(btn => {
+        btn.classList.toggle('btn-primary', btn.dataset.role === role);
+        btn.classList.toggle('btn-ghost', btn.dataset.role !== role);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+{# Apply Job Modal — expects `job` and `resumes` in context #}
+{% csrf_token %}
+<div class="modal fade" id="applyModal" tabindex="-1" aria-labelledby="applyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title" id="applyModalLabel">Apply to {{ job.title }}</h5>
+          <p class="text-muted-2 fs-sm mb-0">{{ job.company.name }} &middot; {{ job.location }}</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{% url 'core:job-apply' %}" id="apply-form">
+        {% csrf_token %}
+        <input type="hidden" name="job_id" value="{{ job.id }}">
+        <div class="modal-body">
+          <!-- Resume selection -->
+          <div class="mb-4">
+            <label class="form-label">Select Resume <span class="text-danger">*</span></label>
+            {% if resumes %}
+              {% for resume in resumes %}
+                <div class="form-check sj-card-flat p-3 mb-2">
+                  <input class="form-check-input" type="radio" name="resume_id" id="resume-{{ resume.id }}" value="{{ resume.id }}" {% if resume.is_primary %}checked{% endif %} required>
+                  <label class="form-check-label d-flex align-items-center justify-content-between w-100" for="resume-{{ resume.id }}">
+                    <div>
+                      <div class="fw-semibold">{{ resume.title }}</div>
+                      <small class="text-muted-2">{{ resume.file_type|upper }} &middot; {{ resume.file_size|filesizeformat }}</small>
+                    </div>
+                    {% if resume.is_primary %}<span class="sj-badge">Primary</span>{% endif %}
+                  </label>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="sj-card-flat p-4 text-center">
+                <i class="bi bi-file-earmark-x text-muted mb-2" style="font-size:2rem;"></i>
+                <p class="text-muted-2 fs-sm mb-2">No resumes uploaded yet.</p>
+                <a href="{% url 'seeker:resumes' %}" class="btn btn-soft-primary btn-sm">Upload Resume</a>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Cover letter -->
+          <div class="mb-4">
+            <label for="cover-letter" class="form-label">Cover Letter <span class="text-muted-2 fw-normal">(optional)</span></label>
+            <textarea class="form-control" id="cover-letter" name="cover_letter" rows="4" placeholder="Tell the recruiter why you're a great fit…" data-char-limit="2000"></textarea>
+          </div>
+
+          <!-- Expected salary -->
+          <div class="mb-3">
+            <label for="expected-salary" class="form-label">Expected Salary (₹/year) <span class="text-muted-2 fw-normal">(optional)</span></label>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              <input type="number" class="form-control" id="expected-salary" name="expected_salary" placeholder="e.g. 1200000" min="0">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-light-brand" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-gradient" {% if not resumes %}disabled{% endif %}>
+            <i class="bi bi-send me-1"></i> Submit Application
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

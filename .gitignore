@@ -1,0 +1,173 @@
+# ============================================================================
+# SevaJobs — Git ignore rules
+# Stack: Django 5 + DRF + PostgreSQL + Redis + Celery + Docker
+# ============================================================================
+
+# ---- Python bytecode & build artifacts -------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+develop-eggs/
+.installed.cfg
+build/
+dist/
+sdist/
+wheels/
+*.whl
+parts/
+var/
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ---- Virtual environments --------------------------------------------------
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+Pipfile.lock
+poetry.lock
+
+# ---- Django ----------------------------------------------------------------
+*.log
+logs/*.log
+logs/*.log.*
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Collected static (run-time output; the `static/` source dir IS tracked)
+staticfiles/
+/static_root/
+
+# User-uploaded media — never commit user data
+media/
+!media/.gitkeep
+
+# Compiled translations
+*.mo
+
+# Django secret / cache
+.django_cache/
+
+# ---- Environment & secrets -------------------------------------------------
+# .env.example IS tracked; real env files are not.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets.json
+credentials.json
+
+# ---- Celery & Redis --------------------------------------------------------
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
+dump.rdb
+appendonly.aof
+
+# ---- Testing & coverage ----------------------------------------------------
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.hypothesis/
+nosetests.xml
+test-results/
+junit.xml
+
+# ---- Type checkers & linters ----------------------------------------------
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# ---- Docker ----------------------------------------------------------------
+docker-compose.override.yml
+*.override.yml
+.docker/
+
+# ---- Node / front-end tooling (in case it gets added) ----------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.parcel-cache/
+.next/
+.nuxt/
+.cache/
+
+# ---- IDEs & editors --------------------------------------------------------
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*.swn
+*~
+.history/
+.project
+.pydevproject
+.spyderproject
+.spyproject
+.ropeproject
+
+# ---- OS files --------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ---- Cloud / deployment artifacts -----------------------------------------
+.terraform/
+*.tfstate
+*.tfstate.*
+.serverless/
+.elasticbeanstalk/
+.aws/
+.sentry-native/
+
+# ---- Documentation build output -------------------------------------------
+docs/_build/
+site/
+
+# ---- Misc temp / backup ----------------------------------------------------
+*.bak
+*.tmp
+*.orig
+*.rej
+.tmp/
+
+# ---- Claude Code / agent metadata ------------------------------------------
+.claude/
+CLAUDE.local.md
+
+# ============================================================================
+# Explicitly tracked (do NOT ignore — they belong in version control):
+#   requirements/*.txt   — pinned dependencies
+#   apps/*/migrations/   — Django migration history
+#   static/              — source CSS/JS/images (NOT collected staticfiles/)
+#   templates/           — Django templates
+#   .env.example         — sample env, no secrets
+#   Dockerfile, docker-compose.yml — base service definitions
+# ============================================================================

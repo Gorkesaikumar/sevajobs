@@ -1,0 +1,135 @@
+{% extends "dashboard/_layout.html" %}
+{% load static sj_extras %}
+
+{% block title %}My Profile — SevaJobs{% endblock %}
+{% block role_label %}Job Seeker{% endblock %}
+
+{% block sidebar_nav %}
+  <li><a class="nav-link" href="#"><i class="bi bi-speedometer2" aria-hidden="true"></i>Overview</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-send" aria-hidden="true"></i>My Applications</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-bookmark-heart" aria-hidden="true"></i>Saved Jobs</a></li>
+  <li><a class="nav-link" href="#"><i class="bi bi-file-earmark-text" aria-hidden="true"></i>Resumes</a></li>
+  <li><a class="nav-link active" href="#"><i class="bi bi-person" aria-hidden="true"></i>Profile</a></li>
+{% endblock %}
+
+{% block dashboard %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <h1 class="h4 mb-0">My profile</h1>
+  <span class="sj-chip"><i class="bi bi-graph-up-arrow"></i>{{ profile.profile_completion|default:75 }}% complete</span>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="d-grid gap-4">
+  {% csrf_token %}
+
+  <!-- Identity card -->
+  <div class="sj-card p-4">
+    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-3 mb-4">
+      <div class="sj-logo" style="width:80px;height:80px;font-size:1.8rem;" aria-hidden="true">{{ user.first_name|default:"J"|slice:":1"|upper }}</div>
+      <div>
+        <h2 class="h5 mb-1">{{ user.get_full_name|default:"Jane Doe" }}</h2>
+        <p class="text-muted-2 mb-2">{{ profile.headline|default:"Senior Python Developer" }}</p>
+        <label class="btn btn-sm btn-outline-light-brand mb-0">
+          <i class="bi bi-camera me-1"></i>Change photo
+          <input type="file" name="avatar" class="d-none" accept="image/*">
+        </label>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label for="p-first" class="form-label">First name</label>
+        <input id="p-first" name="first_name" class="form-control" value="{{ user.first_name|default:'Jane' }}">
+      </div>
+      <div class="col-md-6">
+        <label for="p-last" class="form-label">Last name</label>
+        <input id="p-last" name="last_name" class="form-control" value="{{ user.last_name|default:'Doe' }}">
+      </div>
+      <div class="col-md-6">
+        <label for="p-email" class="form-label">Email</label>
+        <input id="p-email" type="email" class="form-control" value="{{ user.email|default:'jane@example.com' }}" readonly>
+      </div>
+      <div class="col-md-6">
+        <label for="p-phone" class="form-label">Phone</label>
+        <input id="p-phone" name="phone" type="tel" class="form-control" value="{{ user.phone|default:'+91 98765 43210' }}">
+      </div>
+      <div class="col-md-6">
+        <label for="p-altphone" class="form-label">Alternate phone</label>
+        <input id="p-altphone" name="alternate_phone" type="tel" class="form-control" value="{{ profile.alternate_phone }}">
+      </div>
+      <div class="col-md-6">
+        <label for="p-headline" class="form-label">Headline</label>
+        <input id="p-headline" name="headline" class="form-control" value="{{ profile.headline|default:'Senior Python Developer' }}">
+      </div>
+    </div>
+  </div>
+
+  <!-- Professional details -->
+  <div class="sj-card p-4">
+    <h2 class="h6 mb-3">Professional details</h2>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label for="p-designation" class="form-label">Designation</label>
+        <input id="p-designation" name="designation" class="form-control" value="{{ profile.designation|default:'Backend Engineer' }}">
+      </div>
+      <div class="col-md-6">
+        <label for="p-subject" class="form-label">Subject / Field of study</label>
+        <input id="p-subject" name="subject" class="form-control" value="{{ profile.subject|default:'Computer Science' }}">
+      </div>
+      <div class="col-md-4">
+        <label for="p-exp" class="form-label">Experience (years)</label>
+        <input id="p-exp" name="experience_years" type="number" min="0" class="form-control" value="{{ profile.experience_years|default:5 }}">
+      </div>
+      <div class="col-md-4">
+        <label for="p-jobtype" class="form-label">Preferred job type</label>
+        <select id="p-jobtype" name="preferred_job_type" class="form-select">
+          {% for t in "Full Time,Part Time,Contract,Internship,Freelance"|split %}<option>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label for="p-avail" class="form-label">Availability</label>
+        <select id="p-avail" name="availability" class="form-select">
+          {% for t in "Immediately,15 days,30 days,60 days"|split %}<option>{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label for="p-curloc" class="form-label">Current location</label>
+        <input id="p-curloc" name="current_location" class="form-control" value="{{ profile.current_location|default:'Bengaluru' }}">
+      </div>
+      <div class="col-md-6">
+        <label for="p-prefloc" class="form-label">Preferred location</label>
+        <input id="p-prefloc" name="preferred_location" class="form-control" value="{{ profile.preferred_location|default:'Remote' }}">
+      </div>
+      <div class="col-md-6">
+        <label for="p-cursal" class="form-label">Current salary (₹ LPA)</label>
+        <input id="p-cursal" name="current_salary" type="number" class="form-control" value="{{ profile.current_salary|default:14 }}">
+      </div>
+      <div class="col-md-6">
+        <label for="p-expsal" class="form-label">Expected salary (₹ LPA)</label>
+        <input id="p-expsal" name="expected_salary" type="number" class="form-control" value="{{ profile.expected_salary|default:20 }}">
+      </div>
+    </div>
+  </div>
+
+  <!-- Skills -->
+  <div class="sj-card p-4">
+    <h2 class="h6 mb-3">Skills</h2>
+    <div class="d-flex flex-wrap gap-2 mb-3" id="skillList">
+      {% for s in "Python,Django,PostgreSQL,REST,Docker"|split %}
+        <span class="sj-badge d-inline-flex align-items-center gap-2">
+          {{ s }} <button type="button" class="btn-close btn-close-sm" style="font-size:.6rem;" aria-label="Remove {{ s }}"></button>
+        </span>
+      {% endfor %}
+    </div>
+    <label for="addSkill" class="visually-hidden">Add a skill</label>
+    <div class="input-group" style="max-width: 360px;">
+      <input id="addSkill" class="form-control" placeholder="Add a skill…">
+      <button class="btn btn-outline-light-brand" type="button">Add</button>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-end gap-2">
+    <button type="reset" class="btn btn-outline-light-brand">Cancel</button>
+    <button type="submit" class="btn btn-gradient px-4">Save changes</button>
+  </div>
+</form>
+{% endblock %}

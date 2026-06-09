@@ -1,0 +1,49 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load sj_extras %}
+{% block title %}Applications — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<h4 class="fw-800 mb-4">All Applications</h4>
+{% if applications %}
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead><tr><th>Candidate</th><th>Job</th><th class="sortable">Applied</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td><div class="candidate-inline"><div class="avatar">{{ app.applicant.first_name|slice:":1"|upper }}</div><div><div class="fw-semibold fs-sm">{{ app.applicant.full_name }}</div><div class="fs-xs text-muted-2">{{ app.applicant.email }}</div></div></div></td>
+          <td class="fs-sm">{{ app.job.title }}</td>
+          <td class="fs-sm text-muted-2">{{ app.applied_at|date:"M j, Y" }}</td>
+          <td><span class="status-pill {{ app.status|status_class }}">{{ app.get_status_display }}</span></td>
+          <td>
+            <div class="sj-table-actions d-flex gap-1 align-items-center">
+              <a href="{% url 'recruiter:candidate-detail' pk=app.id %}" class="btn btn-soft-primary btn-sm" title="View details">
+                <i class="bi bi-eye me-1"></i>View
+              </a>
+              {% if app.status != "shortlisted" and app.status != "selected" and app.status != "rejected" and app.status != "withdrawn" %}
+              <form method="post" action="{% url 'recruiter:applications' %}" class="d-inline mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="shortlist">
+                <input type="hidden" name="app_id" value="{{ app.id }}">
+                <button type="submit" class="btn btn-soft-success btn-sm" title="Shortlist candidate"><i class="bi bi-check-lg"></i></button>
+              </form>
+              <form method="post" action="{% url 'recruiter:applications' %}" class="d-inline mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reject">
+                <input type="hidden" name="app_id" value="{{ app.id }}">
+                <button type="submit" class="btn btn-soft-danger btn-sm" title="Reject application"><i class="bi bi-x-lg"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/_pagination.html" %}
+{% else %}
+<div class="sj-empty"><div class="icon"><i class="bi bi-inbox"></i></div><h5>No applications</h5><p class="text-muted-2 fs-sm">Applications from candidates will appear here.</p></div>
+{% endif %}
+{% endblock %}
