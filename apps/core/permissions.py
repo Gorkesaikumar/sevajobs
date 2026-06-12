@@ -7,21 +7,36 @@ class IsJobSeeker(BasePermission):
     """Grants access only to users with the job_seeker role."""
 
     def has_permission(self, request, view) -> bool:
-        return bool(request.user and request.user.is_authenticated and request.user.role == "job_seeker")
+        if not (request.user and request.user.is_authenticated):
+            return False
+        if hasattr(request.auth, 'get') and request.auth.get("role") != "job_seeker":
+            # For JWT tokens, enforce role claim
+            return False
+        return request.user.role == "job_seeker"
 
 
 class IsRecruiter(BasePermission):
     """Grants access only to users with the recruiter role."""
 
     def has_permission(self, request, view) -> bool:
-        return bool(request.user and request.user.is_authenticated and request.user.role == "recruiter")
+        if not (request.user and request.user.is_authenticated):
+            return False
+        if hasattr(request.auth, 'get') and request.auth.get("role") != "recruiter":
+            # For JWT tokens, enforce role claim
+            return False
+        return request.user.role == "recruiter"
 
 
 class IsAdmin(BasePermission):
     """Grants access only to staff / superusers."""
 
     def has_permission(self, request, view) -> bool:
-        return bool(request.user and request.user.is_authenticated and request.user.is_staff)
+        if not (request.user and request.user.is_authenticated):
+            return False
+        if hasattr(request.auth, 'get') and request.auth.get("role") != "admin":
+            # For JWT tokens, enforce role claim
+            return False
+        return getattr(request.user, "is_admin_role", False) or request.user.is_superuser
 
 
 class IsOwnerOrReadOnly(BasePermission):

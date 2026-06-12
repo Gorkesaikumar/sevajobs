@@ -7,6 +7,15 @@
 
 {% block content %}
 <div class="container py-4">
+  {% if request.session.is_impersonating %}
+  <div class="alert alert-warning text-center fw-bold mb-4 shadow-sm">
+    <i class="bi bi-person-bounding-box"></i> You are currently impersonating {{ request.user.email }}. 
+    <form method="post" action="{% url 'accounts:stop-impersonate' %}" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-sm btn-dark ms-2">Return to Admin</button>
+    </form>
+  </div>
+  {% endif %}
   <div class="row g-4">
     <!-- Sidebar -->
     <div class="col-lg-3">

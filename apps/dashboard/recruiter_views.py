@@ -1,6 +1,6 @@
 """Recruiter dashboard template views."""
 
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
@@ -10,8 +10,14 @@ from apps.applications.models import JobApplication
 from apps.recruiters.models import Company
 
 
-class RecruiterMixin(LoginRequiredMixin):
-    login_url = "/accounts/login/"
+class RecruiterMixin(LoginRequiredMixin, UserPassesTestMixin):
+    login_url = "/recruiter/login/"
+
+    def test_func(self):
+        scope = self.request.session.get('current_role_scope')
+        if scope == 'recruiter':
+            return self.request.user.is_recruiter or getattr(self.request.user, 'is_admin_role', False)
+        return False
 
     def get_company(self):
         """Return the Company linked to the current recruiter user (via RecruiterProfile)."""

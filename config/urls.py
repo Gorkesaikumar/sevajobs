@@ -5,6 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
 from django.http import JsonResponse
+from apps.accounts import template_views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 def health_check(request):
@@ -14,8 +15,16 @@ urlpatterns = [
     # Health Check
     path("health/", health_check, name="health_check"),
 
+    # Role-based isolated logins
+    path("admin/login/", template_views.AdminLoginView.as_view(), name="admin-login"),
+    path("admin/logout/", template_views.LogoutView.as_view(), name="admin-logout"),
+    path("recruiter/login/", template_views.RecruiterLoginView.as_view(), name="recruiter-login"),
+    path("recruiter/logout/", template_views.LogoutView.as_view(), name="recruiter-logout"),
+    path("jobseeker/login/", template_views.SeekerLoginView.as_view(), name="jobseeker-login"),
+    path("jobseeker/logout/", template_views.LogoutView.as_view(), name="jobseeker-logout"),
+
     # Admin
-    path("admin/", admin.site.urls),
+    path("django-admin/", admin.site.urls),
 
     # API v1 — consolidated resource API (DRF router / ViewSets).
     # Registered first: its routes are UUID-constrained so they own list/detail

@@ -361,3 +361,62 @@ class PasswordResetToken(BaseToken):
 
     def __str__(self) -> str:
         return f"PasswordReset<{self.user.email}>"
+
+
+# ===========================================================================
+# Device Session Management
+# ===========================================================================
+class UserSession(BaseModel):
+    """Tracks active sessions per user (table for device management)."""
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="device_sessions")
+    session_key = models.CharField(max_length=40, unique=True, db_index=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    device_type = models.CharField(max_length=50, blank=True)
+    last_activity = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        verbose_name = "User Session"
+        verbose_name_plural = "User Sessions"
+        ordering = ["-last_activity"]
+
+    def __str__(self) -> str:
+        return f"Session <{self.session_key[:8]}> for {self.user.email}"
+
+
+# ===========================================================================
+# Audit Logging
+# ===========================================================================
+class AuditLog(BaseModel):
+    """Immutable log of security-critical actions."""
+    
+    class Action(models.TextChoices):
+        LOGIN = "login", "Login"
+        LOGOUT = "logout", "Logout"
+        FAILED_LOGIN = "failed_login", "Failed Login"
+        IMPERSONATION = "impersonation", "Admin Impersonation"
+        SESSION_EXPIRED = "session_expired", "Session Expired"
+        DEVICE_LOGOUT = "device_logout", "Device Logout"
+        
+    class Status(models.TextChoices):
+        SUCCESS = "success", "Success"
+        FAILURE = "failure", "Failure"
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_logs")
+    email_attempted = models.CharField(max_length=150, blank=True)  # Useful for failed logins where user doesn't exist
+    role = models.CharField(max_length=20, blank=True)
+    action = models.CharField(max_length=20, choices=Action.choices, db_index=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.SUCCESS)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    device_type = models.CharField(max_length=50, blank=True)
+    details = models.JSONField(default=dict, blank=True)
+    
+    class Meta:
+        verbose_name = "Audit Log"
+        verbose_name_plural = "Audit Logs"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.action} - {self.email_attempted or (self.user.email if self.user else 'Unknown')} - {self.status}"

@@ -13,10 +13,13 @@ from apps.recruiters.models import Company
 
 
 class AdminMixin(LoginRequiredMixin, UserPassesTestMixin):
-    login_url = "/accounts/login/"
+    login_url = "/admin/login/"
 
     def test_func(self):
-        return self.request.user.is_admin_role or self.request.user.is_superuser
+        scope = self.request.session.get('current_role_scope')
+        if scope == 'admin':
+            return self.request.user.is_admin_role or self.request.user.is_superuser
+        return False
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -398,3 +401,55 @@ class AdminAdvertisementsView(AdminMixin, TemplateView):
             messages.error(request, str(e))
             
         return redirect("admin-panel:advertisements")
+
+class AdminImpersonateView(AdminMixin, TemplateView):
+    def post(self, request, *args, **kwargs):
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        from django.contrib.auth import login
+        from apps.accounts.models import AuditLog
+        from apps.accounts.middleware import get_client_ip
+        
+        user_id = request.POST.get("user_id")
+        action = request.POST.get("action")
+
+        if action == "impersonate":
+            try:
+                target_user = User.objects.get(id=user_id)
+                
+                if target_user.is_admin_role or target_user.is_superuser:
+                    messages.error(request, "Cannot impersonate another admin.")
+                    return redirect(request.META.get('HTTP_REFERER', 'admin-panel:users'))
+                
+                admin_id = request.session.get("original_admin_id") or str(request.user.id)
+                
+                AuditLog.objects.create(
+                    action=AuditLog.Action.IMPERSONATION,
+                    user=target_user,
+                    role=target_user.role,
+                    ip_address=get_client_ip(request),
+                    details={"admin_id": str(request.user.id)}
+                )
+
+                login(request, target_user, backend='django.contrib.auth.backends.ModelBackend')
+                request.session['current_role_scope'] = target_user.role
+                request.session["is_impersonating"] = True
+                request.session["original_admin_id"] = admin_id
+                
+                messages.success(request, f"Now impersonating {target_user.email}")
+                if target_user.is_recruiter:
+                    return redirect("/dashboard/recruiter/")
+                else:
+                    return redirect("/dashboard/seeker/")
+
+            except User.DoesNotExist:
+                messages.error(request, "User not found.")
+                return redirect(request.META.get('HTTP_REFERER', 'admin-panel:users'))
+
+        elif action == "stop_impersonating":
+            # Note: This branch might be called from any view, so AdminMixin check might fail if current role is not admin
+            # But wait, AdminMixin validates `scope == 'admin'`. When impersonating, scope is NOT admin.
+            # So `AdminImpersonateView` must be accessible without AdminMixin if stopping.
+            pass
+
+        return redirect(request.META.get('HTTP_REFERER', 'admin-panel:users'))

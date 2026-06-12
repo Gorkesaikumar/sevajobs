@@ -57,6 +57,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "apps.accounts.middleware.RoleBasedCookieInterceptorMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -64,6 +65,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.RequestLoggingMiddleware",
+    "apps.accounts.middleware.DeviceSessionMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -297,6 +299,14 @@ CACHES = {
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+
+# ---------------------------------------------------------------------------
+# Secure Cookies Config
+# ---------------------------------------------------------------------------
+SESSION_COOKIE_SECURE = not config("DEBUG", default=True, cast=bool)
+CSRF_COOKIE_SECURE = not config("DEBUG", default=True, cast=bool)
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
 
 # ---------------------------------------------------------------------------
 # Logging

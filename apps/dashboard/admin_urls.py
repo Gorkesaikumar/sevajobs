@@ -11,4 +11,5 @@ urlpatterns = [
     path("reports/", views.AdminReportsView.as_view(), name="reports"),
     path("advertisements/", views.AdminAdvertisementsView.as_view(), name="advertisements"),
     path("settings/", views.AdminSettingsView.as_view(), name="settings"),
+    path("impersonate/", views.AdminImpersonateView.as_view(), name="impersonate"),
 ]

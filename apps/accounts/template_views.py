@@ -10,14 +10,23 @@ from django.views.decorators.csrf import csrf_protect
 
 from .models import User
 
-
 class LoginView(View):
+    """Fallback dispatcher for generic /accounts/login/ links."""
+    def get(self, request):
+        return redirect("jobseeker-login")
+    def post(self, request):
+        return redirect("jobseeker-login")
+
+class RoleScopedLoginView(View):
     template_name = "pages/login.html"
+    role_scope = None
 
     def get(self, request):
-        if request.user.is_authenticated:
-            return redirect(self._dashboard_url(request.user))
-        return render(request, self.template_name)
+        # Strict Client Requirement: Always force credential entry if the user manually visits the login page.
+        from django.contrib.auth import logout
+        if request.user.is_authenticated and request.session.get('current_role_scope') == self.role_scope:
+            logout(request)
+        return render(request, self.template_name, {"role_scope": self.role_scope})
 
     @method_decorator(csrf_protect)
     def post(self, request):
@@ -29,24 +38,53 @@ class LoginView(View):
         if user is not None:
             if not user.is_active:
                 messages.error(request, "Your account has been deactivated. Please contact support.")
-                return render(request, self.template_name)
+                return render(request, self.template_name, {"role_scope": self.role_scope})
+                
+            if self.role_scope == 'admin' and not (user.is_admin_role or user.is_superuser):
+                messages.error(request, "You do not have permission to access the admin panel.")
+                return render(request, self.template_name, {"email": email, "role_scope": self.role_scope})
+            if self.role_scope == 'recruiter' and not user.is_recruiter:
+                messages.error(request, "You must be a registered recruiter to log in here.")
+                return render(request, self.template_name, {"email": email, "role_scope": self.role_scope})
+            if self.role_scope == 'job_seeker' and not user.is_job_seeker:
+                messages.error(request, "You must be a registered job seeker to log in here.")
+                return render(request, self.template_name, {"email": email, "role_scope": self.role_scope})
+
             login(request, user)
+            request.session['current_role_scope'] = self.role_scope
+            
             if not remember:
                 request.session.set_expiry(0)
             messages.success(request, f"Welcome back, {user.first_name or 'there'}!")
             next_url = request.GET.get("next") or request.POST.get("next")
-            return redirect(next_url or self._dashboard_url(user))
+            return redirect(next_url or self._dashboard_url())
         else:
             messages.error(request, "Invalid email or password. Please try again.")
-            return render(request, self.template_name, {"email": email})
+            return render(request, self.template_name, {"email": email, "role_scope": self.role_scope})
 
-    @staticmethod
-    def _dashboard_url(user):
-        if user.is_admin_role:
+    def _dashboard_url(self):
+        if self.role_scope == 'admin':
             return "/dashboard/admin/"
-        elif user.is_recruiter:
+        elif self.role_scope == 'recruiter':
             return "/dashboard/recruiter/"
         return "/dashboard/seeker/"
+
+class AdminLoginView(RoleScopedLoginView):
+    role_scope = 'admin'
+    template_name = "pages/admin_login.html"
+
+    def get(self, request):
+        # High Security: Force the admin to re-authenticate if they explicitly navigate to the login page
+        from django.contrib.auth import logout
+        if request.user.is_authenticated and request.session.get('current_role_scope') == 'admin':
+            logout(request)
+        return render(request, self.template_name, {"role_scope": self.role_scope})
+
+class RecruiterLoginView(RoleScopedLoginView):
+    role_scope = 'recruiter'
+
+class SeekerLoginView(RoleScopedLoginView):
+    role_scope = 'job_seeker'
 
 
 class RegisterView(View):
@@ -99,8 +137,14 @@ class RegisterView(View):
             role=role,
         )
         login(request, user)
+        request.session['current_role_scope'] = role
         messages.success(request, "Welcome to SevaJobs! Let's set up your profile.")
-        return redirect(LoginView._dashboard_url(user))
+        
+        if role == 'admin':
+            return redirect("/dashboard/admin/")
+        elif role == 'recruiter':
+            return redirect("/dashboard/recruiter/")
+        return redirect("/dashboard/seeker/")
 
 
 class LogoutView(View):
@@ -112,6 +156,17 @@ class LogoutView(View):
     def post(self, request):
         return self.get(request)
 
+
+class StopImpersonationView(View):
+    def post(self, request):
+        admin_id = request.session.get("original_admin_id")
+        if admin_id:
+            from django.contrib.auth import login
+            admin_user = User.objects.get(id=admin_id)
+            login(request, admin_user, backend='django.contrib.auth.backends.ModelBackend')
+            request.session['current_role_scope'] = 'admin'
+            messages.success(request, "Returned to admin session.")
+        return redirect("/dashboard/admin/")
 
 class ForgotPasswordView(View):
     template_name = "pages/forgot_password.html"

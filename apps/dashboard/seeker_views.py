@@ -1,6 +1,6 @@
 """Job Seeker dashboard template views."""
 
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from django.core.paginator import Paginator
 
@@ -8,8 +8,14 @@ from apps.jobs.models import Job
 from apps.applications.models import JobApplication
 
 
-class SeekerMixin(LoginRequiredMixin):
-    login_url = "/accounts/login/"
+class SeekerMixin(LoginRequiredMixin, UserPassesTestMixin):
+    login_url = "/jobseeker/login/"
+
+    def test_func(self):
+        scope = self.request.session.get('current_role_scope')
+        if scope == 'job_seeker':
+            return self.request.user.is_job_seeker or getattr(self.request.user, 'is_admin_role', False)
+        return False
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
