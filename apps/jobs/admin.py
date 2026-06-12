@@ -1,6 +1,54 @@
 from django.contrib import admin
-from .models import Job, JobCategory, Skill, Qualification, JobApprovalHistory
+from .models import (
+    Job, JobCategory, Skill, Qualification, JobApprovalHistory,
+    JobContactVisibility, ContactVisibilityConfig,
+)
 from .services import JobService
+from .visibility_services import ContactVisibilityService
+
+
+@admin.register(ContactVisibilityConfig)
+class ContactVisibilityConfigAdmin(admin.ModelAdmin):
+    list_display = ["default_visibility_days", "is_globally_disabled", "updated_by", "updated_at"]
+    readonly_fields = ["id", "updated_by", "created_at", "updated_at"]
+
+    def has_add_permission(self, request) -> bool:
+        # Singleton — only one row allowed.
+        return not ContactVisibilityConfig.objects.exists()
+
+    def has_delete_permission(self, request, obj=None) -> bool:
+        return False
+
+    def save_model(self, request, obj, form, change):
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(JobContactVisibility)
+class JobContactVisibilityAdmin(admin.ModelAdmin):
+    list_display = ["job", "state", "expires_at", "overridden_by", "last_changed_at"]
+    list_filter = ["state"]
+    search_fields = ["job__title"]
+    readonly_fields = ["id", "job", "last_changed_at", "created_at", "updated_at"]
+    actions = ["force_show_action", "force_hide_action", "reset_to_auto_action"]
+
+    @admin.action(description="Force show recruiter contact")
+    def force_show_action(self, request, queryset):
+        svc = ContactVisibilityService()
+        for vis in queryset.select_related("job"):
+            svc.force_show(vis.job, request.user, reason="Bulk admin action.")
+
+    @admin.action(description="Force hide recruiter contact")
+    def force_hide_action(self, request, queryset):
+        svc = ContactVisibilityService()
+        for vis in queryset.select_related("job"):
+            svc.force_hide(vis.job, request.user, reason="Bulk admin action.")
+
+    @admin.action(description="Reset to AUTO (clear override)")
+    def reset_to_auto_action(self, request, queryset):
+        svc = ContactVisibilityService()
+        for vis in queryset.select_related("job"):
+            svc.reset_to_auto(vis.job, request.user)
 
 
 @admin.register(JobApprovalHistory)

@@ -1,6 +1,7 @@
 """Job-domain models: JobCategory, Skill, Qualification and Job."""
 
 from django.db import models
+from django.utils import timezone
 from apps.core.models import BaseModel
 
 
@@ -265,6 +266,98 @@ class Job(BaseModel):
         if not self.is_featured:
             return False
         return self.featured_until is None or self.featured_until >= timezone.now()
+
+
+class ContactVisibilityConfig(BaseModel):
+    """
+    Singleton-style global configuration for recruiter-contact visibility.
+
+    Only one row is ever used (``id`` is fetched via :meth:`get_solo`). Admins
+    update the default visibility window here; per-job overrides live on
+    :class:`JobContactVisibility`.
+    """
+
+    default_visibility_days = models.PositiveSmallIntegerField(
+        default=2,
+        help_text="How many days a recruiter's contact details stay public "
+                  "after a job is approved & published.",
+    )
+    is_globally_disabled = models.BooleanField(
+        default=False,
+        help_text="If true, contact details are never shown publicly regardless of per-job state.",
+    )
+    updated_by = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Contact Visibility Config"
+        verbose_name_plural = "Contact Visibility Config"
+
+    def __str__(self) -> str:
+        return f"ContactVisibilityConfig(default={self.default_visibility_days}d)"
+
+    @classmethod
+    def get_solo(cls) -> "ContactVisibilityConfig":
+        obj, _ = cls.objects.get_or_create(pk=cls._singleton_pk())
+        return obj
+
+    @staticmethod
+    def _singleton_pk():
+        import uuid
+        return uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+
+class JobContactVisibility(BaseModel):
+    """
+    Per-job visibility state for the recruiter's contact details.
+
+    Lifecycle:
+      * ``AUTO``       — visible until ``expires_at``; flipped to ``HIDDEN``
+                         by the scheduled Celery task at expiry.
+      * ``SHOW``       — admin override: always visible (ignores expiry).
+      * ``HIDE``       — admin override: always hidden.
+      * ``HIDDEN``     — automatic state after expiry (no admin involvement).
+    """
+
+    class State(models.TextChoices):
+        AUTO = "auto", "Auto (visible until expiry)"
+        SHOW = "show", "Force show (admin override)"
+        HIDE = "hide", "Force hide (admin override)"
+        HIDDEN = "hidden", "Hidden (expired)"
+
+    job = models.OneToOneField(
+        Job, on_delete=models.CASCADE, related_name="contact_visibility",
+    )
+    state = models.CharField(
+        max_length=10, choices=State.choices, default=State.AUTO, db_index=True,
+    )
+    expires_at = models.DateTimeField(
+        db_index=True,
+        help_text="When AUTO state flips to HIDDEN. Ignored for SHOW/HIDE overrides.",
+    )
+    overridden_by = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+        help_text="Admin who last overrode the automatic state.",
+    )
+    last_changed_at = models.DateTimeField(auto_now=True)
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Job Contact Visibility"
+        verbose_name_plural = "Job Contact Visibility"
+        indexes = [models.Index(fields=["state", "expires_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.job_id} · {self.state}"
+
+    @property
+    def is_publicly_visible(self) -> bool:
+        if self.state == self.State.SHOW:
+            return True
+        if self.state in (self.State.HIDE, self.State.HIDDEN):
+            return False
+        # AUTO
+        return timezone.now() < self.expires_at
 
 
 class JobApprovalHistory(BaseModel):

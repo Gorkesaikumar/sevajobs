@@ -8,15 +8,21 @@ from apps.core.models import ActivityLog
 from apps.core.permissions import IsRecruiter
 from apps.accounts.permissions import IsAdmin
 from .filters import JobFilter
-from .models import Job, JobCategory, Skill, Qualification, JobApprovalHistory
+from .models import (
+    Job, JobCategory, Skill, Qualification, JobApprovalHistory,
+    JobContactVisibility, ContactVisibilityConfig,
+)
 from .repository import JobRepository
 from .serializers import (
     JobListSerializer, JobDetailSerializer, JobWriteSerializer,
     JobCategorySerializer, SkillSerializer, QualificationSerializer,
     JobRejectSerializer, JobFeatureSerializer,
     JobApprovalHistorySerializer, AuditLogSerializer,
+    JobContactVisibilitySerializer, VisibilityOverrideSerializer,
+    ContactVisibilityConfigSerializer,
 )
 from .services import JobService
+from .visibility_services import ContactVisibilityService
 
 _service = JobService()
 
@@ -297,3 +303,104 @@ class AdminAuditLogView(generics.ListAPIView):
 
     def get_queryset(self):
         return ActivityLog.objects.filter(entity_type="Job").select_related("user")
+
+
+# ===========================================================================
+# Admin: recruiter-contact visibility controls
+# ===========================================================================
+_visibility = ContactVisibilityService()
+
+
+@extend_schema(tags=["jobs"])
+class AdminContactVisibilityListView(generics.ListAPIView):
+    """GET /api/v1/jobs/admin/contact-visibility/ — every job's visibility state."""
+
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = JobContactVisibilitySerializer
+    filterset_fields = ["state"]
+    ordering_fields = ["expires_at", "last_changed_at"]
+    ordering = ["-last_changed_at"]
+
+    def get_queryset(self):
+        return (
+            JobContactVisibility.objects
+            .select_related("job", "overridden_by")
+            .all()
+        )
+
+
+class _AdminVisibilityActionMixin:
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def _get_job(self, job_id):
+        return Job.objects.filter(id=job_id).first()
+
+
+@extend_schema(tags=["jobs"])
+class AdminContactShowView(_AdminVisibilityActionMixin, APIView):
+    """POST /api/v1/jobs/admin/<id>/contact/show/ — force contact visible."""
+
+    def post(self, request, id):
+        job = self._get_job(id)
+        if not job:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = VisibilityOverrideSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        vis = _visibility.force_show(
+            job, request.user,
+            reason=serializer.validated_data.get("reason", ""),
+            ip=_client_ip(request),
+        )
+        return Response(JobContactVisibilitySerializer(vis).data)
+
+
+@extend_schema(tags=["jobs"])
+class AdminContactHideView(_AdminVisibilityActionMixin, APIView):
+    """POST /api/v1/jobs/admin/<id>/contact/hide/ — force contact hidden."""
+
+    def post(self, request, id):
+        job = self._get_job(id)
+        if not job:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = VisibilityOverrideSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        vis = _visibility.force_hide(
+            job, request.user,
+            reason=serializer.validated_data.get("reason", ""),
+            ip=_client_ip(request),
+        )
+        return Response(JobContactVisibilitySerializer(vis).data)
+
+
+@extend_schema(tags=["jobs"])
+class AdminContactResetView(_AdminVisibilityActionMixin, APIView):
+    """POST /api/v1/jobs/admin/<id>/contact/reset/ — clear override, restore AUTO."""
+
+    def post(self, request, id):
+        job = self._get_job(id)
+        if not job:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        vis = _visibility.reset_to_auto(job, request.user, ip=_client_ip(request))
+        return Response(JobContactVisibilitySerializer(vis).data)
+
+
+@extend_schema(tags=["jobs"])
+class AdminContactVisibilityConfigView(APIView):
+    """GET/PATCH /api/v1/jobs/admin/contact-visibility/config/ — global config."""
+
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        config = ContactVisibilityConfig.get_solo()
+        return Response(ContactVisibilityConfigSerializer(config).data)
+
+    def patch(self, request):
+        serializer = ContactVisibilityConfigSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        config = _visibility.configure_global(
+            request.user,
+            default_visibility_days=serializer.validated_data.get("default_visibility_days"),
+            is_globally_disabled=serializer.validated_data.get("is_globally_disabled"),
+            ip=_client_ip(request),
+        )
+        return Response(ContactVisibilityConfigSerializer(config).data)

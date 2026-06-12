@@ -4,9 +4,16 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
+from django.http import JsonResponse
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
+def health_check(request):
+    return JsonResponse({"status": "healthy"})
+
 urlpatterns = [
+    # Health Check
+    path("health/", health_check, name="health_check"),
+
     # Admin
     path("admin/", admin.site.urls),
 

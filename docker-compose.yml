@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_local:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -32,13 +32,11 @@ services:
   web:
     build: .
     command: >
-      sh -c "python manage.py migrate &&
-             python manage.py collectstatic --noinput &&
-             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120"
+      sh -c "python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
-      - media_data:/app/media
-      - static_data:/app/staticfiles
+      - media_data_local:/app/media
+      - static_data_local:/app/staticfiles
     ports:
       - "8000:8000"
     env_file:
@@ -58,8 +56,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   celery_beat:
@@ -70,11 +70,13 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
-  postgres_data:
-  media_data:
-  static_data:
+  postgres_data_local:
+  media_data_local:
+  static_data_local:

@@ -26,6 +26,13 @@ urlpatterns = [
     path("admin/<uuid:id>/reject/", views.AdminRejectJobView.as_view(), name="admin-reject-job"),
     path("admin/<uuid:id>/feature/", views.AdminFeatureJobView.as_view(), name="admin-feature-job"),
 
+    # Admin: recruiter-contact visibility
+    path("admin/contact-visibility/", views.AdminContactVisibilityListView.as_view(), name="admin-contact-visibility"),
+    path("admin/contact-visibility/config/", views.AdminContactVisibilityConfigView.as_view(), name="admin-contact-visibility-config"),
+    path("admin/<uuid:id>/contact/show/", views.AdminContactShowView.as_view(), name="admin-contact-show"),
+    path("admin/<uuid:id>/contact/hide/", views.AdminContactHideView.as_view(), name="admin-contact-hide"),
+    path("admin/<uuid:id>/contact/reset/", views.AdminContactResetView.as_view(), name="admin-contact-reset"),
+
     # Approval history (admin or owning recruiter)
     path("<uuid:id>/approval-history/", views.JobApprovalHistoryView.as_view(), name="approval-history"),
 

@@ -1,7 +1,10 @@
 from rest_framework import serializers
 
 from apps.core.models import ActivityLog
-from .models import Job, JobCategory, Skill, Qualification, JobApprovalHistory
+from .models import (
+    Job, JobCategory, Skill, Qualification, JobApprovalHistory,
+    JobContactVisibility, ContactVisibilityConfig,
+)
 
 
 class JobCategorySerializer(serializers.ModelSerializer):
@@ -43,13 +46,43 @@ class JobDetailSerializer(JobListSerializer):
     skills_required = SkillSerializer(many=True, read_only=True)
     preferred_qualifications = QualificationSerializer(many=True, read_only=True)
     minimum_qualification = QualificationSerializer(read_only=True)
+    recruiter_contact = serializers.SerializerMethodField()
+    contact_visibility = serializers.SerializerMethodField()
 
     class Meta(JobListSerializer.Meta):
         fields = JobListSerializer.Meta.fields + [
             "description", "responsibilities", "requirements", "benefits",
             "skills_required", "preferred_qualifications", "minimum_qualification",
-            "rejection_reason",
+            "rejection_reason", "recruiter_contact", "contact_visibility",
         ]
+
+    def get_recruiter_contact(self, job) -> dict | None:
+        """Return recruiter contact details only when policy permits."""
+        from .visibility_services import ContactVisibilityService
+
+        viewer = getattr(self.context.get("request"), "user", None)
+        if not ContactVisibilityService.is_visible_for(job, viewer=viewer):
+            return None
+        recruiter = job.recruiter
+        if not recruiter:
+            return None
+        user = recruiter.user
+        return {
+            "name": user.full_name,
+            "email": user.email,
+            "phone": recruiter.phone or user.phone or "",
+        }
+
+    def get_contact_visibility(self, job) -> dict:
+        """Public status hint so the UI can show 'contact hidden after Day 2'."""
+        vis = getattr(job, "contact_visibility", None)
+        if vis is None:
+            return {"state": "unknown", "is_publicly_visible": False, "expires_at": None}
+        return {
+            "state": vis.state,
+            "is_publicly_visible": vis.is_publicly_visible,
+            "expires_at": vis.expires_at,
+        }
 
 
 class JobWriteSerializer(serializers.ModelSerializer):
@@ -107,6 +140,47 @@ class JobApprovalHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = JobApprovalHistory
         fields = ["id", "action", "action_display", "actor_name", "comment", "created_at"]
+
+
+class JobContactVisibilitySerializer(serializers.ModelSerializer):
+    """Admin read view of a job's contact visibility state."""
+
+    job_title = serializers.CharField(source="job.title", read_only=True)
+    state_display = serializers.CharField(source="get_state_display", read_only=True)
+    overridden_by_email = serializers.EmailField(source="overridden_by.email", read_only=True, default=None)
+    is_publicly_visible = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = JobContactVisibility
+        fields = [
+            "id", "job", "job_title", "state", "state_display",
+            "expires_at", "is_publicly_visible",
+            "overridden_by_email", "last_changed_at", "created_at",
+        ]
+        read_only_fields = fields
+
+
+class VisibilityOverrideSerializer(serializers.Serializer):
+    """Body for force-show / force-hide admin actions."""
+
+    reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class ContactVisibilityConfigSerializer(serializers.ModelSerializer):
+    updated_by_email = serializers.EmailField(source="updated_by.email", read_only=True, default=None)
+
+    class Meta:
+        model = ContactVisibilityConfig
+        fields = [
+            "id", "default_visibility_days", "is_globally_disabled",
+            "updated_by_email", "updated_at",
+        ]
+        read_only_fields = ["id", "updated_by_email", "updated_at"]
+
+    def validate_default_visibility_days(self, value: int) -> int:
+        if not 1 <= value <= 60:
+            raise serializers.ValidationError("Must be between 1 and 60 days.")
+        return value
 
 
 class AuditLogSerializer(serializers.ModelSerializer):

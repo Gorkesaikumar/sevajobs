@@ -267,6 +267,18 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 
+# Recurring jobs (Celery beat). Requires the `celery beat` process to be running.
+CELERY_BEAT_SCHEDULE = {
+    "jobs.hide_expired_contacts": {
+        "task": "jobs.hide_expired_contacts",
+        "schedule": 600.0,  # every 10 minutes
+    },
+    "jobs.expire_due_jobs": {
+        "task": "jobs.expire_due_jobs",
+        "schedule": 3600.0,  # hourly
+    },
+}
+
 # ---------------------------------------------------------------------------
 # Cache
 # ---------------------------------------------------------------------------
@@ -313,7 +325,6 @@ LOGGING = {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-            "filters": ["require_debug_true"],
         },
         "file_django": {
             "level": "WARNING",
@@ -367,6 +378,11 @@ LOGGING = {
         "level": "WARNING",
     },
 }
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.ngrok-free.app",
+    "https://*.ngrok-free.dev",
+]
 
 # ---------------------------------------------------------------------------
 # Security headers (overridden per environment)

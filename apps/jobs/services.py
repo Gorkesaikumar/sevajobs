@@ -132,6 +132,10 @@ class JobService:
             description=f"Job '{job.title}' approved.",
             metadata={"event": "approve", "auto_publish": auto_publish},
         )
+        # Start the recruiter-contact visibility window on first approval-publish.
+        if auto_publish:
+            from .visibility_services import ContactVisibilityService
+            ContactVisibilityService().initialise_for(job)
         self._notify_recruiter(job, approved=True)
         logger.info("Job %s approved by %s", job.id, admin_user.pk)
         return job
