@@ -36,6 +36,7 @@ THIRD_PARTY_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "drf_spectacular",
+   "django_celery_beat",
 ]
 
 LOCAL_APPS = [
@@ -390,8 +391,7 @@ LOGGING = {
 }
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://*.ngrok-free.app",
-    "https://*.ngrok-free.dev",
+    "http://187.127.180.60",
 ]
 
 # ---------------------------------------------------------------------------
