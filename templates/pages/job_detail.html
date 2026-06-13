@@ -123,7 +123,7 @@
       <div class="col-lg-4">
         <!-- Company Info -->
         <div class="sj-card p-4 mb-4">
-          <h6 class="fw-700 mb-3">About the Company</h6>
+          <h6 class="fw-700 mb-3">About the Institution</h6>
           <div class="d-flex align-items-center gap-3 mb-3">
             <div class="sj-logo flex-shrink-0">
               {% if job.company.logo %}
@@ -145,7 +145,7 @@
             {% if job.company.website %}<li class="fs-sm"><i class="bi bi-globe text-muted me-2"></i><a href="{{ job.company.website }}" target="_blank" rel="noopener">{{ job.company.website|cut:"https://"|truncatechars:30 }}</a></li>{% endif %}
           </ul>
           <a href="{% url 'core:company-detail' slug=job.company.slug %}" class="btn btn-outline-light-brand btn-sm w-100">
-            View Company Profile <i class="bi bi-arrow-right ms-1"></i>
+            View Institution Profile <i class="bi bi-arrow-right ms-1"></i>
           </a>
         </div>
 

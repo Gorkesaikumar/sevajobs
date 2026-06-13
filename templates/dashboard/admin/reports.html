@@ -5,10 +5,10 @@
 <div class="d-flex align-items-center justify-content-between mb-4">
   <h4 class="fw-800 mb-0">Reports & Analytics</h4>
   <div class="d-flex gap-2">
-    <a href="?timeframe={{ timeframe }}&export=excel" class="btn btn-outline-success btn-sm fw-semibold">
+    <a href="?timeframe={{ timeframe }}&export=excel{% if view_type == 'jobs' %}&company_id={{ selected_company.id }}{% endif %}" class="btn btn-outline-success btn-sm fw-semibold">
       <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
     </a>
-    <a href="?timeframe={{ timeframe }}&export=pdf" class="btn btn-outline-danger btn-sm fw-semibold">
+    <a href="?timeframe={{ timeframe }}&export=pdf{% if view_type == 'jobs' %}&company_id={{ selected_company.id }}{% endif %}" class="btn btn-outline-danger btn-sm fw-semibold">
       <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
     </a>
   </div>
@@ -96,12 +96,29 @@
 </div>
 
 <div class="sj-card overflow-hidden">
+  {% if view_type == 'jobs' %}
+  <div class="p-3 border-bottom bg-light">
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="fw-bold mb-0 text-dark">{{ selected_company.name }}</h5>
+        <span class="badge bg-primary rounded-pill">{{ reports_data|length }} Jobs</span>
+      </div>
+      <a href="?timeframe={{ timeframe }}" class="btn btn-sm btn-outline-secondary fw-semibold">
+        <i class="bi bi-arrow-left me-1"></i> Back to All Schools/Colleges
+      </a>
+    </div>
+  </div>
+  {% endif %}
   <div class="table-responsive">
     <table class="table sj-table mb-0">
       <thead>
         <tr>
-          <th>Company</th>
+          {% if view_type == 'companies' %}
+          <th>School/College</th>
+          <th class="text-center">Total Jobs</th>
+          {% else %}
           <th>Job Posting</th>
+          {% endif %}
           <th class="text-center">Applied</th>
           <th class="text-center">Selected</th>
           <th class="text-center">Rejected</th>
@@ -110,15 +127,23 @@
       <tbody>
         {% for row in reports_data %}
         <tr>
-          <td class="fw-semibold">{{ row.company_name }}</td>
-          <td>{{ row.job_title }}</td>
+          {% if view_type == 'companies' %}
+          <td class="fw-semibold">
+            <a href="?timeframe={{ timeframe }}&company_id={{ row.id }}" class="text-decoration-none text-primary">
+              {{ row.name }}
+            </a>
+          </td>
+          <td class="text-center">{{ row.total_jobs }}</td>
+          {% else %}
+          <td class="fw-semibold">{{ row.title }}</td>
+          {% endif %}
           <td class="text-center fw-bold">{{ row.total_applications }}</td>
           <td class="text-center text-success fw-bold">{{ row.selected_count }}</td>
           <td class="text-center text-danger fw-bold">{{ row.rejected_count }}</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="text-center py-5 text-muted-2">
+          <td colspan="{% if view_type == 'companies' %}5{% else %}4{% endif %}" class="text-center py-5 text-muted-2">
             No data available for the selected timeframe.
           </td>
         </tr>

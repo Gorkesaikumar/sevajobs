@@ -4,7 +4,7 @@
 <div class="sidebar-section">Management</div>
 <a class="nav-link {% if sidebar_section == 'users' %}active{% endif %}" href="{% url 'admin-panel:users' %}"><i class="bi bi-people"></i> Users</a>
 <a class="nav-link {% if sidebar_section == 'approvals' %}active{% endif %}" href="{% url 'admin-panel:job-approvals' %}"><i class="bi bi-check2-square"></i> Job Approvals{% if pending_jobs %} <span class="badge bg-danger ms-1">{{ pending_jobs }}</span>{% endif %}</a>
-<a class="nav-link {% if sidebar_section == 'companies' %}active{% endif %}" href="{% url 'admin-panel:companies' %}"><i class="bi bi-buildings"></i> Companies</a>
+<a class="nav-link {% if sidebar_section == 'companies' %}active{% endif %}" href="{% url 'admin-panel:companies' %}"><i class="bi bi-buildings"></i> Schools/Colleges</a>
 <a class="nav-link {% if sidebar_section == 'advertisements' %}active{% endif %}" href="{% url 'admin-panel:advertisements' %}"><i class="bi bi-badge-ad"></i> Advertisements</a>
 <div class="sidebar-section">Analytics</div>
 <a class="nav-link {% if sidebar_section == 'reports' %}active{% endif %}" href="{% url 'admin-panel:reports' %}"><i class="bi bi-graph-up"></i> Reports</a>

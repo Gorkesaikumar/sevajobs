@@ -2,7 +2,7 @@
 <nav class="navbar navbar-expand-lg sj-nav sticky-top" aria-label="Primary navigation">
   <div class="container">
     <a class="navbar-brand sj-brand d-flex align-items-center" href="{% url 'core:home' %}">
-      <img src="{% static 'images/logo.png' %}" alt="SevaJobs Logo" class="img-fluid" style="max-height: 45px; width: auto; object-fit: contain;">
+      <img src="{% static 'images/logo_dark.png' %}" alt="SevaJobs Logo" class="img-fluid" style="max-height: 45px; width: auto; object-fit: contain;">
     </a>
 
     <div class="d-flex align-items-center gap-2 d-lg-none">
@@ -34,11 +34,11 @@
           <div class="dropdown-menu sj-mega-menu">
             <div class="row">
               <div class="col-lg-3">
-                <div class="mega-col-title">By Category</div>
-                <a href="{% url 'core:job-search' %}?category=engineering" class="mega-link"><i class="bi bi-code-slash"></i> Engineering</a>
-                <a href="{% url 'core:job-search' %}?category=design" class="mega-link"><i class="bi bi-palette"></i> Design</a>
-                <a href="{% url 'core:job-search' %}?category=marketing" class="mega-link"><i class="bi bi-megaphone"></i> Marketing</a>
-                <a href="{% url 'core:job-search' %}?category=sales" class="mega-link"><i class="bi bi-graph-up-arrow"></i> Sales</a>
+                <div class="mega-col-title">By Subject</div>
+                <a href="{% url 'core:job-search' %}?category=mathematics" class="mega-link"><i class="bi bi-calculator"></i> Mathematics</a>
+                <a href="{% url 'core:job-search' %}?category=science" class="mega-link"><i class="bi bi-lightbulb"></i> Science</a>
+                <a href="{% url 'core:job-search' %}?category=english" class="mega-link"><i class="bi bi-book"></i> English</a>
+                <a href="{% url 'core:job-search' %}?category=social-studies" class="mega-link"><i class="bi bi-globe"></i> Social Studies</a>
               </div>
               <div class="col-lg-3">
                 <div class="mega-col-title">By Type</div>
@@ -66,7 +66,7 @@
         </li>
         <li class="nav-item">
           <a class="nav-link {% block nav_companies %}{% endblock %}" href="{% url 'core:company-list' %}">
-            <i class="bi bi-buildings d-lg-none me-2"></i>Companies
+            <i class="bi bi-buildings d-lg-none me-2"></i>Schools/Colleges
           </a>
         </li>
         {% if user.is_authenticated and user.is_recruiter %}
@@ -152,7 +152,7 @@
                 <li><a class="dropdown-item" href="{% url 'seeker:saved-jobs' %}"><i class="bi bi-bookmark"></i> Saved Jobs</a></li>
               {% elif user.is_recruiter %}
                 <li><a class="dropdown-item" href="{% url 'recruiter:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-                <li><a class="dropdown-item" href="{% url 'recruiter:company-profile' %}"><i class="bi bi-buildings"></i> Company Profile</a></li>
+                <li><a class="dropdown-item" href="{% url 'recruiter:company-profile' %}"><i class="bi bi-buildings"></i> Institution Profile</a></li>
                 <li><a class="dropdown-item" href="{% url 'recruiter:post-job' %}"><i class="bi bi-plus-circle"></i> Post a Job</a></li>
                 <li><a class="dropdown-item" href="{% url 'recruiter:manage-jobs' %}"><i class="bi bi-briefcase"></i> Manage Jobs</a></li>
               {% elif user.is_admin_role %}

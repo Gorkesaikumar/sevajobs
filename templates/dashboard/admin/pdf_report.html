@@ -68,6 +68,11 @@
     <div style="text-align: center; margin-bottom: 30px;">
         <h1>SevaJobs</h1>
         <h3>Application Analytics Report ({{ timeframe|title }})</h3>
+        {% if view_type == 'jobs' %}
+        <h4 style="color: #4B5563; margin-top: 5px; font-weight: normal;">{{ selected_company.name }}</h4>
+        {% else %}
+        <h4 style="color: #4B5563; margin-top: 5px; font-weight: normal;">All Schools/Colleges</h4>
+        {% endif %}
     </div>
 
     <table class="summary-table">
@@ -90,8 +95,12 @@
     <table class="report-table">
         <thead>
             <tr>
-                <th>Company</th>
+                {% if view_type == 'companies' %}
+                <th>School/College</th>
+                <th class="text-center">Total Jobs</th>
+                {% else %}
                 <th>Job Title</th>
+                {% endif %}
                 <th class="text-center">Total Applications</th>
                 <th class="text-center">Selected</th>
                 <th class="text-center">Rejected</th>
@@ -100,15 +109,19 @@
         <tbody>
             {% for row in reports_data %}
             <tr>
-                <td>{{ row.company_name }}</td>
-                <td>{{ row.job_title }}</td>
+                {% if view_type == 'companies' %}
+                <td>{{ row.name }}</td>
+                <td class="text-center">{{ row.total_jobs }}</td>
+                {% else %}
+                <td>{{ row.title }}</td>
+                {% endif %}
                 <td class="text-center">{{ row.total_applications }}</td>
                 <td class="text-center" style="color: #10B981;">{{ row.selected_count }}</td>
                 <td class="text-center" style="color: #EF4444;">{{ row.rejected_count }}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" class="text-center">No data available for the selected timeframe.</td>
+                <td colspan="{% if view_type == 'companies' %}5{% else %}4{% endif %}" class="text-center">No data available for the selected timeframe.</td>
             </tr>
             {% endfor %}
         </tbody>

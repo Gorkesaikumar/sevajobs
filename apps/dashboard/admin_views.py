@@ -50,31 +50,134 @@ class AdminUsersView(AdminMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        qs = User.objects.all().order_by("-date_joined")
+        from django.utils import timezone
+        import datetime
+        
+        # Optimize queryset with select_related for recruiter_profile__company
+        qs = User.objects.all().select_related('recruiter_profile__company')
+        
         q = self.request.GET.get("q")
         if q:
             qs = qs.filter(Q(email__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q))
+            
         role = self.request.GET.get("role")
         if role:
             qs = qs.filter(role=role)
+            
+        status = self.request.GET.get("status")
+        if status == "active":
+            qs = qs.filter(is_active=True)
+        elif status == "inactive":
+            qs = qs.filter(is_active=False)
+            
+        date_range = self.request.GET.get("date_range")
+        if date_range:
+            now = timezone.now()
+            if date_range == "7days":
+                qs = qs.filter(date_joined__gte=now - datetime.timedelta(days=7))
+            elif date_range == "30days":
+                qs = qs.filter(date_joined__gte=now - datetime.timedelta(days=30))
+                
+        # Sorting
+        sort = self.request.GET.get("sort", "date_joined")
+        sort_dir = self.request.GET.get("dir", "desc")
+        
+        valid_sort_fields = {
+            "name": "first_name",
+            "email": "email",
+            "role": "role",
+            "date_joined": "date_joined",
+            "last_login": "last_login",
+            "status": "is_active"
+        }
+        
+        if sort in valid_sort_fields:
+            order_field = valid_sort_fields[sort]
+            if sort_dir == "desc":
+                order_field = f"-{order_field}"
+            qs = qs.order_by(order_field)
+        else:
+            qs = qs.order_by("-date_joined")
+            
         paginator = Paginator(qs, 20)
         ctx["page_obj"] = paginator.get_page(self.request.GET.get("page", 1))
         ctx["users_list"] = ctx["page_obj"]
+        
+        # Pass current sort parameters to context for template building
+        ctx["current_sort"] = sort
+        ctx["current_dir"] = sort_dir
+        
         return ctx
+
+    def get(self, request, *args, **kwargs):
+        export = request.GET.get("export")
+        if export == "csv":
+            return self.export_csv(request)
+        return super().get(request, *args, **kwargs)
+
+    def export_csv(self, request):
+        import csv
+        from django.http import HttpResponse
+        
+        # Get filtered queryset
+        ctx = self.get_context_data()
+        qs = ctx["page_obj"].paginator.object_list
+        
+        # If specific IDs are provided (bulk export action via GET redirect)
+        user_ids = request.GET.get("user_ids")
+        if user_ids:
+            ids_list = [id.strip() for id in user_ids.split(",") if id.strip()]
+            qs = qs.filter(id__in=ids_list)
+            
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="sevajobs_users.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'Email', 'First Name', 'Last Name', 'Role', 'Status', 'Date Joined', 'Last Login', 'School/Company'])
+        
+        for u in qs:
+            try:
+                school_name = u.recruiter_profile.company.name if u.role == 'recruiter' and hasattr(u, 'recruiter_profile') and u.recruiter_profile.company else "N/A"
+            except Exception:
+                school_name = "N/A"
+                
+            writer.writerow([
+                str(u.id),
+                u.email,
+                u.first_name,
+                u.last_name,
+                u.get_role_display(),
+                'Active' if u.is_active else 'Inactive',
+                u.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
+                u.last_login.strftime('%Y-%m-%d %H:%M:%S') if u.last_login else 'Never',
+                school_name
+            ])
+            
+        return response
 
     def post(self, request, *args, **kwargs):
         from django.contrib import messages
         from django.shortcuts import redirect
         from django.contrib.auth import get_user_model
+        from django.db.models import ProtectedError
+        from django.contrib.auth.forms import PasswordResetForm
+        import urllib.parse
         
         User = get_user_model()
         action = request.POST.get("action")
-        user_id = request.POST.get("user_id")
+        user_ids = request.POST.getlist("user_ids[]")
+        
+        # If single user action, it might come as user_id
+        if not user_ids and request.POST.get("user_id"):
+            user_ids = [request.POST.get("user_id")]
+             
+        users_qs = User.objects.filter(id__in=user_ids).exclude(id=request.user.id) # Protect self
+        affected_count = 0
         
         if action == "toggle_active":
+            user_id = request.POST.get("user_id")
             try:
                 user = User.objects.get(id=user_id)
-                # Prevent deactivating self
                 if user == request.user:
                     messages.error(request, "You cannot deactivate your own account.")
                 else:
@@ -85,7 +188,53 @@ class AdminUsersView(AdminMixin, TemplateView):
             except User.DoesNotExist:
                 messages.error(request, "User not found.")
                 
-        # Preserve search/filter query params if present
+        elif action == "bulk_deactivate":
+            affected_count = users_qs.update(is_active=False)
+            messages.success(request, f"Successfully deactivated {affected_count} user(s).")
+            
+        elif action == "bulk_activate":
+            affected_count = users_qs.update(is_active=True)
+            messages.success(request, f"Successfully activated {affected_count} user(s).")
+            
+        elif action == "bulk_delete" or action == "delete_user":
+            failed_count = 0
+            for user in users_qs:
+                try:
+                    user.delete()
+                    affected_count += 1
+                except ProtectedError:
+                    failed_count += 1
+            if affected_count > 0:
+                messages.success(request, f"Successfully deleted {affected_count} user(s).")
+            if failed_count > 0:
+                messages.warning(request, f"Could not delete {failed_count} user(s) because they have protected related data (e.g. jobs, applications).")
+                
+        elif action == "bulk_export":
+            # Redirect to export CSV with user IDs
+            query_string = request.META.get('QUERY_STRING', '')
+            url = reverse('admin-panel:users')
+            ids_str = ",".join(user_ids)
+            redirect_url = f"{url}?export=csv&user_ids={ids_str}"
+            if query_string:
+                redirect_url += f"&{query_string}"
+            return redirect(redirect_url)
+                
+        elif action == "send_password_reset":
+            user_id = request.POST.get("user_id")
+            try:
+                user = User.objects.get(id=user_id)
+                form = PasswordResetForm({'email': user.email})
+                if form.is_valid():
+                    form.save(
+                        request=request,
+                        use_https=request.is_secure(),
+                        email_template_name='accounts/password_reset_email.html',
+                        subject_template_name='accounts/password_reset_subject.txt'
+                    )
+                    messages.success(request, f"Password reset email sent to {user.email}.")
+            except User.DoesNotExist:
+                messages.error(request, "User not found.")
+                
         query_string = request.META.get('QUERY_STRING', '')
         url = reverse('admin-panel:users')
         if query_string:
@@ -141,16 +290,99 @@ class AdminCompaniesView(AdminMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        qs = Company.objects.all().order_by("-created_at")
+        from django.db.models import Count, Q
+        
+        # Annotate with active jobs and recruiters count
+        qs = Company.objects.annotate(
+            active_jobs_count=Count('jobs', filter=Q(jobs__status='published'), distinct=True),
+            recruiters_count=Count('recruiters', distinct=True)
+        )
         
         q = self.request.GET.get("q")
         if q:
             qs = qs.filter(Q(name__icontains=q) | Q(industry__icontains=q))
             
+        status = self.request.GET.get("status")
+        if status == "verified":
+            qs = qs.filter(is_verified=True)
+        elif status == "pending":
+            qs = qs.filter(is_verified=False)
+            
+        type_filter = self.request.GET.get("type")
+        if type_filter == "school":
+            qs = qs.filter(name__icontains="school")
+        elif type_filter == "college":
+            qs = qs.filter(name__icontains="college")
+            
+        # Sorting
+        sort = self.request.GET.get("sort", "created_at")
+        sort_dir = self.request.GET.get("dir", "desc")
+        
+        valid_sort_fields = {
+            "name": "name",
+            "industry": "industry",
+            "size": "size",
+            "active_jobs": "active_jobs_count",
+            "recruiters": "recruiters_count",
+            "status": "is_verified",
+            "created_at": "created_at"
+        }
+        
+        if sort in valid_sort_fields:
+            order_field = valid_sort_fields[sort]
+            if sort_dir == "desc":
+                order_field = f"-{order_field}"
+            qs = qs.order_by(order_field)
+        else:
+            qs = qs.order_by("-created_at")
+            
         paginator = Paginator(qs, 20)
         ctx["page_obj"] = paginator.get_page(self.request.GET.get("page", 1))
         ctx["companies"] = ctx["page_obj"]
+        
+        ctx["current_sort"] = sort
+        ctx["current_dir"] = sort_dir
+        
         return ctx
+
+    def get(self, request, *args, **kwargs):
+        export = request.GET.get("export")
+        if export == "csv":
+            return self.export_csv(request)
+        return super().get(request, *args, **kwargs)
+
+    def export_csv(self, request):
+        import csv
+        from django.http import HttpResponse
+        
+        ctx = self.get_context_data()
+        qs = ctx["page_obj"].paginator.object_list
+        
+        company_ids = request.GET.get("company_ids")
+        if company_ids:
+            ids_list = [id.strip() for id in company_ids.split(",") if id.strip()]
+            qs = qs.filter(id__in=ids_list)
+            
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="sevajobs_schools.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'School Name', 'Industry', 'Size', 'Status', 'Active Jobs', 'Recruiters', 'Website', 'Created On'])
+        
+        for c in qs:
+            writer.writerow([
+                str(c.id),
+                c.name,
+                c.industry,
+                c.size,
+                'Verified' if c.is_verified else 'Pending',
+                getattr(c, 'active_jobs_count', 0),
+                getattr(c, 'recruiters_count', 0),
+                c.website or 'N/A',
+                c.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            ])
+            
+        return response
 
     def post(self, request, *args, **kwargs):
         from django.contrib import messages
@@ -158,76 +390,131 @@ class AdminCompaniesView(AdminMixin, TemplateView):
         from django.db.models import ProtectedError
         
         action = request.POST.get("action")
-        if action == "delete_company":
+        company_ids = request.POST.getlist("company_ids[]")
+        
+        if not company_ids and request.POST.get("company_id"):
+            company_ids = [request.POST.get("company_id")]
+            
+        companies_qs = Company.objects.filter(id__in=company_ids)
+        affected_count = 0
+        
+        if action == "toggle_verification":
             company_id = request.POST.get("company_id")
             try:
                 company = Company.objects.get(id=company_id)
-                company.delete()
-                messages.success(request, f"Company '{company.name}' deleted successfully.")
+                company.is_verified = not company.is_verified
+                company.save(update_fields=['is_verified'])
+                status = "verified" if company.is_verified else "unverified"
+                messages.success(request, f"School '{company.name}' successfully {status}.")
             except Company.DoesNotExist:
-                messages.error(request, "Company not found.")
-            except ProtectedError:
-                messages.error(request, "Cannot delete this company because it has active job postings or recruiter profiles tied to it.")
-            except Exception as e:
-                messages.error(request, f"Failed to delete company: {str(e)}")
+                messages.error(request, "School not found.")
                 
-        return redirect("admin-dashboard:companies")
-
-
+        elif action == "bulk_verify":
+            affected_count = companies_qs.update(is_verified=True)
+            messages.success(request, f"Successfully verified {affected_count} school(s).")
+            
+        elif action == "bulk_unverify":
+            affected_count = companies_qs.update(is_verified=False)
+            messages.success(request, f"Successfully unverified {affected_count} school(s).")
+            
+        elif action == "bulk_delete" or action == "delete_company":
+            failed_count = 0
+            for company in companies_qs:
+                try:
+                    company.delete()
+                    affected_count += 1
+                except ProtectedError:
+                    failed_count += 1
+            if affected_count > 0:
+                messages.success(request, f"Successfully deleted {affected_count} school(s).")
+            if failed_count > 0:
+                messages.warning(request, f"Could not delete {failed_count} school(s) because they have active job postings or recruiters tied to them.")
+                
+        elif action == "bulk_export":
+            query_string = request.META.get('QUERY_STRING', '')
+            url = reverse('admin-panel:companies')
+            ids_str = ",".join(company_ids)
+            redirect_url = f"{url}?export=csv&company_ids={ids_str}"
+            if query_string:
+                redirect_url += f"&{query_string}"
+            return redirect(redirect_url)
+            
+        query_string = request.META.get('QUERY_STRING', '')
+        url = reverse('admin-panel:companies')
+        if query_string:
+            url = f"{url}?{query_string}"
+            
+        return redirect(url)
 class AdminReportsView(AdminMixin, TemplateView):
     template_name = "dashboard/admin/reports.html"
-    sidebar_section = "reports"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        from django.db.models import Count, Q, F
+        from django.db.models import Count, Q
         from django.utils import timezone
         import datetime
         from apps.applications.models import JobApplication
-        from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, TruncYear
+        from django.shortcuts import get_object_or_404
 
         timeframe = self.request.GET.get("timeframe", "month")
+        company_id = self.request.GET.get("company_id")
         
-        # Base queryset
-        qs = JobApplication.objects.select_related("job", "job__company")
-        
-        # Determine the cutoff date based on timeframe
         now = timezone.now()
         if timeframe == "day":
             cutoff = now - datetime.timedelta(days=1)
-            trunc_func = TruncDay
         elif timeframe == "week":
             cutoff = now - datetime.timedelta(weeks=1)
-            trunc_func = TruncWeek
         elif timeframe == "month":
             cutoff = now - datetime.timedelta(days=30)
-            trunc_func = TruncMonth
         elif timeframe == "year":
             cutoff = now - datetime.timedelta(days=365)
-            trunc_func = TruncYear
         else:
             cutoff = None
-            trunc_func = None
-            
-        if cutoff:
-            qs = qs.filter(applied_at__gte=cutoff)
 
-        # Aggregate applications by Job
-        aggregated = qs.values(
-            job_title=F('job__title'),
-            company_name=F('job__company__name')
-        ).annotate(
-            total_applications=Count('id'),
-            selected_count=Count('id', filter=Q(status=JobApplication.Status.SELECTED)),
-            rejected_count=Count('id', filter=Q(status=JobApplication.Status.REJECTED)),
-        ).order_by('-total_applications')
-        
-        ctx["reports_data"] = aggregated
+        if not company_id:
+            # Level 1: Schools / Colleges
+            qs = Company.objects.all()
+            
+            app_filter = Q()
+            if cutoff:
+                app_filter &= Q(jobs__applications__applied_at__gte=cutoff)
+                
+            aggregated = qs.annotate(
+                total_jobs=Count('jobs', distinct=True),
+                total_applications=Count('jobs__applications', filter=app_filter, distinct=True),
+                selected_count=Count('jobs__applications', filter=app_filter & Q(jobs__applications__status=JobApplication.Status.SELECTED), distinct=True),
+                rejected_count=Count('jobs__applications', filter=app_filter & Q(jobs__applications__status=JobApplication.Status.REJECTED), distinct=True),
+            ).filter(total_jobs__gt=0).order_by('-total_applications')
+            
+            ctx["reports_data"] = aggregated
+            ctx["view_type"] = "companies"
+            ctx["total_applications_all"] = sum(item.total_applications for item in aggregated)
+            ctx["total_selected_all"] = sum(item.selected_count for item in aggregated)
+            ctx["total_rejected_all"] = sum(item.rejected_count for item in aggregated)
+            
+        else:
+            # Level 2: Jobs for a specific School / College
+            company = get_object_or_404(Company, id=company_id)
+            qs = Job.objects.filter(company=company)
+            
+            app_filter = Q()
+            if cutoff:
+                app_filter &= Q(applications__applied_at__gte=cutoff)
+                
+            aggregated = qs.annotate(
+                total_applications=Count('applications', filter=app_filter, distinct=True),
+                selected_count=Count('applications', filter=app_filter & Q(applications__status=JobApplication.Status.SELECTED), distinct=True),
+                rejected_count=Count('applications', filter=app_filter & Q(applications__status=JobApplication.Status.REJECTED), distinct=True),
+            ).order_by('-total_applications')
+            
+            ctx["reports_data"] = aggregated
+            ctx["view_type"] = "jobs"
+            ctx["selected_company"] = company
+            ctx["total_applications_all"] = sum(item.total_applications for item in aggregated)
+            ctx["total_selected_all"] = sum(item.selected_count for item in aggregated)
+            ctx["total_rejected_all"] = sum(item.rejected_count for item in aggregated)
+            
         ctx["timeframe"] = timeframe
-        ctx["total_applications_all"] = sum(item['total_applications'] for item in aggregated)
-        ctx["total_selected_all"] = sum(item['selected_count'] for item in aggregated)
-        ctx["total_rejected_all"] = sum(item['rejected_count'] for item in aggregated)
-        
         return ctx
 
     def get(self, request, *args, **kwargs):
@@ -250,23 +537,40 @@ class AdminReportsView(AdminMixin, TemplateView):
         ws.title = "Analytics Report"
         
         timeframe = ctx.get('timeframe', 'month').capitalize()
-        ws.append([f"SevaJobs Application Analytics ({timeframe})"])
-        ws.append([])
+        view_type = ctx.get("view_type")
         
-        headers = ["Company", "Job Title", "Total Applications", "Selected", "Rejected"]
-        ws.append(headers)
-        
-        for item in ctx["reports_data"]:
-            ws.append([
-                item["company_name"],
-                item["job_title"],
-                item["total_applications"],
-                item["selected_count"],
-                item["rejected_count"],
-            ])
+        if view_type == "companies":
+            ws.append([f"SevaJobs Application Analytics - All Schools/Colleges ({timeframe})"])
+            ws.append([])
+            headers = ["School/College", "Total Jobs", "Total Applications", "Selected", "Rejected"]
+            ws.append(headers)
+            
+            for item in ctx["reports_data"]:
+                ws.append([
+                    item.name,
+                    item.total_jobs,
+                    item.total_applications,
+                    item.selected_count,
+                    item.rejected_count,
+                ])
+        else:
+            company = ctx.get("selected_company")
+            ws.append([f"SevaJobs Application Analytics - {company.name} ({timeframe})"])
+            ws.append([])
+            headers = ["Job Title", "Total Applications", "Selected", "Rejected"]
+            ws.append(headers)
+            
+            for item in ctx["reports_data"]:
+                ws.append([
+                    item.title,
+                    item.total_applications,
+                    item.selected_count,
+                    item.rejected_count,
+                ])
             
         response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        response["Content-Disposition"] = f'attachment; filename="sevajobs_report_{timeframe.lower()}.xlsx"'
+        prefix = "schools" if view_type == "companies" else "jobs"
+        response["Content-Disposition"] = f'attachment; filename="sevajobs_report_{prefix}_{timeframe.lower()}.xlsx"'
         wb.save(response)
         return response
 
@@ -295,6 +599,48 @@ class AdminSettingsView(AdminMixin, TemplateView):
     template_name = "dashboard/admin/settings.html"
     sidebar_section = "settings"
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.core.models import PlatformSettings
+        ctx["settings"] = PlatformSettings.get_settings()
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        from apps.core.models import PlatformSettings
+        
+        settings = PlatformSettings.get_settings()
+        
+        # General
+        settings.site_name = request.POST.get("site_name", settings.site_name)
+        settings.support_email = request.POST.get("support_email", settings.support_email)
+        settings.contact_phone = request.POST.get("contact_phone", settings.contact_phone)
+        settings.address = request.POST.get("address", settings.address)
+        
+        # Social
+        settings.facebook_url = request.POST.get("facebook_url", settings.facebook_url)
+        settings.twitter_url = request.POST.get("twitter_url", settings.twitter_url)
+        settings.linkedin_url = request.POST.get("linkedin_url", settings.linkedin_url)
+        settings.instagram_url = request.POST.get("instagram_url", settings.instagram_url)
+        settings.youtube_url = request.POST.get("youtube_url", settings.youtube_url)
+        
+        # Maintenance
+        settings.maintenance_mode = request.POST.get("maintenance_mode") == "on"
+        
+        # Features
+        settings.allow_registrations = request.POST.get("allow_registrations") == "on"
+        settings.auto_approve_jobs = request.POST.get("auto_approve_jobs") == "on"
+        
+        # SEO
+        settings.default_meta_title = request.POST.get("default_meta_title", settings.default_meta_title)
+        settings.default_meta_description = request.POST.get("default_meta_description", settings.default_meta_description)
+        
+        settings.save()
+        messages.success(request, "Platform settings updated successfully.")
+        
+        return redirect("admin-panel:settings")
+
 class AdminAdvertisementsView(AdminMixin, TemplateView):
     template_name = "dashboard/admin/advertisements.html"
     sidebar_section = "advertisements"
@@ -302,10 +648,39 @@ class AdminAdvertisementsView(AdminMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         from apps.core.models import Advertisement
-        qs = Advertisement.objects.all().order_by("-created_at")
+        from django.db.models import Q
+        
+        qs = Advertisement.objects.all()
+        
+        q = self.request.GET.get("q")
+        if q:
+            qs = qs.filter(title__icontains=q)
+            
+        status = self.request.GET.get("status")
+        if status == "active":
+            qs = qs.filter(is_active=True)
+        elif status == "paused":
+            qs = qs.filter(is_active=False)
+            
+        ad_type = self.request.GET.get("ad_type")
+        if ad_type:
+            qs = qs.filter(ad_type=ad_type)
+            
+        sort = self.request.GET.get("sort", "created_at")
+        sort_dir = self.request.GET.get("dir", "desc")
+        
+        valid_sorts = ["title", "ad_type", "start_date", "is_active", "created_at", "views", "clicks"]
+        if sort not in valid_sorts:
+            sort = "created_at"
+            
+        order_prefix = "-" if sort_dir == "desc" else ""
+        qs = qs.order_by(f"{order_prefix}{sort}")
+        
         paginator = Paginator(qs, 20)
         ctx["page_obj"] = paginator.get_page(self.request.GET.get("page", 1))
         ctx["advertisements"] = ctx["page_obj"]
+        ctx["current_sort"] = sort
+        ctx["current_dir"] = sort_dir
         return ctx
 
     def post(self, request, *args, **kwargs):
@@ -393,6 +768,24 @@ class AdminAdvertisementsView(AdminMixin, TemplateView):
                 ad = Advertisement.objects.get(id=ad_id)
                 ad.delete()
                 messages.success(request, f"Advertisement '{ad.title}' deleted successfully.")
+                
+            elif action == "bulk_activate":
+                ad_ids = request.POST.getlist("selected_ads")
+                if ad_ids:
+                    Advertisement.objects.filter(id__in=ad_ids).update(is_active=True)
+                    messages.success(request, f"Successfully activated {len(ad_ids)} advertisements.")
+                    
+            elif action == "bulk_pause":
+                ad_ids = request.POST.getlist("selected_ads")
+                if ad_ids:
+                    Advertisement.objects.filter(id__in=ad_ids).update(is_active=False)
+                    messages.success(request, f"Successfully paused {len(ad_ids)} advertisements.")
+                    
+            elif action == "bulk_delete":
+                ad_ids = request.POST.getlist("selected_ads")
+                if ad_ids:
+                    Advertisement.objects.filter(id__in=ad_ids).delete()
+                    messages.success(request, f"Successfully deleted {len(ad_ids)} advertisements.")
                 
         except Advertisement.DoesNotExist:
             messages.error(request, "Advertisement not found.")

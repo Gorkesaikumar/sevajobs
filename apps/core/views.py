@@ -32,6 +32,11 @@ class HomeView(TemplateView):
         ctx["total_companies"] = Company.objects.filter(is_verified=True).count()
         ctx["featured_companies"] = Company.objects.filter(is_verified=True).order_by("-created_at")[:6]
         
+        from apps.accounts.models import User
+        from apps.applications.models import JobApplication
+        ctx["total_teachers"] = User.objects.filter(role=User.Role.JOB_SEEKER, is_active=True).count()
+        ctx["total_placements"] = JobApplication.objects.filter(status=JobApplication.Status.SELECTED).count()
+        
         # Advertisements
         import datetime
         today = datetime.date.today()
@@ -220,7 +225,7 @@ class CompanyListPageView(TemplateView):
         page = self.request.GET.get("page", 1)
         ctx["page_obj"] = paginator.get_page(page)
         ctx["companies"] = ctx["page_obj"]
-        ctx["breadcrumbs"] = [{"label": "Companies"}]
+        ctx["breadcrumbs"] = [{"label": "Schools/Colleges"}]
         return ctx
 
 
@@ -243,7 +248,7 @@ class CompanyDetailPageView(DetailView):
             .prefetch_related("skills_required")
         )
         ctx["breadcrumbs"] = [
-            {"label": "Companies", "url": "/companies/"},
+            {"label": "Schools/Colleges", "url": "/companies/"},
             {"label": self.object.name},
         ]
         return ctx

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static humanize sj_extras %}
 
-{% block title %}SevaJobs — India's Premium Job Portal{% endblock %}
+{% block title %}SevaJobs — India's Premium Teacher Recruitment Portal{% endblock %}
 {% block nav_home %}active{% endblock %}
 
 {% block content %}
@@ -45,14 +45,13 @@
     <div class="row justify-content-center text-center">
       <div class="col-lg-8 col-xl-7">
         <div class="mb-3">
-          <span class="sj-badge is-new animate-bounce-in">🚀 Over {{ total_jobs|default:"10,000"|intcomma }}+ active jobs</span>
+          <span class="sj-badge is-new animate-bounce-in">🚀 Over {{ total_jobs|default:"10,000"|intcomma }}+ active teaching jobs</span>
         </div>
         <h1 class="display-4 fw-800 mb-3 animate-fade-up" style="animation-delay:.1s;">
-          Find your <span class="text-warning">dream job</span><br>in seconds
+          Find your <span class="text-warning">dream teaching job</span><br>in seconds
         </h1>
         <p class="lead mb-4 animate-fade-up" style="animation-delay:.2s;">
-          Connect with India's top employers. Search thousands of curated positions
-          across every industry, experience level, and location.
+          Connect with India's top schools and colleges. Search thousands of curated teaching positions across every subject, grade level, and location.
         </p>
 
         <!-- Search bar -->
@@ -62,7 +61,7 @@
               <div class="input-icon-group">
                 <i class="bi bi-search input-icon"></i>
                 <input type="text" class="form-control form-control-lg" name="q"
-                       placeholder="Job title, keyword, or company" autocomplete="off" id="q-keyword">
+                       placeholder="Job Title, Subject, or School Name" autocomplete="off" id="q-keyword">
               </div>
               <div id="search-suggestions" class="dropdown-menu w-100 d-none shadow-lg mt-1 p-0" style="border-radius:var(--sj-radius);overflow:hidden;"></div>
             </div>
@@ -79,13 +78,7 @@
           </form>
         </div>
 
-        <div class="d-flex flex-wrap justify-content-center gap-2 mt-3 animate-fade-up" style="animation-delay:.4s;">
-          <span class="text-white-50 fs-sm fw-600">Popular:</span>
-          <a href="{% url 'core:job-search' %}?q=python" class="sj-chip" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.85);">Python</a>
-          <a href="{% url 'core:job-search' %}?q=react" class="sj-chip" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.85);">React</a>
-          <a href="{% url 'core:job-search' %}?q=data+science" class="sj-chip" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.85);">Data Science</a>
-          <a href="{% url 'core:job-search' %}?q=ui+ux" class="sj-chip" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.85);">UI/UX Design</a>
-        </div>
+
       </div>
     </div>
   </div>
@@ -93,8 +86,8 @@
   <!-- Floating glassmorphism cards -->
   <div class="sj-auth-floating d-none d-xl-block" style="top:15%;left:5%;animation-delay:0s;">
     <div class="d-flex align-items-center gap-2">
-      <div class="sj-logo-sm" style="background:rgba(255,255,255,.15);border:0;color:#fff;">G</div>
-      <div><div class="fw-bold text-white fs-sm">Google</div><div class="fs-xs" style="color:rgba(255,255,255,.6);">12 open roles</div></div>
+      <div class="sj-logo-sm" style="background:rgba(255,255,255,.15);border:0;color:#fff;"><i class="bi bi-book"></i></div>
+      <div><div class="fw-bold text-white fs-sm">Delhi Public School</div><div class="fs-xs" style="color:rgba(255,255,255,.6);">12 open roles</div></div>
     </div>
   </div>
   <div class="sj-auth-floating d-none d-xl-block" style="bottom:20%;right:4%;animation-delay:2s;">
@@ -109,10 +102,10 @@
 <section class="py-4 border-bottom">
   <div class="container">
     <div class="text-center mb-3">
-      <span class="text-muted-2 fs-sm fw-600 text-uppercase" style="letter-spacing:.06em;">Trusted by 500+ top employers</span>
+      <span class="text-muted-2 fs-sm fw-600 text-uppercase" style="letter-spacing:.06em;">Trusted by 500+ top educational institutions</span>
     </div>
     <div class="d-flex flex-wrap justify-content-center align-items-center gap-4 gap-lg-5 opacity-50">
-      {% for name in "Infosys,TCS,Wipro,HCL,Tata,Reliance,Flipkart,Razorpay"|split:"," %}
+      {% for name in "Delhi Public School,Kendriya Vidyalaya,Ryan International,Amity University,Podar International,VIBGYOR High,EuroKids"|split:"," %}
         <span class="fw-800 text-muted" style="font-size:1.1rem;">{{ name }}</span>
       {% endfor %}
     </div>
@@ -127,13 +120,13 @@
         {% include "partials/_stat_card.html" with icon="bi-briefcase" icon_class="ico-gradient-primary" value=total_jobs label="Active Jobs" %}
       </div>
       <div class="col-6 col-md-3">
-        {% include "partials/_stat_card.html" with icon="bi-buildings" icon_class="ico-gradient-cool" value=total_companies label="Companies" %}
+        {% include "partials/_stat_card.html" with icon="bi-buildings" icon_class="ico-gradient-cool" value=total_companies label="Partner Schools & Colleges" %}
       </div>
       <div class="col-6 col-md-3">
-        {% include "partials/_stat_card.html" with icon="bi-people" icon_class="ico-gradient-green" value=50000 label="Candidates" %}
+        {% include "partials/_stat_card.html" with icon="bi-people" icon_class="ico-gradient-green" value=total_teachers|default:"0" label="Registered Teachers" %}
       </div>
       <div class="col-6 col-md-3">
-        {% include "partials/_stat_card.html" with icon="bi-check-circle" icon_class="ico-gradient-warm" value=12000 label="Placements" %}
+        {% include "partials/_stat_card.html" with icon="bi-check-circle" icon_class="ico-gradient-warm" value=total_placements|default:"0" label="Successful Placements" %}
       </div>
     </div>
   </div>
@@ -171,41 +164,58 @@
 </section>
 {% endif %}
 
-<!-- ====== CATEGORIES ====== -->
-{% if categories %}
+<!-- ====== FEATURED JOB CATEGORIES (EDUCATIONAL) ====== -->
 <section class="section" id="categories">
   <div class="container">
     <div class="text-center mb-5">
-      <span class="sj-badge is-new mb-2">Popular Categories</span>
-      <h2 class="fw-800">Browse by <span class="text-gradient">category</span></h2>
-      <p class="text-muted-2 mx-auto" style="max-width:480px;">Explore opportunities across India's fastest-growing industries</p>
+      <span class="sj-badge is-new mb-2">Institution Types</span>
+      <h2 class="fw-800">Browse by <span class="text-gradient">Institution Type</span></h2>
+      <p class="text-muted-2 mx-auto" style="max-width:480px;">Find your ideal workplace across India's top educational sectors</p>
     </div>
     <div class="row g-3 stagger-children">
-      {% for cat in categories %}
+      {% for type in "School Teaching Jobs,College Lecturer Jobs,University Faculty Jobs,Principal Jobs,Pre-Primary Jobs,Coaching Institute Jobs,Online Teaching Jobs,Administrative Jobs"|split:"," %}
       <div class="col-6 col-md-4 col-lg-3 animate-fade-up">
-        <a href="{% url 'core:job-search' %}?category={{ cat.slug }}" class="sj-card p-4 d-flex flex-column align-items-center text-center h-100 text-reset hover-lift">
-          <div class="ico bg-soft-primary mb-3" style="width:56px;height:56px;border-radius:14px;">
-            <i class="bi {{ cat.icon|default:'bi-grid' }}" style="font-size:1.3rem;"></i>
+        <a href="{% url 'core:job-search' %}?q={{ type|urlencode }}" class="sj-card p-4 d-flex flex-column align-items-center text-center h-100 text-reset hover-lift">
+          <div class="ico bg-soft-primary mb-3 d-flex align-items-center justify-content-center" style="width:56px;height:56px;border-radius:14px;">
+            <i class="bi {% cycle 'bi-book' 'bi-award' 'bi-bank' 'bi-person-badge' 'bi-balloon' 'bi-journal-richtext' 'bi-laptop' 'bi-file-earmark-person' %}" style="font-size:1.3rem;"></i>
           </div>
-          <h6 class="mb-1">{{ cat.name }}</h6>
-          <span class="text-muted-2 fs-xs">{{ cat.jobs.count }} {{ cat.jobs.count|pluralize:"job,jobs" }}</span>
+          <h6 class="mb-1">{{ type }}</h6>
+          <span class="text-muted-2 fs-xs">Explore openings <i class="bi bi-arrow-right ms-1"></i></span>
         </a>
       </div>
       {% endfor %}
     </div>
   </div>
 </section>
-{% endif %}
 
-<!-- ====== FEATURED JOBS ====== -->
+<!-- ====== JOBS BY SUBJECT (NEW SECTION) ====== -->
+<section class="section bg-soft" id="subjects">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fw-800">Jobs by <span class="text-gradient">Subject</span></h2>
+      <p class="text-muted-2 mx-auto" style="max-width:480px;">Specialized positions tailored for your academic expertise</p>
+    </div>
+    <div class="row g-3 stagger-children">
+      {% for subject in "Mathematics,Physics,Chemistry,Biology,English,Social Studies,Computer Science,Commerce,Economics,Telugu,Hindi,Sanskrit"|split:"," %}
+      <div class="col-6 col-md-3 col-lg-2 animate-fade-up">
+        <a href="{% url 'core:job-search' %}?q={{ subject|urlencode }}" class="card border-0 shadow-sm h-100 text-reset text-center p-3 hover-lift" style="border-radius: 12px;">
+          <div class="fw-bold fs-6">{{ subject }}</div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ====== LATEST EDUCATIONAL JOBS ====== -->
 {% if featured_jobs %}
-<section class="section bg-soft" id="featured-jobs">
+<section class="section" id="featured-jobs">
   <div class="container">
     <div class="d-flex flex-wrap justify-content-between align-items-end mb-4 gap-3">
       <div>
         <span class="sj-badge is-featured mb-2"><i class="bi bi-star-fill me-1"></i>Featured</span>
-        <h2 class="fw-800 mb-1">Featured <span class="text-gradient">opportunities</span></h2>
-        <p class="text-muted-2 mb-0">Hand-picked positions from top employers</p>
+        <h2 class="fw-800 mb-1">Latest <span class="text-gradient">Educational Jobs</span></h2>
+        <p class="text-muted-2 mb-0">Hand-picked teaching positions from top schools and colleges</p>
       </div>
       <a href="{% url 'core:job-search' %}" class="btn btn-outline-primary">
         View all jobs <i class="bi bi-arrow-right ms-1"></i>
@@ -222,19 +232,84 @@
 </section>
 {% endif %}
 
-<!-- ====== HOW IT WORKS ====== -->
+<!-- ====== WHY CHOOSE US (SCHOOLS & TEACHERS) ====== -->
+<section class="section bg-soft">
+  <div class="container">
+    <div class="row g-5">
+      <!-- Why Schools Choose Us -->
+      <div class="col-lg-6">
+        <div class="pe-lg-4">
+          <span class="sj-badge mb-2 bg-white"><i class="bi bi-building"></i> For Institutions</span>
+          <h3 class="fw-800 mb-4">Why Schools <span class="text-gradient">Choose Us</span></h3>
+          <div class="d-flex align-items-start mb-4">
+            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-check-circle text-primary"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Verified Teacher Profiles</h6>
+              <p class="text-muted fs-sm mb-0">Access thoroughly vetted candidates with verified credentials and experience.</p>
+            </div>
+          </div>
+          <div class="d-flex align-items-start mb-4">
+            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-lightning text-warning"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Fast Hiring Process</h6>
+              <p class="text-muted fs-sm mb-0">Streamlined tools to post jobs, filter applications, and hire the best educators quickly.</p>
+            </div>
+          </div>
+          <div class="d-flex align-items-start">
+            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-kanban text-info"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Easy Candidate Management</h6>
+              <p class="text-muted fs-sm mb-0">Track applications, view resumes directly, and manage interviews in one dashboard.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Why Teachers Choose Us -->
+      <div class="col-lg-6">
+        <div class="ps-lg-4 border-start-lg border-light">
+          <span class="sj-badge mb-2 bg-white"><i class="bi bi-person-badge"></i> For Educators</span>
+          <h3 class="fw-800 mb-4">Why Teachers <span class="text-gradient">Choose Us</span></h3>
+          <div class="d-flex align-items-start mb-4">
+            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-shield-check text-success"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Verified Opportunities</h6>
+              <p class="text-muted fs-sm mb-0">Apply safely to direct openings from reputed schools and colleges across India.</p>
+            </div>
+          </div>
+          <div class="d-flex align-items-start mb-4">
+            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-graph-up-arrow text-primary"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Career Growth</h6>
+              <p class="text-muted fs-sm mb-0">Discover opportunities that match your expertise and take your career to the next level.</p>
+            </div>
+          </div>
+          <div class="d-flex align-items-start">
+            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-bell text-danger"></i></div>
+            <div>
+              <h6 class="fw-bold mb-1">Instant Job Alerts</h6>
+              <p class="text-muted fs-sm mb-0">Never miss out! Get notified instantly when matching jobs are posted by top institutions.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== EDUCATIONAL RECRUITMENT PROCESS ====== -->
 <section class="section" id="how-it-works">
   <div class="container">
     <div class="text-center mb-5">
       <span class="sj-badge mb-2">Simple Process</span>
-      <h2 class="fw-800">How it <span class="text-gradient">works</span></h2>
-      <p class="text-muted-2 mx-auto" style="max-width:480px;">Three simple steps to land your dream job</p>
+      <h2 class="fw-800">Educational <span class="text-gradient">Recruitment Process</span></h2>
+      <p class="text-muted-2 mx-auto" style="max-width:480px;">Three simple steps to land your dream teaching job</p>
     </div>
-    <div class="row g-4">
+    <div class="row g-4 stagger-children">
       {% for step in "Create Profile,Find Jobs,Apply & Get Hired"|split:"," %}
       <div class="col-md-4">
-        <div class="text-center reveal">
-          <div class="ico mx-auto mb-3 {% cycle 'ico-gradient-primary' 'ico-gradient-cool' 'ico-gradient-green' %}"
+        <div class="text-center animate-fade-up">
+          <div class="ico mx-auto mb-3 d-flex align-items-center justify-content-center {% cycle 'ico-gradient-primary' 'ico-gradient-cool' 'ico-gradient-green' %}"
                style="width:72px;height:72px;border-radius:20px;font-size:1.6rem;">
             {% if forloop.counter == 1 %}<i class="bi bi-person-plus"></i>
             {% elif forloop.counter == 2 %}<i class="bi bi-search"></i>
@@ -243,9 +318,9 @@
           <div class="fs-sm text-primary fw-700 mb-1">Step {{ forloop.counter }}</div>
           <h5 class="fw-700">{{ step }}</h5>
           <p class="text-muted-2 fs-sm px-3">
-            {% if forloop.counter == 1 %}Sign up in 60 seconds, add your skills and experience, and upload your resume.
-            {% elif forloop.counter == 2 %}Browse curated positions or let our smart matching find the perfect fit for you.
-            {% else %}Apply with one click, track your applications, and get hired faster.{% endif %}
+            {% if forloop.counter == 1 %}Sign up in 60 seconds, add your teaching experience, subjects, and upload your resume.
+            {% elif forloop.counter == 2 %}Browse curated teaching positions or let our smart matching find the perfect school for you.
+            {% else %}Apply with one click, interview directly with the school, and start your new journey.{% endif %}
           </p>
         </div>
       </div>
@@ -254,14 +329,71 @@
   </div>
 </section>
 
-<!-- ====== FEATURED EMPLOYERS ====== -->
-{% if featured_companies %}
-<section class="section bg-soft" id="employers">
+<!-- ====== TEACHER SUCCESS STORIES (STATIC MOCKUP) ====== -->
+<section class="section bg-soft">
   <div class="container">
     <div class="text-center mb-5">
-      <span class="sj-badge is-verified mb-2"><i class="bi bi-patch-check-fill me-1"></i>Top Employers</span>
-      <h2 class="fw-800">Featured <span class="text-gradient">employers</span></h2>
-      <p class="text-muted-2 mx-auto" style="max-width:480px;">Join companies that are building the future of India</p>
+      <h2 class="fw-800">Success <span class="text-gradient">Stories</span></h2>
+      <p class="text-muted-2 mx-auto" style="max-width:480px;">Hear from educators who found their dream roles through SevaJobs</p>
+    </div>
+    <div class="row g-4 justify-content-center">
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-4" style="border-radius: 16px;">
+          <div class="d-flex text-warning mb-3">
+            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+          </div>
+          <p class="text-muted mb-4 fst-italic">"SevaJobs made finding a Mathematics teaching position incredibly simple. Within a week of creating my profile, I received interview calls from three reputed international schools."</p>
+          <div class="d-flex align-items-center mt-auto">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width:45px;height:45px;font-weight:bold;">AK</div>
+            <div>
+              <h6 class="mb-0 fw-bold">Anita K.</h6>
+              <span class="fs-xs text-muted">Senior Math Teacher</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-4" style="border-radius: 16px;">
+          <div class="d-flex text-warning mb-3">
+            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+          </div>
+          <p class="text-muted mb-4 fst-italic">"As a school principal, finding qualified special educators was always a challenge. This portal provided us with verified profiles and we hired two fantastic teachers in record time."</p>
+          <div class="d-flex align-items-center mt-auto">
+            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width:45px;height:45px;font-weight:bold;">RP</div>
+            <div>
+              <h6 class="mb-0 fw-bold">Dr. Rajesh P.</h6>
+              <span class="fs-xs text-muted">School Principal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-4" style="border-radius: 16px;">
+          <div class="d-flex text-warning mb-3">
+            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+          </div>
+          <p class="text-muted mb-4 fst-italic">"The platform is beautifully designed specifically for academia. I quickly found a College Lecturer position in my city. Highly recommended for all teaching professionals!"</p>
+          <div class="d-flex align-items-center mt-auto">
+            <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width:45px;height:45px;font-weight:bold;">SM</div>
+            <div>
+              <h6 class="mb-0 fw-bold">Suresh M.</h6>
+              <span class="fs-xs text-muted">Physics Lecturer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== FEATURED INSTITUTIONS ====== -->
+{% if featured_companies %}
+<section class="section" id="employers">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="sj-badge is-verified mb-2"><i class="bi bi-patch-check-fill me-1"></i>Top Schools</span>
+      <h2 class="fw-800">Featured <span class="text-gradient">Institutions</span></h2>
+      <p class="text-muted-2 mx-auto" style="max-width:480px;">Join reputed educational institutions that are building the future of India</p>
     </div>
     <div class="row g-3 stagger-children">
       {% for company in featured_companies %}
@@ -288,17 +420,17 @@
   <div class="container">
     <div class="sj-card p-5 text-center" style="background:var(--sj-gradient);border:0;color:#fff;">
       <div class="row justify-content-center">
-        <div class="col-lg-7">
-          <h2 class="fw-800 mb-3" style="color:#fff;">Ready to take the next step?</h2>
+        <div class="col-lg-8">
+          <h2 class="fw-800 mb-3" style="color:#fff;">Ready to transform education?</h2>
           <p class="mb-4" style="color:rgba(255,255,255,.8);">
-            Whether you're a job seeker looking for your dream role, or a recruiter searching for top talent — SevaJobs has you covered.
+            Whether you're an educator looking for your dream role, or an institution searching for top teaching talent — SevaJobs has you covered.
           </p>
           <div class="d-flex flex-wrap justify-content-center gap-2">
             <a href="{% url 'accounts:register' %}" class="btn btn-white btn-lg">
-              <i class="bi bi-person-plus me-1"></i> Sign up free
+              <i class="bi bi-person-plus me-1"></i> I'm a Teacher
             </a>
-            <a href="{% url 'accounts:register' %}?role=recruiter" class="btn btn-outline-light-brand btn-lg" style="border-color:rgba(255,255,255,.3);color:#fff;">
-              <i class="bi bi-megaphone me-1"></i> Post a job
+            <a href="{% url 'accounts:register' %}?role=recruiter" class="btn btn-outline-light btn-lg">
+              <i class="bi bi-building me-1"></i> Register Institution
             </a>
           </div>
         </div>

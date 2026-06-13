@@ -137,6 +137,8 @@ class Advertisement(BaseModel):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     duration_seconds = models.PositiveIntegerField(default=30, help_text="Timer for popups (in seconds)")
+    views = models.PositiveIntegerField(default=0)
+    clicks = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = "Advertisement"
@@ -145,3 +147,54 @@ class Advertisement(BaseModel):
 
     def __str__(self):
         return f"[{self.get_ad_type_display()}] {self.title}"
+
+    @property
+    def ctr(self) -> float:
+        """Click-through rate percentage."""
+        if self.views == 0:
+            return 0.0
+        return round((self.clicks / self.views) * 100, 2)
+
+class PlatformSettings(BaseModel):
+    """
+    Singleton model for site-wide settings.
+    """
+    # General
+    site_name = models.CharField(max_length=100, default="SevaJobs")
+    support_email = models.EmailField(default="support@sevajobs.com")
+    contact_phone = models.CharField(max_length=20, blank=True)
+    address = models.TextField(blank=True)
+    
+    # Social Links
+    facebook_url = models.URLField(blank=True)
+    twitter_url = models.URLField(blank=True)
+    linkedin_url = models.URLField(blank=True)
+    instagram_url = models.URLField(blank=True)
+    youtube_url = models.URLField(blank=True)
+    
+    # Maintenance
+    maintenance_mode = models.BooleanField(default=False, help_text="Block access for non-admins.")
+    
+    # Features
+    allow_registrations = models.BooleanField(default=True)
+    auto_approve_jobs = models.BooleanField(default=False)
+    
+    # SEO
+    default_meta_title = models.CharField(max_length=255, default="SevaJobs - Find Your Dream Job")
+    default_meta_description = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Platform Settings"
+        verbose_name_plural = "Platform Settings"
+
+    def __str__(self):
+        return "Platform Settings"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_settings(cls):
+        settings, created = cls.objects.get_or_create(pk=1)
+        return settings

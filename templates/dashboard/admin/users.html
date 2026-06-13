@@ -1,13 +1,127 @@
 {% extends "dashboard/admin/_layout.html" %}
 {% block title %}Users — Admin — SevaJobs{% endblock %}
 {% block dashboard_content %}
-<div class="d-flex align-items-center justify-content-between mb-4"><h4 class="fw-800 mb-0">User Management</h4>
-<form class="d-flex gap-2" method="get"><input type="text" class="form-control form-control-sm" name="q" placeholder="Search users..." value="{{ request.GET.q|default:'' }}"><select class="form-select form-select-sm" name="role" style="width:auto;"><option value="">All roles</option><option value="job_seeker">Job Seeker</option><option value="recruiter">Recruiter</option><option value="admin">Admin</option></select><button class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button></form>
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h4 class="fw-800 mb-0">User Management</h4>
+  <div class="d-flex gap-2">
+    <a href="{% url 'admin-panel:users' %}?export=csv{% if request.META.QUERY_STRING %}&{{ request.META.QUERY_STRING }}{% endif %}" class="btn btn-outline-success btn-sm fw-semibold">
+      <i class="bi bi-file-earmark-excel me-1"></i> Export All Filtered
+    </a>
+  </div>
 </div>
+<form class="d-flex gap-2 mb-3" method="get">
+  <input type="text" class="form-control form-control-sm" name="q" placeholder="Search users..." value="{{ request.GET.q|default:'' }}">
+  <select class="form-select form-select-sm" name="role" style="min-width: 140px; width: auto;">
+    <option value="">All roles</option>
+    <option value="job_seeker" {% if request.GET.role == 'job_seeker' %}selected{% endif %}>Job Seeker</option>
+    <option value="recruiter" {% if request.GET.role == 'recruiter' %}selected{% endif %}>Recruiter</option>
+    <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>Admin</option>
+  </select>
+  <select class="form-select form-select-sm" name="status" style="min-width: 140px; width: auto;">
+    <option value="">All statuses</option>
+    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+  </select>
+  <select class="form-select form-select-sm" name="date_range" style="min-width: 140px; width: auto;">
+    <option value="">All time</option>
+    <option value="7days" {% if request.GET.date_range == '7days' %}selected{% endif %}>Last 7 Days</option>
+    <option value="30days" {% if request.GET.date_range == '30days' %}selected{% endif %}>Last 30 Days</option>
+  </select>
+  <input type="hidden" name="sort" value="{{ current_sort }}">
+  <input type="hidden" name="dir" value="{{ current_dir }}">
+  <button class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+</form>
 {% if users_list %}
-<div class="sj-card overflow-hidden"><div class="table-responsive"><table class="table sj-table mb-0"><thead><tr><th>User</th><th>Role</th><th class="sortable">Joined</th><th>Status</th><th>Actions</th></tr></thead><tbody>
-{% for u in users_list %}<tr><td><div class="candidate-inline"><div class="avatar">{{ u.first_name|slice:":1"|upper }}</div><div><div class="fw-semibold fs-sm">{{ u.full_name }}</div><div class="fs-xs text-muted-2">{{ u.email }}</div></div></div></td><td><span class="sj-badge">{{ u.get_role_display }}</span></td><td class="fs-sm text-muted-2">{{ u.date_joined|date:"M j, Y" }}</td><td>{% if u.is_active %}<span class="status-pill status-active">Active</span>{% else %}<span class="status-pill status-inactive">Inactive</span>{% endif %}</td><td><div class="sj-table-actions d-flex gap-1"><button class="btn btn-ghost btn-sm" title="View" data-bs-toggle="modal" data-bs-target="#viewUserModal{{ u.id }}"><i class="bi bi-eye"></i></button>{% if not u.is_admin_role and not u.is_superuser %}<form method="post" action="{% url 'admin-panel:impersonate' %}" style="display:inline;" class="m-0">{% csrf_token %}<input type="hidden" name="action" value="impersonate"><input type="hidden" name="user_id" value="{{ u.id }}"><button type="submit" class="btn btn-ghost btn-sm text-primary" title="Impersonate"><i class="bi bi-person-bounding-box"></i></button></form>{% endif %}{% if request.user != u %}{% if u.is_active %}<button class="btn btn-ghost btn-sm text-warning" title="Deactivate" data-bs-toggle="modal" data-bs-target="#confirmToggleModal{{ u.id }}"><i class="bi bi-pause-circle"></i></button>{% else %}<button class="btn btn-ghost btn-sm text-success" title="Activate" data-bs-toggle="modal" data-bs-target="#confirmToggleModal{{ u.id }}"><i class="bi bi-play-circle"></i></button>{% endif %}{% endif %}</div></td></tr>{% endfor %}
-</tbody></table></div></div>
+<form id="bulkActionForm" method="post" action="{% url 'admin-panel:users' %}">
+  {% csrf_token %}
+</form>
+
+<div class="sj-card overflow-hidden">
+  <div class="bg-light p-2 border-bottom d-none align-items-center gap-2" id="bulkToolbar">
+    <span class="fs-sm fw-semibold text-muted-2 ms-2 me-3"><span id="selectedCount">0</span> selected</span>
+    <button type="submit" name="action" value="bulk_activate" class="btn btn-sm btn-outline-success" form="bulkActionForm"><i class="bi bi-play-circle me-1"></i>Activate</button>
+    <button type="submit" name="action" value="bulk_deactivate" class="btn btn-sm btn-outline-warning" form="bulkActionForm"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
+    <button type="submit" name="action" value="bulk_export" class="btn btn-sm btn-outline-primary" form="bulkActionForm"><i class="bi bi-download me-1"></i>Export Selected CSV</button>
+    <button type="submit" name="action" value="bulk_delete" class="btn btn-sm btn-outline-danger ms-auto" form="bulkActionForm" onclick="return confirm('Are you sure you want to permanently delete the selected users?');"><i class="bi bi-trash me-1"></i>Delete</button>
+  </div>
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="selectAll"></th>
+          <th>
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=name&dir={% if current_sort == 'name' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              User {% if current_sort == 'name' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th>Role</th>
+          <th>
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=date_joined&dir={% if current_sort == 'date_joined' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              Joined {% if current_sort == 'date_joined' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=last_login&dir={% if current_sort == 'last_login' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              Last Login {% if current_sort == 'last_login' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users_list %}
+        <tr>
+          <td><input class="form-check-input user-checkbox" type="checkbox" name="user_ids[]" value="{{ u.id }}" form="bulkActionForm"></td>
+          <td>
+            <div class="candidate-inline">
+              <div class="avatar">{{ u.first_name|slice:":1"|upper }}</div>
+              <div>
+                <div class="fw-semibold fs-sm">{{ u.full_name }}</div>
+                <div class="fs-xs text-muted-2">{{ u.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="sj-badge">{{ u.get_role_display }}</span>
+            {% if u.role == 'recruiter' and u.recruiter_profile.company %}
+            <div class="fs-xs text-muted-2 mt-1"><i class="bi bi-building"></i> {{ u.recruiter_profile.company.name|truncatechars:20 }}</div>
+            {% endif %}
+          </td>
+          <td class="fs-sm text-muted-2">{{ u.date_joined|date:"M j, Y" }}</td>
+          <td class="fs-sm text-muted-2">{% if u.last_login %}{{ u.last_login|date:"M j, Y g:i A" }}{% else %}Never{% endif %}</td>
+          <td>{% if u.is_active %}<span class="status-pill status-active">Active</span>{% else %}<span class="status-pill status-inactive">Inactive</span>{% endif %}</td>
+          <td>
+            <div class="sj-table-actions d-flex gap-1">
+              <button type="button" class="btn btn-ghost btn-sm" title="View" data-bs-toggle="modal" data-bs-target="#viewUserModal{{ u.id }}"><i class="bi bi-eye"></i></button>
+              
+              {% if not u.is_admin_role and not u.is_superuser %}
+              <form method="post" action="{% url 'admin-panel:impersonate' %}" style="display:inline;" class="m-0">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="impersonate">
+                <input type="hidden" name="user_id" value="{{ u.id }}">
+                <button type="submit" class="btn btn-ghost btn-sm text-primary" title="Impersonate"><i class="bi bi-person-bounding-box"></i></button>
+              </form>
+              {% endif %}
+              
+              <button type="button" class="btn btn-ghost btn-sm text-info" title="Send Password Reset" data-bs-toggle="modal" data-bs-target="#resetPasswordModal{{ u.id }}"><i class="bi bi-key"></i></button>
+              
+              {% if request.user != u %}
+                {% if u.is_active %}
+                <button type="button" class="btn btn-ghost btn-sm text-warning" title="Deactivate" data-bs-toggle="modal" data-bs-target="#confirmToggleModal{{ u.id }}"><i class="bi bi-pause-circle"></i></button>
+                {% else %}
+                <button type="button" class="btn btn-ghost btn-sm text-success" title="Activate" data-bs-toggle="modal" data-bs-target="#confirmToggleModal{{ u.id }}"><i class="bi bi-play-circle"></i></button>
+                {% endif %}
+                <button type="button" class="btn btn-ghost btn-sm text-danger" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ u.id }}"><i class="bi bi-trash"></i></button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% include "partials/_pagination.html" %}
 {% endif %}
 {% endblock %}
@@ -27,9 +141,30 @@
           <div class="avatar avatar-xl mb-3 mx-auto" style="width: 80px; height: 80px; font-size: 2rem;">
             {{ u.first_name|slice:":1"|upper }}
           </div>
-          <h4 class="fw-bold mb-1">{{ u.full_name }}</h4>
-          <p class="text-muted-2 mb-2">{{ u.email }}</p>
-          <span class="sj-badge">{{ u.get_role_display }}</span>
+          <h4 class="fw-bold mb-2">{{ u.full_name }}</h4>
+          <span class="sj-badge mb-3">{{ u.get_role_display }}</span>
+        </div>
+        
+        <div class="bg-light rounded p-3 mb-3 text-start">
+          <div class="text-muted-2 fs-xs text-uppercase mb-2 fw-semibold">Contact Details</div>
+          <div class="d-flex align-items-center mb-2">
+            <i class="bi bi-envelope text-primary me-2"></i>
+            <span class="fs-sm fw-medium"><a href="mailto:{{ u.email }}" class="text-decoration-none text-dark">{{ u.email }}</a></span>
+          </div>
+          <div class="d-flex align-items-center">
+            <i class="bi bi-telephone text-primary me-2"></i>
+            <span class="fs-sm fw-medium text-dark">
+              {% if u.phone %}
+                {{ u.phone }}
+              {% elif u.role == 'recruiter' and u.recruiter_profile %}
+                {{ u.recruiter_profile.phone|default:"Not provided" }}
+              {% elif u.role == 'job_seeker' and u.job_seeker_profile %}
+                {{ u.job_seeker_profile.alternate_phone|default:"Not provided" }}
+              {% else %}
+                Not provided
+              {% endif %}
+            </span>
+          </div>
         </div>
         
         <div class="row g-3">
@@ -105,5 +240,107 @@
   </div>
 </div>
 {% endif %}
+{% if request.user != u %}
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-bottom-0">
+        <h5 class="modal-title fw-bold">Permanent Deletion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <div class="mb-3">
+          <div class="avatar avatar-xl bg-soft-danger text-danger mb-3 mx-auto" style="width: 70px; height: 70px;">
+            <i class="bi bi-trash fs-2"></i>
+          </div>
+          <h4 class="fw-bold">Delete {{ u.full_name }}?</h4>
+          <p class="text-muted-2 px-3">This action cannot be undone. All data associated with this user will be permanently removed.</p>
+        </div>
+      </div>
+      <div class="modal-footer bg-light border-top-0 d-flex justify-content-between">
+        <button type="button" class="btn btn-white text-muted fw-semibold" data-bs-dismiss="modal">Cancel</button>
+        <form method="post" action="{% url 'admin-panel:users' %}" class="m-0">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete_user">
+          <input type="hidden" name="user_id" value="{{ u.id }}">
+          <button type="submit" class="btn btn-danger fw-semibold">Yes, Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal{{ u.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-bottom-0">
+        <h5 class="modal-title fw-bold">Reset Password</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <div class="mb-3">
+          <div class="avatar avatar-xl bg-soft-info text-info mb-3 mx-auto" style="width: 70px; height: 70px;">
+            <i class="bi bi-envelope-check fs-2"></i>
+          </div>
+          <h4 class="fw-bold">Send Reset Link?</h4>
+          <p class="text-muted-2 px-3">Are you sure you want to send a password reset link to <strong>{{ u.email }}</strong>?</p>
+        </div>
+      </div>
+      <div class="modal-footer bg-light border-top-0 d-flex justify-content-between">
+        <button type="button" class="btn btn-white text-muted fw-semibold" data-bs-dismiss="modal">Cancel</button>
+        <form method="post" action="{% url 'admin-panel:users' %}" class="m-0">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="send_password_reset">
+          <input type="hidden" name="user_id" value="{{ u.id }}">
+          <button type="submit" class="btn btn-info text-white fw-semibold">Send Link</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 {% endfor %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('selectAll');
+  const userCheckboxes = document.querySelectorAll('.user-checkbox');
+  const bulkToolbar = document.getElementById('bulkToolbar');
+  const selectedCountSpan = document.getElementById('selectedCount');
+
+  function updateToolbar() {
+    const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
+    selectedCountSpan.textContent = checkedCount;
+    if (checkedCount > 0) {
+      bulkToolbar.classList.remove('d-none');
+      bulkToolbar.classList.add('d-flex');
+    } else {
+      bulkToolbar.classList.add('d-none');
+      bulkToolbar.classList.remove('d-flex');
+    }
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      userCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+      updateToolbar();
+    });
+  }
+
+  userCheckboxes.forEach(cb => {
+    cb.addEventListener('change', function() {
+      if (!this.checked && selectAll) {
+        selectAll.checked = false;
+      }
+      // If all are checked, check selectAll
+      if (document.querySelectorAll('.user-checkbox:checked').length === userCheckboxes.length) {
+        if(selectAll) selectAll.checked = true;
+      }
+      updateToolbar();
+    });
+  });
+});
+</script>
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static humanize %}
 
-{% block title %}Companies — SevaJobs{% endblock %}
+{% block title %}Schools/Colleges — SevaJobs{% endblock %}
 {% block nav_companies %}active{% endblock %}
 {% block breadcrumb %}{% include "partials/_breadcrumb.html" %}{% endblock %}
 
@@ -10,8 +10,8 @@
   <div class="container">
     <div class="text-center mb-5">
       <span class="sj-badge is-verified mb-2"><i class="bi bi-patch-check-fill me-1"></i>Verified</span>
-      <h1 class="fw-800">Discover <span class="text-gradient">companies</span></h1>
-      <p class="text-muted-2 mx-auto" style="max-width:480px;">Explore verified employers and find companies that match your career goals.</p>
+      <h1 class="fw-800">Discover <span class="text-gradient">schools/colleges</span></h1>
+      <p class="text-muted-2 mx-auto" style="max-width:480px;">Explore verified employers and find schools/colleges that match your career goals.</p>
     </div>
 
     <!-- Search bar -->
@@ -37,9 +37,9 @@
     {% else %}
       <div class="sj-empty">
         <div class="icon"><i class="bi bi-buildings"></i></div>
-        <h5>No companies found</h5>
+        <h5>No schools/colleges found</h5>
         <p class="text-muted-2 fs-sm">Try a different search query.</p>
-        <a href="{% url 'core:company-list' %}" class="btn btn-soft-primary">Show all companies</a>
+        <a href="{% url 'core:company-list' %}" class="btn btn-soft-primary">Show all schools/colleges</a>
       </div>
     {% endif %}
   </div>

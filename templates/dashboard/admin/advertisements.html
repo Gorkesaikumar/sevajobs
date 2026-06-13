@@ -9,23 +9,78 @@
   </button>
 </div>
 
+<!-- Filters -->
+<form class="d-flex gap-2 mb-3" method="get">
+  <input type="text" class="form-control form-control-sm" name="q" placeholder="Search title..." value="{{ request.GET.q|default:'' }}">
+  <select class="form-select form-select-sm" name="ad_type" style="min-width: 140px; width: auto;">
+    <option value="">All Types</option>
+    <option value="display_ad" {% if request.GET.ad_type == 'display_ad' %}selected{% endif %}>Standard Display</option>
+    <option value="popup" {% if request.GET.ad_type == 'popup' %}selected{% endif %}>Popup Modal</option>
+    <option value="scroll_bar" {% if request.GET.ad_type == 'scroll_bar' %}selected{% endif %}>Scroll Bar</option>
+  </select>
+  <select class="form-select form-select-sm" name="status" style="min-width: 140px; width: auto;">
+    <option value="">All Statuses</option>
+    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+    <option value="paused" {% if request.GET.status == 'paused' %}selected{% endif %}>Paused</option>
+  </select>
+  <input type="hidden" name="sort" value="{{ current_sort }}">
+  <input type="hidden" name="dir" value="{{ current_dir }}">
+  <button class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+</form>
+
+<!-- Bulk Actions -->
+<form method="post" id="bulkForm">
+  {% csrf_token %}
+  <input type="hidden" name="action" id="bulkActionInput" value="">
+  
+  <div class="d-none align-items-center gap-2 mb-3 bg-light p-2 rounded" id="bulkActionsToolbar">
+    <span class="fs-sm fw-medium ms-2 text-muted-2"><span id="selectedCount">0</span> selected</span>
+    <div class="ms-auto d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-outline-success" onclick="submitBulk('bulk_activate')"><i class="bi bi-play-fill me-1"></i>Activate</button>
+      <button type="button" class="btn btn-sm btn-outline-warning" onclick="submitBulk('bulk_pause')"><i class="bi bi-pause-fill me-1"></i>Pause</button>
+      <button type="button" class="btn btn-sm btn-outline-danger" onclick="submitBulk('bulk_delete')"><i class="bi bi-trash me-1"></i>Delete</button>
+    </div>
+  </div>
+
 {% if advertisements %}
 <div class="sj-card overflow-hidden">
   <div class="table-responsive">
     <table class="table sj-table mb-0">
       <thead>
         <tr>
-          <th>Title & Image</th>
-          <th>Type</th>
-          <th>Dates</th>
-          <th>Status</th>
-          <th>Sponsored</th>
+          <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="selectAll"></th>
+          <th>
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=title&dir={% if current_sort == 'title' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              Title & Image {% if current_sort == 'title' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=ad_type&dir={% if current_sort == 'ad_type' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              Type {% if current_sort == 'ad_type' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=start_date&dir={% if current_sort == 'start_date' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              Dates {% if current_sort == 'start_date' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=is_active&dir={% if current_sort == 'is_active' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              Status {% if current_sort == 'is_active' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=views&dir={% if current_sort == 'views' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              Views/Clicks {% if current_sort == 'views' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
           <th class="text-end">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for ad in advertisements %}
         <tr>
+          <td><input class="form-check-input ad-checkbox" type="checkbox" name="selected_ads" value="{{ ad.id }}"></td>
           <td>
             <div class="d-flex align-items-center gap-3">
               {% if ad.image %}
@@ -35,6 +90,7 @@
               {% endif %}
               <div>
                 <div class="fw-semibold fs-sm">{{ ad.title }}</div>
+                {% if ad.is_sponsored %}<span class="badge bg-warning text-dark me-2"><i class="bi bi-star-fill me-1"></i>Sponsored</span>{% endif %}
                 {% if ad.target_url %}
                 <a href="{{ ad.target_url }}" target="_blank" class="fs-xs text-primary text-decoration-none">Target Link <i class="bi bi-box-arrow-up-right ms-1"></i></a>
                 {% endif %}
@@ -54,29 +110,23 @@
             {% endif %}
           </td>
           <td>
-            <form method="post" action="{% url 'admin-panel:advertisements' %}" class="d-inline mb-0">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="toggle_active">
-              <input type="hidden" name="ad_id" value="{{ ad.id }}">
+            <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" onclick="toggleActive('{{ ad.id }}')">
               {% if ad.is_active %}
-                <button type="submit" class="btn btn-soft-success btn-sm" title="Click to deactivate"><i class="bi bi-circle-fill fs-xs me-1"></i>Active</button>
+                <span class="badge bg-soft-success text-success" title="Click to pause"><i class="bi bi-circle-fill fs-xs me-1"></i>Active</span>
               {% else %}
-                <button type="submit" class="btn btn-soft-danger btn-sm" title="Click to activate"><i class="bi bi-circle fs-xs me-1"></i>Inactive</button>
+                <span class="badge bg-soft-danger text-danger" title="Click to activate"><i class="bi bi-circle fs-xs me-1"></i>Paused</span>
               {% endif %}
-            </form>
+            </button>
           </td>
-          <td class="fs-sm">
-            {% if ad.is_sponsored %}<span class="badge bg-warning text-dark"><i class="bi bi-star-fill me-1"></i>Sponsored</span>{% else %}<span class="text-muted-2">-</span>{% endif %}
+          <td>
+            <div class="fs-sm fw-medium">{{ ad.views }} / {{ ad.clicks }}</div>
+            <div class="fs-xs text-muted-2">{{ ad.ctr }}% CTR</div>
           </td>
           <td class="text-end">
             <div class="d-flex justify-content-end gap-1">
+              <button type="button" class="btn btn-soft-info btn-sm" title="Preview Ad" data-bs-toggle="modal" data-bs-target="#previewAdModal{{ ad.id }}"><i class="bi bi-eye"></i></button>
               <button type="button" class="btn btn-soft-primary btn-sm" title="Edit Ad" data-bs-toggle="modal" data-bs-target="#editAdModal{{ ad.id }}"><i class="bi bi-pencil"></i></button>
-              <form method="post" action="{% url 'admin-panel:advertisements' %}" class="d-inline mb-0" onsubmit="return confirm('Are you sure you want to delete this advertisement?');">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="ad_id" value="{{ ad.id }}">
-                <button type="submit" class="btn btn-soft-danger btn-sm" title="Delete Ad"><i class="bi bi-trash"></i></button>
-              </form>
+              <button type="button" class="btn btn-soft-danger btn-sm" title="Delete Ad" onclick="deleteAd('{{ ad.id }}')"><i class="bi bi-trash"></i></button>
             </div>
           </td>
         </tr>
@@ -91,9 +141,114 @@
   <div class="icon"><i class="bi bi-badge-ad"></i></div>
   <h5>No Advertisements</h5>
   <p class="text-muted-2 fs-sm">Create advertisements for schools or colleges to display them on the site.</p>
-  <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#createAdModal">Create First Ad</button>
+  <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#createAdModal">Create First Ad</button>
 </div>
 {% endif %}
+</form>
+
+<!-- Helper Forms for quick actions -->
+<form method="post" id="toggleForm" class="d-none">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="toggle_active">
+  <input type="hidden" name="ad_id" id="toggleAdId">
+</form>
+
+<form method="post" id="deleteForm" class="d-none">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="delete">
+  <input type="hidden" name="ad_id" id="deleteAdId">
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('selectAll');
+  const checkboxes = document.querySelectorAll('.ad-checkbox');
+  const bulkToolbar = document.getElementById('bulkActionsToolbar');
+  const selectedCount = document.getElementById('selectedCount');
+  
+  function updateToolbar() {
+    if(checkboxes.length > 0) {
+        const checked = document.querySelectorAll('.ad-checkbox:checked').length;
+        if (checked > 0) {
+          bulkToolbar.classList.remove('d-none');
+          bulkToolbar.classList.add('d-flex');
+          selectedCount.textContent = checked;
+        } else {
+          bulkToolbar.classList.add('d-none');
+          bulkToolbar.classList.remove('d-flex');
+        }
+    }
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      checkboxes.forEach(cb => cb.checked = selectAll.checked);
+      updateToolbar();
+    });
+  }
+
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', function() {
+      if (!this.checked && selectAll) {
+        selectAll.checked = false;
+      }
+      if (document.querySelectorAll('.ad-checkbox:checked').length === checkboxes.length) {
+        if(selectAll) selectAll.checked = true;
+      }
+      updateToolbar();
+    });
+  });
+});
+
+function submitBulk(action) {
+  document.getElementById('bulkActionInput').value = action;
+  
+  // Update modal styling based on action
+  const modalTitle = document.getElementById('bulkModalTitle');
+  const modalBtn = document.getElementById('bulkModalBtn');
+  const modalText = document.getElementById('bulkModalText');
+  
+  if (action === 'bulk_delete') {
+    modalTitle.className = 'modal-title fw-bold text-danger';
+    modalTitle.textContent = 'Delete Advertisements';
+    modalBtn.className = 'btn btn-danger btn-sm';
+    modalBtn.textContent = 'Delete';
+    modalText.textContent = 'Are you sure you want to delete the selected advertisements? This action cannot be undone.';
+  } else if (action === 'bulk_pause') {
+    modalTitle.className = 'modal-title fw-bold text-warning';
+    modalTitle.textContent = 'Pause Advertisements';
+    modalBtn.className = 'btn btn-warning btn-sm';
+    modalBtn.textContent = 'Pause';
+    modalText.textContent = 'Are you sure you want to pause the selected advertisements?';
+  } else {
+    modalTitle.className = 'modal-title fw-bold text-success';
+    modalTitle.textContent = 'Activate Advertisements';
+    modalBtn.className = 'btn btn-success btn-sm';
+    modalBtn.textContent = 'Activate';
+    modalText.textContent = 'Are you sure you want to activate the selected advertisements?';
+  }
+  
+  new bootstrap.Modal(document.getElementById('bulkActionConfirmModal')).show();
+}
+
+function confirmBulkAction() {
+  document.getElementById('bulkForm').submit();
+}
+
+function toggleActive(adId) {
+  document.getElementById('toggleAdId').value = adId;
+  document.getElementById('toggleForm').submit();
+}
+
+function deleteAd(adId) {
+  document.getElementById('deleteAdId').value = adId;
+  new bootstrap.Modal(document.getElementById('deleteAdConfirmModal')).show();
+}
+
+function confirmDeleteAd() {
+  document.getElementById('deleteForm').submit();
+}
+</script>
 {% endblock %}
 
 {% block modals %}
@@ -248,4 +403,57 @@
   </div>
 </div>
 {% endfor %}
+{% for ad in advertisements %}
+<!-- Preview Ad Modal -->
+<div class="modal fade" id="previewAdModal{{ ad.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered {% if ad.ad_type == 'scroll_bar' %}modal-lg{% endif %}">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Preview: {{ ad.title }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center bg-light">
+        {% if ad.image %}
+          <img src="{{ ad.image.url }}" alt="{{ ad.title }}" class="img-fluid rounded shadow-sm" style="{% if ad.ad_type == 'scroll_bar' %}max-height: 150px; width: 100%; object-fit: cover;{% elif ad.ad_type == 'popup' %}max-height: 400px;{% else %}max-height: 250px;{% endif %}">
+        {% else %}
+          <div class="p-5 text-muted-2">No image available</div>
+        {% endif %}
+        
+        {% if ad.target_url %}
+          <div class="mt-3">
+            <a href="{{ ad.target_url }}" target="_blank" class="btn btn-primary">Test Target Link <i class="bi bi-box-arrow-up-right ms-1"></i></a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- Delete Ad Modal -->
+<div class="modal fade" id="deleteAdConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title fw-bold text-danger">Delete Advertisement</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p class="text-muted-2 fs-sm mb-0">Are you sure you want to delete this advertisement? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-light-brand btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-danger btn-sm" onclick="confirmDeleteAd()">Delete</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Action Modal -->
+<div class="modal fade" id="bulkActionConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header"><h5 id="bulkModalTitle" class="modal-title fw-bold text-primary">Confirm Action</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p id="bulkModalText" class="text-muted-2 fs-sm mb-0">Are you sure you want to perform this action on the selected advertisements?</p>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-outline-light-brand btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" id="bulkModalBtn" class="btn btn-primary btn-sm" onclick="confirmBulkAction()">Confirm</button></div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

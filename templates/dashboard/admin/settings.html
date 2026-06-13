@@ -1,3 +1,178 @@
 {% extends "dashboard/admin/_layout.html" %}
-{% block title %}Settings — Admin — SevaJobs{% endblock %}
-{% block dashboard_content %}<h4 class="fw-800 mb-4">Platform Settings</h4><div class="sj-card p-5 text-center"><p class="text-muted-2">Site-wide configuration, email templates, and maintenance mode.</p></div>{% endblock %}
+
+{% block title %}Platform Settings — Admin — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-800 mb-0">Platform Settings</h4>
+  <button type="submit" form="settingsForm" class="btn btn-primary">
+    <i class="bi bi-save me-1"></i>Save Settings
+  </button>
+</div>
+
+<div class="row">
+  <div class="col-md-3 mb-4 mb-md-0">
+    <div class="list-group list-group-flush sj-card border-0 rounded-4 overflow-hidden" id="settings-tabs" role="tablist">
+      <a class="list-group-item list-group-item-action active p-3" id="general-tab" data-bs-toggle="tab" href="#general" role="tab" aria-controls="general" aria-selected="true">
+        <i class="bi bi-gear-fill me-2 text-muted-2"></i> General
+      </a>
+      <a class="list-group-item list-group-item-action p-3" id="social-tab" data-bs-toggle="tab" href="#social" role="tab" aria-controls="social" aria-selected="false">
+        <i class="bi bi-share-fill me-2 text-muted-2"></i> Social Links
+      </a>
+      <a class="list-group-item list-group-item-action p-3" id="features-tab" data-bs-toggle="tab" href="#features" role="tab" aria-controls="features" aria-selected="false">
+        <i class="bi bi-sliders me-2 text-muted-2"></i> Features
+      </a>
+      <a class="list-group-item list-group-item-action p-3" id="seo-tab" data-bs-toggle="tab" href="#seo" role="tab" aria-controls="seo" aria-selected="false">
+        <i class="bi bi-search me-2 text-muted-2"></i> SEO
+      </a>
+      <a class="list-group-item list-group-item-action p-3" id="maintenance-tab" data-bs-toggle="tab" href="#maintenance" role="tab" aria-controls="maintenance" aria-selected="false">
+        <i class="bi bi-tools me-2 text-danger"></i> Maintenance
+      </a>
+    </div>
+  </div>
+
+  <div class="col-md-9">
+    <div class="sj-card p-4">
+      <form id="settingsForm" method="post" action="{% url 'admin-panel:settings' %}">
+        {% csrf_token %}
+        <div class="tab-content" id="settings-tab-content">
+          
+          <!-- General Settings -->
+          <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+            <h5 class="fw-bold mb-4">General Configuration</h5>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">Site Name <span class="text-danger">*</span></label>
+              <input type="text" name="site_name" class="form-control" value="{{ settings.site_name }}" required>
+            </div>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">Support Email</label>
+              <input type="email" name="support_email" class="form-control" value="{{ settings.support_email }}">
+            </div>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">Contact Phone</label>
+              <input type="text" name="contact_phone" class="form-control" value="{{ settings.contact_phone }}">
+            </div>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">Office Address</label>
+              <textarea name="address" class="form-control" rows="3">{{ settings.address }}</textarea>
+            </div>
+          </div>
+          
+          <!-- Social Links -->
+          <div class="tab-pane fade" id="social" role="tabpanel" aria-labelledby="social-tab">
+            <h5 class="fw-bold mb-4">Social Media Links</h5>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">Facebook URL</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-primary"><i class="bi bi-facebook"></i></span>
+                <input type="url" name="facebook_url" class="form-control" value="{{ settings.facebook_url }}" placeholder="https://facebook.com/...">
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">Twitter URL</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-info"><i class="bi bi-twitter"></i></span>
+                <input type="url" name="twitter_url" class="form-control" value="{{ settings.twitter_url }}" placeholder="https://twitter.com/...">
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">LinkedIn URL</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-primary"><i class="bi bi-linkedin"></i></span>
+                <input type="url" name="linkedin_url" class="form-control" value="{{ settings.linkedin_url }}" placeholder="https://linkedin.com/...">
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">Instagram URL</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-danger"><i class="bi bi-instagram"></i></span>
+                <input type="url" name="instagram_url" class="form-control" value="{{ settings.instagram_url }}" placeholder="https://instagram.com/...">
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">YouTube URL</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light text-danger"><i class="bi bi-youtube"></i></span>
+                <input type="url" name="youtube_url" class="form-control" value="{{ settings.youtube_url }}" placeholder="https://youtube.com/...">
+              </div>
+            </div>
+          </div>
+          
+          <!-- Features -->
+          <div class="tab-pane fade" id="features" role="tabpanel" aria-labelledby="features-tab">
+            <h5 class="fw-bold mb-4">Feature Toggles</h5>
+            
+            <div class="card bg-light border-0 mb-3">
+              <div class="card-body">
+                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                  <div>
+                    <label class="form-check-label fw-bold d-block" for="allow_registrations">Allow User Registrations</label>
+                    <span class="fs-sm text-muted-2">If disabled, new users cannot sign up for accounts.</span>
+                  </div>
+                  <input class="form-check-input ms-3 fs-5" type="checkbox" role="switch" name="allow_registrations" id="allow_registrations" {% if settings.allow_registrations %}checked{% endif %}>
+                </div>
+              </div>
+            </div>
+            
+            <div class="card bg-light border-0 mb-3">
+              <div class="card-body">
+                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                  <div>
+                    <label class="form-check-label fw-bold d-block" for="auto_approve_jobs">Auto-Approve Jobs</label>
+                    <span class="fs-sm text-muted-2">If enabled, new jobs bypass the "Pending Approval" state and go live immediately.</span>
+                  </div>
+                  <input class="form-check-input ms-3 fs-5" type="checkbox" role="switch" name="auto_approve_jobs" id="auto_approve_jobs" {% if settings.auto_approve_jobs %}checked{% endif %}>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- SEO -->
+          <div class="tab-pane fade" id="seo" role="tabpanel" aria-labelledby="seo-tab">
+            <h5 class="fw-bold mb-4">Search Engine Optimization (SEO)</h5>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">Default Meta Title</label>
+              <input type="text" name="default_meta_title" class="form-control" value="{{ settings.default_meta_title }}">
+              <div class="form-text fs-xs text-muted-2">The default title shown in search engine results.</div>
+            </div>
+            
+            <div class="mb-4">
+              <label class="form-label fw-medium">Default Meta Description</label>
+              <textarea name="default_meta_description" class="form-control" rows="4">{{ settings.default_meta_description }}</textarea>
+              <div class="form-text fs-xs text-muted-2">A short summary of what the site is about (150-160 characters).</div>
+            </div>
+          </div>
+          
+          <!-- Maintenance -->
+          <div class="tab-pane fade" id="maintenance" role="tabpanel" aria-labelledby="maintenance-tab">
+            <h5 class="fw-bold text-danger mb-4"><i class="bi bi-exclamation-triangle-fill me-2"></i>Danger Zone</h5>
+            
+            <div class="card border-danger border-opacity-25 bg-soft-danger mb-3">
+              <div class="card-body">
+                <div class="form-check form-switch d-flex justify-content-between align-items-center ps-0">
+                  <div>
+                    <label class="form-check-label fw-bold text-danger d-block" for="maintenance_mode">Maintenance Mode</label>
+                    <span class="fs-sm text-dark">Blocks all non-admin users from accessing the site. Only toggle this during deployments or major upgrades.</span>
+                  </div>
+                  <input class="form-check-input ms-3 fs-5 bg-danger border-danger" type="checkbox" role="switch" name="maintenance_mode" id="maintenance_mode" {% if settings.maintenance_mode %}checked{% endif %}>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -22,3 +22,22 @@ LOGGING["loggers"]["django.db.backends"] = {  # noqa: F405
     "level": "DEBUG",
     "propagate": False,
 }
+
+# Native Local Dev Fallbacks (No Docker required)
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",  # noqa: F405
+    }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
+
+# Run Celery tasks synchronously locally without needing Redis
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_STORE_EAGER_RESULT = True
+

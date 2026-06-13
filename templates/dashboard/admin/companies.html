@@ -1,23 +1,79 @@
 {% extends "dashboard/admin/_layout.html" %}
-{% block title %}Companies — Admin — SevaJobs{% endblock %}
+{% block title %}Schools/Colleges — Admin — SevaJobs{% endblock %}
 
 {% block dashboard_content %}
 <div class="d-flex align-items-center justify-content-between mb-4">
-  <h4 class="fw-800 mb-0">Companies Management</h4>
-  <form class="d-flex gap-2" method="get">
-    <input type="text" class="form-control form-control-sm" name="q" placeholder="Search companies..." value="{{ request.GET.q|default:'' }}">
-    <button class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
-  </form>
+  <h4 class="fw-800 mb-0">Schools/Colleges Management</h4>
+  <div class="d-flex gap-2">
+    <a href="{% url 'admin-panel:companies' %}?export=csv{% if request.META.QUERY_STRING %}&{{ request.META.QUERY_STRING }}{% endif %}" class="btn btn-outline-success btn-sm fw-semibold">
+      <i class="bi bi-file-earmark-excel me-1"></i> Export All Filtered
+    </a>
+  </div>
 </div>
 
+<form class="d-flex gap-2 mb-3" method="get">
+  <input type="text" class="form-control form-control-sm" name="q" placeholder="Search schools/colleges..." value="{{ request.GET.q|default:'' }}">
+  <select class="form-select form-select-sm" name="type" style="min-width: 140px; width: auto;">
+    <option value="">All Types</option>
+    <option value="school" {% if request.GET.type == 'school' %}selected{% endif %}>Schools</option>
+    <option value="college" {% if request.GET.type == 'college' %}selected{% endif %}>Colleges</option>
+  </select>
+  <select class="form-select form-select-sm" name="status" style="min-width: 140px; width: auto;">
+    <option value="">All statuses</option>
+    <option value="verified" {% if request.GET.status == 'verified' %}selected{% endif %}>Verified</option>
+    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+  </select>
+  <input type="hidden" name="sort" value="{{ current_sort }}">
+  <input type="hidden" name="dir" value="{{ current_dir }}">
+  <button class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+</form>
+
 {% if companies %}
+<form id="bulkActionForm" method="post" action="{% url 'admin-panel:companies' %}">
+  {% csrf_token %}
+</form>
+
 <div class="sj-card overflow-hidden">
+  <div class="bg-light p-2 border-bottom d-none align-items-center gap-2" id="bulkToolbar">
+    <span class="fs-sm fw-semibold text-muted-2 ms-2 me-3"><span id="selectedCount">0</span> selected</span>
+    <button type="submit" name="action" value="bulk_verify" class="btn btn-sm btn-outline-success" form="bulkActionForm"><i class="bi bi-patch-check-fill me-1"></i>Verify</button>
+    <button type="submit" name="action" value="bulk_unverify" class="btn btn-sm btn-outline-warning" form="bulkActionForm"><i class="bi bi-x-circle me-1"></i>Unverify</button>
+    <button type="submit" name="action" value="bulk_export" class="btn btn-sm btn-outline-primary" form="bulkActionForm"><i class="bi bi-download me-1"></i>Export Selected CSV</button>
+    <button type="submit" name="action" value="bulk_delete" class="btn btn-sm btn-outline-danger ms-auto" form="bulkActionForm" onclick="return confirm('Are you sure you want to permanently delete the selected schools?');"><i class="bi bi-trash me-1"></i>Delete</button>
+  </div>
   <div class="table-responsive">
     <table class="table sj-table mb-0">
-      <thead><tr><th>Company</th><th>Industry</th><th>Size</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead>
+        <tr>
+          <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="selectAll"></th>
+          <th>
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=name&dir={% if current_sort == 'name' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              School/College {% if current_sort == 'name' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=industry&dir={% if current_sort == 'industry' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              Industry {% if current_sort == 'industry' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th class="text-center">
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=active_jobs&dir={% if current_sort == 'active_jobs' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              Active Jobs {% if current_sort == 'active_jobs' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th class="text-center">
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=recruiters&dir={% if current_sort == 'recruiters' and current_dir == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
+              Recruiters {% if current_sort == 'recruiters' %}<i class="bi bi-arrow-{% if current_dir == 'asc' %}up{% else %}down{% endif %}"></i>{% endif %}
+            </a>
+          </th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for c in companies %}
         <tr>
+          <td><input class="form-check-input company-checkbox" type="checkbox" name="company_ids[]" value="{{ c.id }}" form="bulkActionForm"></td>
           <td>
             <div class="candidate-inline">
               <div class="avatar">{% if c.logo %}<img src="{{ c.logo.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">{% else %}{{ c.name|slice:":1"|upper }}{% endif %}</div>
@@ -28,16 +84,30 @@
             </div>
           </td>
           <td class="fs-sm text-muted-2">{{ c.industry|default:"-" }}</td>
-          <td class="fs-sm text-muted-2">{{ c.get_size_display|default:"-" }}</td>
+          <td class="fs-sm text-center fw-medium text-primary">{{ c.active_jobs_count }}</td>
+          <td class="fs-sm text-center fw-medium">{{ c.recruiters_count }}</td>
           <td>
             {% if c.is_verified %}
               <span class="status-pill status-active"><i class="bi bi-patch-check-fill"></i> Verified</span>
             {% else %}
-              <span class="status-pill status-inactive">Unverified</span>
+              <span class="status-pill status-inactive">Pending</span>
             {% endif %}
           </td>
           <td>
-            <div class="sj-table-actions">
+            <div class="sj-table-actions d-flex gap-1">
+              <button type="button" class="btn btn-ghost btn-sm" title="View Details" data-bs-toggle="modal" data-bs-target="#viewCompanyModal{{ c.id }}"><i class="bi bi-eye"></i></button>
+              
+              <form method="post" action="{% url 'admin-panel:companies' %}" class="m-0" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_verification">
+                <input type="hidden" name="company_id" value="{{ c.id }}">
+                {% if c.is_verified %}
+                  <button type="submit" class="btn btn-ghost btn-sm text-warning" title="Unverify"><i class="bi bi-x-circle"></i></button>
+                {% else %}
+                  <button type="submit" class="btn btn-ghost btn-sm text-success" title="Verify"><i class="bi bi-patch-check-fill"></i></button>
+                {% endif %}
+              </form>
+
               <button type="button" class="btn btn-ghost btn-sm text-danger" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteCompanyModal" onclick="document.getElementById('delete-company-id').value='{{ c.id }}';"><i class="bi bi-trash"></i></button>
             </div>
           </td>
@@ -49,8 +119,50 @@
 </div>
 {% include "partials/_pagination.html" with page_obj=companies %}
 {% else %}
-<div class="sj-empty"><div class="icon"><i class="bi bi-buildings"></i></div><h5>No companies found</h5><p class="text-muted-2 fs-sm">There are no companies registered yet.</p></div>
+<div class="sj-empty"><div class="icon"><i class="bi bi-buildings"></i></div><h5>No schools/colleges found</h5><p class="text-muted-2 fs-sm">There are no schools/colleges matching your criteria.</p></div>
 {% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('selectAll');
+  const checkboxes = document.querySelectorAll('.company-checkbox');
+  const bulkToolbar = document.getElementById('bulkToolbar');
+  const selectedCountSpan = document.getElementById('selectedCount');
+
+  function updateToolbar() {
+    const checkedCount = document.querySelectorAll('.company-checkbox:checked').length;
+    if (selectedCountSpan) selectedCountSpan.textContent = checkedCount;
+    if (bulkToolbar) {
+        if (checkedCount > 0) {
+        bulkToolbar.classList.remove('d-none');
+        bulkToolbar.classList.add('d-flex');
+        } else {
+        bulkToolbar.classList.add('d-none');
+        bulkToolbar.classList.remove('d-flex');
+        }
+    }
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      checkboxes.forEach(cb => cb.checked = selectAll.checked);
+      updateToolbar();
+    });
+  }
+
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', function() {
+      if (!this.checked && selectAll) {
+        selectAll.checked = false;
+      }
+      if (document.querySelectorAll('.company-checkbox:checked').length === checkboxes.length) {
+        if(selectAll) selectAll.checked = true;
+      }
+      updateToolbar();
+    });
+  });
+});
+</script>
 {% endblock %}
 
 {% block modals %}
@@ -71,4 +183,100 @@
     </div>
   </div>
 </div>
+
+{% for c in companies %}
+<!-- View Company Modal -->
+<div class="modal fade" id="viewCompanyModal{{ c.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold">
+          {% if 'college' in c.name|lower %}College Details{% else %}School Details{% endif %}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pt-3">
+        <div class="text-center mb-4">
+          <div class="avatar avatar-xl mb-2 mx-auto" style="width: 64px; height: 64px; font-size: 1.5rem;">
+            {% if c.logo %}
+              <img src="{{ c.logo.url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+            {% else %}
+              {{ c.name|slice:":1"|upper }}
+            {% endif %}
+          </div>
+          <h5 class="fw-bold mb-1">{{ c.name }}</h5>
+          {% if c.is_verified %}
+            <span class="sj-badge mb-2 bg-soft-success text-success"><i class="bi bi-patch-check-fill"></i> Verified</span>
+          {% else %}
+            <span class="sj-badge mb-2 bg-soft-secondary text-secondary">Pending</span>
+          {% endif %}
+        </div>
+        
+        <div class="bg-light rounded p-2 mb-2 text-start">
+          <div class="text-muted-2 fs-xs text-uppercase mb-1 fw-semibold">About</div>
+          <p class="fs-sm mb-0">{{ c.description|default:"No description provided." }}</p>
+        </div>
+        
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="bg-light rounded p-2 h-100">
+              <div class="text-muted-2 fs-xs text-uppercase mb-1"><i class="bi bi-building text-primary me-1"></i>Industry</div>
+              <div class="fw-medium fs-sm text-dark text-truncate">{{ c.industry|default:"Not specified" }}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="bg-light rounded p-2 h-100">
+              <div class="text-muted-2 fs-xs text-uppercase mb-1"><i class="bi bi-people text-primary me-1"></i>Size</div>
+              <div class="fw-medium fs-sm text-dark">{{ c.get_size_display|default:"Not specified" }}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="bg-light rounded p-2 h-100">
+              <div class="text-muted-2 fs-xs text-uppercase mb-1"><i class="bi bi-envelope text-primary me-1"></i>Email</div>
+              <div class="fw-medium fs-sm text-dark text-truncate">{% if c.email %}<a href="mailto:{{ c.email }}">{{ c.email }}</a>{% else %}Not specified{% endif %}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="bg-light rounded p-2 h-100">
+              <div class="text-muted-2 fs-xs text-uppercase mb-1"><i class="bi bi-telephone text-primary me-1"></i>Phone</div>
+              <div class="fw-medium fs-sm text-dark text-truncate">{% if c.phone %}<a href="tel:{{ c.phone }}">{{ c.phone }}</a>{% else %}Not specified{% endif %}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="bg-light rounded p-2 h-100">
+              <div class="text-muted-2 fs-xs text-uppercase mb-1"><i class="bi bi-geo-alt text-primary me-1"></i>Location</div>
+              <div class="fw-medium fs-sm text-dark text-truncate">{{ c.location|default:"Not specified" }}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="bg-light rounded p-2 h-100">
+              <div class="text-muted-2 fs-xs text-uppercase mb-1"><i class="bi bi-globe text-primary me-1"></i>Website</div>
+              <div class="fw-medium fs-sm text-dark text-truncate">{% if c.website %}<a href="{{ c.website }}" target="_blank">Link</a>{% else %}Not specified{% endif %}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="row g-2">
+            <div class="col-6">
+              <div class="border rounded p-2 text-center h-100">
+                <h4 class="fw-bold text-primary mb-0">{{ c.active_jobs_count }}</h4>
+                <div class="text-muted-2 fs-xs text-uppercase mt-1">Active Jobs</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="border rounded p-2 text-center h-100">
+                <h4 class="fw-bold mb-0">{{ c.recruiters_count }}</h4>
+                <div class="text-muted-2 fs-xs text-uppercase mt-1">Recruiters</div>
+              </div>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-outline-light-brand w-100" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
 {% endblock %}
