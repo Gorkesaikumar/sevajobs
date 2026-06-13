@@ -62,16 +62,16 @@ services:
       - DJANGO_SETTINGS_MODULE=config.settings.production
     env_file:
       - .env
-    healthcheck:
-      test: ["CMD", "celery", "-A", "config", "inspect", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "celery", "-A", "config", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - app_network
 
@@ -103,16 +103,28 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - media_data:/app/media:ro
       - static_data:/app/staticfiles:ro
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health/"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
     depends_on:
       web:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@sevajobs.in
+      PGADMIN_DEFAULT_PASSWORD: Raghava@2026
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     networks:
       - app_network
 
@@ -120,6 +132,7 @@ volumes:
   postgres_data:
   media_data:
   static_data:
+  pgadmin_data:
 
 networks:
   app_network:
