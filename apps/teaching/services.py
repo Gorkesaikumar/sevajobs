@@ -1,5 +1,4 @@
 from django.db import transaction
-from django.utils import timezone
 from .models import TeachingApplication
 from apps.notifications.services import NotificationService
 from apps.notifications.models import Notification

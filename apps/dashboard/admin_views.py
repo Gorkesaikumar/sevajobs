@@ -3,7 +3,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.urls import reverse
 
 from apps.accounts.models import User
@@ -183,7 +183,6 @@ class AdminReportsView(AdminMixin, TemplateView):
         from django.db.models import Count, Q, F
         from django.utils import timezone
         import datetime
-        from apps.jobs.models import Job
         from apps.applications.models import JobApplication
         from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, TruncYear
 

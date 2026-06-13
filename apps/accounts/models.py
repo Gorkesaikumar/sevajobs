@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseU
 import secrets
 from datetime import timedelta
 
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.core.validators import MaxValueValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 from apps.core.models import BaseModel, TimeStampedModel

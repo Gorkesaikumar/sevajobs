@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from django.conf import settings
 from django.core.mail import send_mail

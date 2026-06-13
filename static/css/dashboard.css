@@ -89,46 +89,10 @@
   font-weight: 500;
   margin-top: var(--sj-sp-1);
 }
-.sj-kpi .kpi-trend {
-  font-size: var(--sj-fs-xs);
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: .2rem;
-  margin-top: var(--sj-sp-2);
-  padding: .15rem .4rem;
-  border-radius: var(--sj-radius-full);
-}
-.sj-kpi .kpi-trend.up { background: var(--sj-success-50); color: var(--sj-success); }
-.sj-kpi .kpi-trend.down { background: var(--sj-danger-50); color: var(--sj-danger); }
 
 /* --------------------------------------------------------------------------
    CHART CONTAINERS
    -------------------------------------------------------------------------- */
-.sj-chart-card {
-  background: var(--sj-surface);
-  border: 1px solid var(--sj-line);
-  border-radius: var(--sj-radius);
-  padding: var(--sj-sp-5);
-}
-.sj-chart-card .chart-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--sj-sp-5);
-}
-.sj-chart-card .chart-title {
-  font-size: var(--sj-fs-md);
-  font-weight: 700;
-  color: var(--sj-ink);
-}
-.sj-chart-card .chart-subtitle {
-  font-size: var(--sj-fs-xs);
-  color: var(--sj-muted);
-}
-.sj-chart-card canvas {
-  max-height: 300px;
-}
 
 /* Mini bar chart (inline) */
 .mini-bar-chart {
@@ -172,52 +136,9 @@
 .sj-activity-item:hover { background: var(--sj-bg); }
 .sj-activity-item:last-child { border-bottom: 0; }
 
-.sj-activity-item .activity-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--sj-primary);
-  margin-top: 6px; flex-shrink: 0;
-}
-.sj-activity-item .activity-text {
-  font-size: var(--sj-fs-sm);
-  color: var(--sj-body);
-  line-height: 1.5;
-}
-.sj-activity-item .activity-time {
-  font-size: var(--sj-fs-xs);
-  color: var(--sj-subtle);
-  margin-top: 2px;
-}
-
 /* --------------------------------------------------------------------------
    PIPELINE / KANBAN
    -------------------------------------------------------------------------- */
-.sj-pipeline {
-  display: flex;
-  gap: var(--sj-sp-2);
-  overflow-x: auto;
-  padding-bottom: var(--sj-sp-2);
-}
-.sj-pipeline-stage {
-  flex: 1;
-  min-width: 160px;
-  text-align: center;
-  padding: var(--sj-sp-4) var(--sj-sp-3);
-  border-radius: var(--sj-radius-sm);
-  background: var(--sj-bg);
-  border: 1px solid var(--sj-line);
-}
-.sj-pipeline-stage .stage-count {
-  font-size: var(--sj-fs-3xl);
-  font-weight: 800;
-  color: var(--sj-ink);
-  line-height: 1;
-}
-.sj-pipeline-stage .stage-label {
-  font-size: var(--sj-fs-xs);
-  font-weight: 600;
-  color: var(--sj-muted);
-  margin-top: var(--sj-sp-1);
-}
 
 /* --------------------------------------------------------------------------
    PROFILE COMPLETION WIDGET
@@ -384,10 +305,6 @@
     color: var(--sj-ink);
     cursor: pointer;
     width: 100%;
-  }
-
-  .sj-sidebar-collapse {
-    transition: max-height var(--sj-duration-md) var(--sj-ease);
   }
 }
 

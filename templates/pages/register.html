@@ -73,17 +73,17 @@
 
             <!-- Name + Phone in a 2x2 grid to save vertical space -->
             <div class="row g-2 mb-2">
-              <div class="col-6">
+              <div class="col-12 col-md-6">
                 <label for="first_name" class="form-label mb-1" style="font-size:0.8rem;">First Name <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" id="first_name" name="first_name"
                        value="{{ first_name|default:'' }}" placeholder="John" required>
               </div>
-              <div class="col-6">
+              <div class="col-12 col-md-6">
                 <label for="last_name" class="form-label mb-1" style="font-size:0.8rem;">Last Name</label>
                 <input type="text" class="form-control form-control-sm" id="last_name" name="last_name"
                        value="{{ last_name|default:'' }}" placeholder="Doe">
               </div>
-              <div class="col-6">
+              <div class="col-12 col-md-6">
                 <label for="email" class="form-label mb-1" style="font-size:0.8rem;">Email <span class="text-danger">*</span></label>
                 <div class="input-icon-group">
                   <i class="bi bi-envelope input-icon" style="font-size:0.75rem;"></i>
@@ -91,7 +91,7 @@
                          value="{{ email|default:'' }}" placeholder="you@example.com" required>
                 </div>
               </div>
-              <div class="col-6">
+              <div class="col-12 col-md-6">
                 <label for="phone" class="form-label mb-1" style="font-size:0.8rem;">Phone</label>
                 <div class="input-icon-group">
                   <i class="bi bi-telephone input-icon" style="font-size:0.75rem;"></i>
@@ -103,7 +103,7 @@
 
             <!-- Password row side by side -->
             <div class="row g-2 mb-2">
-              <div class="col-6">
+              <div class="col-12 col-md-6">
                 <label for="reg-password" class="form-label mb-1" style="font-size:0.8rem;">Password <span class="text-danger">*</span></label>
                 <div class="input-icon-group position-relative">
                   <i class="bi bi-lock input-icon" style="font-size:0.75rem;"></i>
@@ -115,7 +115,7 @@
                   </button>
                 </div>
               </div>
-              <div class="col-6">
+              <div class="col-12 col-md-6">
                 <label for="password2" class="form-label mb-1" style="font-size:0.8rem;">Confirm Password <span class="text-danger">*</span></label>
                 <div class="input-icon-group">
                   <i class="bi bi-lock input-icon" style="font-size:0.75rem;"></i>

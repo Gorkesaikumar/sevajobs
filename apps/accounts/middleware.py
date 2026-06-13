@@ -47,7 +47,6 @@ class DeviceSessionMiddleware:
         return response
 
 
-import time
 from django.conf import settings
 
 class RoleBasedCookieInterceptorMiddleware:

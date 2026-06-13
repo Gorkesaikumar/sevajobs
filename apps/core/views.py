@@ -1,6 +1,6 @@
 """Template views for public pages and core functionality."""
 
-from django.views.generic import TemplateView, ListView, DetailView
+from django.views.generic import TemplateView, DetailView
 from django.db.models import Q, Count
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny
 from django.db import connection
 from django.core.paginator import Paginator
 
-from apps.jobs.models import Job, JobCategory, Skill
+from apps.jobs.models import Job, JobCategory
 from apps.recruiters.models import Company
 from apps.core.models import Advertisement
 

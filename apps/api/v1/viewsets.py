@@ -18,7 +18,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 # Models
-from apps.jobs.models import Job, JobCategory, Skill, Qualification
+from apps.jobs.models import JobCategory, Skill, Qualification
 from apps.recruiters.models import Company
 from apps.advertisements.models import Advertisement
 from apps.notifications.models import Notification

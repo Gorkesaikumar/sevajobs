@@ -5,20 +5,8 @@
 /* --------------------------------------------------------------------------
    ENTRANCE ANIMATIONS
    -------------------------------------------------------------------------- */
-.animate-fade-in {
-  animation: sjFadeIn var(--sj-duration-lg) var(--sj-ease) both;
-}
 .animate-fade-up {
   animation: sjFadeUp var(--sj-duration-lg) var(--sj-ease) both;
-}
-.animate-fade-down {
-  animation: sjFadeDown var(--sj-duration-lg) var(--sj-ease) both;
-}
-.animate-fade-left {
-  animation: sjFadeLeft var(--sj-duration-lg) var(--sj-ease) both;
-}
-.animate-fade-right {
-  animation: sjFadeRight var(--sj-duration-lg) var(--sj-ease) both;
 }
 .animate-scale-in {
   animation: sjScaleIn var(--sj-duration-lg) var(--sj-ease) both;
@@ -40,42 +28,12 @@
 /* --------------------------------------------------------------------------
    LOADING STATES
    -------------------------------------------------------------------------- */
-.spinner-dots {
-  display: inline-flex; gap: 4px; align-items: center;
-}
-.spinner-dots span {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--sj-primary);
-  animation: sjDotPulse .6s ease-in-out infinite alternate;
-}
-.spinner-dots span:nth-child(2) { animation-delay: .2s; }
-.spinner-dots span:nth-child(3) { animation-delay: .4s; }
-
-.loading-overlay {
-  position: absolute; inset: 0; z-index: 10;
-  background: rgba(255,255,255,.8); backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
-  border-radius: inherit;
-}
 
 /* Pulse ring */
-.pulse-ring {
-  position: relative;
-}
-.pulse-ring::after {
-  content: "";
-  position: absolute; inset: -4px;
-  border-radius: inherit;
-  border: 2px solid var(--sj-primary);
-  animation: sjPulseRing 1.5s ease-out infinite;
-}
 
 /* --------------------------------------------------------------------------
    COUNTER ANIMATION (JS-driven via data-target)
    -------------------------------------------------------------------------- */
-.counter-animate {
-  font-variant-numeric: tabular-nums;
-}
 
 /* --------------------------------------------------------------------------
    MICRO-INTERACTIONS
@@ -91,20 +49,8 @@
 }
 
 /* Hover glow */
-.hover-glow {
-  transition: box-shadow var(--sj-duration-md) var(--sj-ease);
-}
-.hover-glow:hover {
-  box-shadow: var(--sj-shadow-glow);
-}
 
 /* Press */
-.press-effect {
-  transition: transform .1s var(--sj-ease);
-}
-.press-effect:active {
-  transform: scale(.97);
-}
 
 /* Reveal on scroll (used with IntersectionObserver) */
 .reveal {
@@ -113,22 +59,8 @@
   transition: opacity var(--sj-duration-lg) var(--sj-ease),
               transform var(--sj-duration-lg) var(--sj-ease);
 }
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
 
 /* Notification ping */
-.ping {
-  position: relative;
-}
-.ping::after {
-  content: "";
-  position: absolute; top: 0; right: 0;
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--sj-danger);
-  animation: sjPing 1.5s ease-in-out infinite;
-}
 
 /* --------------------------------------------------------------------------
    PAGE TRANSITIONS

@@ -35,6 +35,7 @@ Code Quality:
 - Docstrings
 - PEP8
 - Modular Structure
+- **Read `DEVELOPMENT_GUIDELINES.md`**: For all frontend, layout, HTML, CSS, and general clean-code standards, you MUST strictly adhere to `DEVELOPMENT_GUIDELINES.md`.
 
 Never create quick fixes.
 Always create production-grade code.

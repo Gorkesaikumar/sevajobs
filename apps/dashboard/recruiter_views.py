@@ -3,7 +3,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Count
 
 from apps.jobs.models import Job
 from apps.applications.models import JobApplication
@@ -77,7 +77,6 @@ class RecruiterCompanyProfileView(RecruiterMixin, TemplateView):
         from django.contrib import messages
         from django.shortcuts import redirect
         from apps.recruiters.services import CompanyService, RecruiterService
-        from apps.recruiters.models import RecruiterProfile
         
         company = self.get_company()
         name = request.POST.get("name", "").strip()

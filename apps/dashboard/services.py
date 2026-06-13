@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Q
+from django.db.models import Count
 from apps.jobs.models import Job
 from apps.applications.models import JobApplication
 from apps.advertisements.models import Advertisement

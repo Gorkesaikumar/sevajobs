@@ -9,7 +9,7 @@ same rules.
 from __future__ import annotations
 
 from django import forms
-from django.contrib.auth import authenticate, password_validation
+from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.validators import RegexValidator
 from crispy_forms.helper import FormHelper
