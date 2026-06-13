@@ -128,11 +128,23 @@ services:
     networks:
       - app_network
 
+  uptime_kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: always
+    volumes:
+      - uptime_kuma_data:/app/data
+    ports:
+      - "3001:3001"
+    networks:
+      - app_network
+
 volumes:
   postgres_data:
   media_data:
   static_data:
   pgadmin_data:
+  uptime_kuma_data:
 
 networks:
   app_network:
