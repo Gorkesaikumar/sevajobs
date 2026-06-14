@@ -11,6 +11,7 @@ urlpatterns = [
     path("jobs/", views.RecruiterManageJobsView.as_view(), name="manage-jobs"),
     path("jobs/<uuid:pk>/edit/", views.RecruiterEditJobView.as_view(), name="edit-job"),
     path("applications/", views.RecruiterApplicationsView.as_view(), name="applications"),
+    path("kanban/", views.RecruiterKanbanView.as_view(), name="kanban"),
     path("applications/<uuid:pk>/", views.RecruiterCandidateDetailView.as_view(), name="candidate-detail"),
     path("shortlisted/", views.RecruiterShortlistedView.as_view(), name="shortlisted"),
     path("rejected/", views.RecruiterRejectedView.as_view(), name="rejected"),

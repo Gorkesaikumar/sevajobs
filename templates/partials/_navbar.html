@@ -1,8 +1,9 @@
 {% load static %}
+{% csrf_token %}
 <nav class="navbar navbar-expand-lg sj-nav sticky-top" aria-label="Primary navigation">
   <div class="container">
     <a class="navbar-brand sj-brand d-flex align-items-center" href="{% url 'core:home' %}">
-      <img src="{% static 'images/logo_dark.png' %}" alt="SevaJobs Logo" class="img-fluid" style="max-height: 45px; width: auto; object-fit: contain;">
+      <img src="{% static 'images/logo.jpg' %}" alt="SevaJobs Logo" class="img-fluid" style="max-height: 45px; width: auto; object-fit: contain;">
     </a>
 
     <div class="d-flex align-items-center gap-2 d-lg-none">
@@ -84,48 +85,71 @@
           <div class="dropdown d-none d-lg-block">
             <button class="sj-notif-bell" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
               <i class="bi bi-bell"></i>
-              <span class="sj-notif-badge">3</span>
+              {% if unread_notifications_count > 0 %}
+              <span class="sj-notif-badge" id="notif-badge">{{ unread_notifications_count }}</span>
+              {% endif %}
             </button>
             <div class="dropdown-menu dropdown-menu-end sj-notif-dropdown">
               <div class="notif-header">
                 <span class="fw-bold">Notifications</span>
-                <a href="#" class="text-primary fs-sm fw-semibold">Mark all read</a>
+                {% if unread_notifications_count > 0 %}
+                <button type="button" class="btn btn-link p-0 text-primary fs-sm fw-semibold text-decoration-none" onclick="markAllRead(event)">Mark all read</button>
+                {% endif %}
               </div>
-              <div class="notif-item unread">
-                <div class="sj-logo-sm bg-soft-primary flex-shrink-0">
-                  <i class="bi bi-briefcase"></i>
+              <div id="notif-list">
+                {% for notif in unread_notifications %}
+                <div class="notif-item unread">
+                  <div class="sj-logo-sm {% if notif.notification_type == 'job_posted' %}bg-soft-primary{% elif notif.notification_type == 'status_changed' %}bg-soft-success{% elif notif.notification_type == 'profile_viewed' %}bg-soft-info{% else %}bg-soft-secondary{% endif %} flex-shrink-0">
+                    <i class="bi {% if notif.notification_type == 'job_posted' %}bi-briefcase{% elif notif.notification_type == 'status_changed' %}bi-check-circle{% elif notif.notification_type == 'profile_viewed' %}bi-person-check{% else %}bi-bell{% endif %}"></i>
+                  </div>
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="fs-sm fw-semibold text-ink">{{ notif.title }}</div>
+                    <div class="fs-xs text-muted-2">{{ notif.message }}</div>
+                    <div class="fs-xs text-subtle mt-1">{{ notif.created_at|timesince }} ago</div>
+                  </div>
                 </div>
-                <div class="flex-grow-1 min-w-0">
-                  <div class="fs-sm fw-semibold text-ink">New job matching your profile</div>
-                  <div class="fs-xs text-muted-2">Senior Python Developer at TechCorp</div>
-                  <div class="fs-xs text-subtle mt-1">2 hours ago</div>
+                {% empty %}
+                <div class="p-4 text-center text-muted">
+                  <i class="bi bi-bell-slash fs-4 d-block mb-2 text-muted-2"></i>
+                  <span class="fs-sm">No new notifications</span>
                 </div>
+                {% endfor %}
               </div>
-              <div class="notif-item unread">
-                <div class="sj-logo-sm bg-soft-success flex-shrink-0">
-                  <i class="bi bi-check-circle"></i>
-                </div>
-                <div class="flex-grow-1 min-w-0">
-                  <div class="fs-sm fw-semibold text-ink">Application shortlisted</div>
-                  <div class="fs-xs text-muted-2">Your application was shortlisted</div>
-                  <div class="fs-xs text-subtle mt-1">5 hours ago</div>
-                </div>
-              </div>
-              <div class="notif-item">
-                <div class="sj-logo-sm bg-soft-info flex-shrink-0">
-                  <i class="bi bi-person-check"></i>
-                </div>
-                <div class="flex-grow-1 min-w-0">
-                  <div class="fs-sm fw-semibold text-ink">Profile viewed by recruiter</div>
-                  <div class="fs-xs text-muted-2">A recruiter from Infosys viewed your profile</div>
-                  <div class="fs-xs text-subtle mt-1">1 day ago</div>
-                </div>
-              </div>
+              {% if unread_notifications_count > 0 %}
               <div class="p-3 text-center border-top">
-                <a href="#" class="fw-semibold fs-sm">View all notifications <i class="bi bi-arrow-right ms-1"></i></a>
+                <a href="#" class="fw-semibold fs-sm text-decoration-none text-muted-2">View all notifications <i class="bi bi-arrow-right ms-1"></i></a>
               </div>
+              {% endif %}
             </div>
           </div>
+          
+          <script>
+            function markAllRead(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fetch("{% url 'notifications:mark-all-read' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                }).then(res => {
+                    if(res.ok) {
+                        const badge = document.getElementById('notif-badge');
+                        if (badge) badge.remove();
+                        const list = document.getElementById('notif-list');
+                        if (list) {
+                            list.innerHTML = `<div class="p-4 text-center text-muted">
+                              <i class="bi bi-bell-slash fs-4 d-block mb-2 text-muted-2"></i>
+                              <span class="fs-sm">No new notifications</span>
+                            </div>`;
+                        }
+                        const markBtn = e.target;
+                        if (markBtn) markBtn.remove();
+                    }
+                });
+            }
+          </script>
 
           <!-- User dropdown -->
           <div class="dropdown">
@@ -174,7 +198,9 @@
           </div>
         {% else %}
           <a href="{% url 'accounts:login' %}" class="btn btn-outline-light-brand btn-sm">Log in</a>
+          {% if site_settings.allow_registrations %}
           <a href="{% url 'accounts:register' %}" class="btn btn-gradient btn-sm">Sign up free</a>
+          {% endif %}
         {% endif %}
       </div>
     </div>

@@ -18,8 +18,8 @@ from crispy_forms.layout import Submit
 from .models import User
 
 phone_validator = RegexValidator(
-    regex=r"^\+?[1-9]\d{7,14}$",
-    message="Enter a valid phone number in E.164 format, e.g. +919876543210.",
+    regex=r"^[0-9]{10,15}$",
+    message="Enter a valid mobile number consisting only of digits (10 to 15 digits).",
 )
 
 
@@ -43,6 +43,10 @@ class UserRegistrationForm(forms.ModelForm):
     password1 = forms.CharField(label="Password", strip=False, widget=forms.PasswordInput)
     password2 = forms.CharField(label="Confirm password", strip=False, widget=forms.PasswordInput)
 
+    designation = forms.CharField(required=False, max_length=150)
+    subject = forms.CharField(required=False, max_length=150)
+    current_salary = forms.IntegerField(required=False, min_value=0)
+
     class Meta:
         model = User
         fields = ["email", "first_name", "last_name", "phone", "role"]
@@ -57,6 +61,14 @@ class UserRegistrationForm(forms.ModelForm):
         self.helper = FormHelper()
         self.helper.form_method = "post"
         self.helper.add_input(Submit("submit", self.submit_label, css_class="btn btn-primary w-100"))
+
+    def clean(self):
+        from django.utils.html import strip_tags
+        cleaned_data = super().clean()
+        for field, value in cleaned_data.items():
+            if isinstance(value, str):
+                cleaned_data[field] = strip_tags(value).strip()
+        return cleaned_data
 
     def clean_email(self) -> str:
         email = self.cleaned_data["email"].lower().strip()

@@ -44,10 +44,45 @@ class SeekerDashboardView(SeekerMixin, TemplateView):
         ctx["has_skills"] = profile.skills.exists() if profile else False
 
         # Recommended jobs
-        ctx["recommended_jobs"] = (
-            Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED)
-            .select_related("company")[:4]
-        )
+        base_qs = Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).select_related("company")
+        
+        if profile:
+            from django.db.models import Count, Q, Case, When, Value, IntegerField, F
+            
+            # Score job type
+            job_type_match = Case(
+                When(job_type=profile.preferred_job_type, then=Value(2)),
+                default=Value(0),
+                output_field=IntegerField()
+            ) if profile.preferred_job_type else Value(0, output_field=IntegerField())
+            
+            # Score skills
+            skill_ids = list(profile.skills.values_list('id', flat=True)) if profile.skills.exists() else []
+            
+            if skill_ids:
+                qs = base_qs.annotate(
+                    skill_match_count=Count('skills_required', filter=Q(skills_required__in=skill_ids)),
+                    type_score=job_type_match,
+                ).annotate(
+                    relevance_score=F('skill_match_count') * 3 + F('type_score')
+                ).filter(relevance_score__gt=0).order_by('-published_at', '-relevance_score')
+                
+                # Fallback if no matching jobs
+                if not qs.exists():
+                    qs = base_qs.order_by('-published_at')
+            else:
+                qs = base_qs.annotate(
+                    type_score=job_type_match,
+                ).annotate(
+                    relevance_score=F('type_score')
+                ).filter(relevance_score__gt=0).order_by('-published_at', '-relevance_score')
+                
+                if not qs.exists():
+                    qs = base_qs.order_by('-published_at')
+        else:
+            qs = base_qs.order_by('-published_at')
+            
+        ctx["recommended_jobs"] = qs[:4]
         return ctx
 
 
@@ -206,14 +241,89 @@ class SeekerAppliedJobsView(SeekerMixin, TemplateView):
         return ctx
 
 
+from django.http import JsonResponse
+from django.views import View
+
+class SaveJobView(SeekerMixin, View):
+    def post(self, request, *args, **kwargs):
+        job_id = request.POST.get("job_id")
+        if not job_id:
+            return JsonResponse({"error": "Job ID required"}, status=400)
+        from apps.applications.models import SavedJob
+        SavedJob.objects.get_or_create(user=request.user, job_id=job_id)
+        return JsonResponse({"success": True})
+
+
+class UnsaveJobView(SeekerMixin, View):
+    def post(self, request, *args, **kwargs):
+        job_id = request.POST.get("job_id")
+        if not job_id:
+            return JsonResponse({"error": "Job ID required"}, status=400)
+        from apps.applications.models import SavedJob
+        SavedJob.objects.filter(user=request.user, job_id=job_id).delete()
+        return JsonResponse({"success": True})
+
+
 class SeekerSavedJobsView(SeekerMixin, TemplateView):
     template_name = "dashboard/seeker/saved_jobs.html"
     sidebar_section = "saved"
+    
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.applications.models import SavedJob
+        saved_jobs = SavedJob.objects.filter(user=self.request.user).select_related('job', 'job__company')
+        # We need to monkey-patch is_saved=True onto the job instances so the template renders the button correctly
+        jobs = []
+        for sj in saved_jobs:
+            sj.job.is_saved = True
+            jobs.append(sj)
+        ctx['saved_jobs'] = jobs
+        return ctx
 
+
+from django.shortcuts import redirect
+from django.contrib import messages
 
 class SeekerJobAlertsView(SeekerMixin, TemplateView):
     template_name = "dashboard/seeker/job_alerts.html"
     sidebar_section = "alerts"
+    
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.applications.models import JobAlert
+        ctx['job_alerts'] = JobAlert.objects.filter(user=self.request.user)
+        ctx['job_types'] = JobAlert.JOB_TYPE_CHOICES
+        ctx['experience_levels'] = JobAlert.EXPERIENCE_LEVEL_CHOICES
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        from apps.applications.models import JobAlert
+        keyword = request.POST.get('keyword', '').strip()
+        location = request.POST.get('location', '').strip()
+        job_type = request.POST.get('job_type', '').strip()
+        experience_level = request.POST.get('experience_level', '').strip()
+        
+        if not keyword and not location and not job_type and not experience_level:
+            messages.error(request, "Please provide at least one criteria for the alert.")
+            return redirect("seeker:job-alerts")
+            
+        JobAlert.objects.create(
+            user=request.user,
+            keyword=keyword,
+            location=location,
+            job_type=job_type,
+            experience_level=experience_level
+        )
+        messages.success(request, "Job alert created successfully!")
+        return redirect("seeker:job-alerts")
+
+
+class DeleteJobAlertView(SeekerMixin, View):
+    def post(self, request, pk, *args, **kwargs):
+        from apps.applications.models import JobAlert
+        JobAlert.objects.filter(user=request.user, pk=pk).delete()
+        messages.success(request, "Job alert deleted.")
+        return redirect("seeker:job-alerts")
 
 
 class SeekerSettingsView(SeekerMixin, TemplateView):

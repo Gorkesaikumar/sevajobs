@@ -138,34 +138,6 @@
     }
   }
 
-  /* ------- Save / Bookmark job ----------------------------------------- */
-  function initSaveJob() {
-    document.querySelectorAll('.sj-save-btn').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        const jobId = btn.dataset.jobId;
-        const isSaved = btn.classList.contains('saved');
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-
-        const body = new FormData();
-        if (csrfToken) body.append('csrfmiddlewaretoken', csrfToken.value);
-        body.append('job_id', jobId);
-
-        const url = isSaved ? '/dashboard/seeker/unsave-job/' : '/dashboard/seeker/save-job/';
-        fetch(url, { method: 'POST', body, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-          .then(r => {
-            if (r.ok) {
-              btn.classList.toggle('saved');
-              const icon = btn.querySelector('i');
-              if (icon) icon.className = btn.classList.contains('saved') ? 'bi bi-bookmark-fill' : 'bi bi-bookmark';
-            }
-          })
-          .catch(() => {});
-      });
-    });
-  }
-
   /* ------- Utility ------------------------------------------------------ */
   function escapeHtml(text) {
     const div = document.createElement('div');
@@ -179,7 +151,6 @@
     initSearchAutocomplete();
     initFilterState();
     initFilterChips();
-    initSaveJob();
   });
 
 })();

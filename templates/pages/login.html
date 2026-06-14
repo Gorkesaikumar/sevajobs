@@ -21,7 +21,7 @@
     <div class="sj-auth-aside d-none d-lg-flex col-lg-5 col-xl-6">
       <div class="aside-content animate-fade-up">
         <div class="mb-4 d-flex justify-content-center">
-          <img src="{% static 'images/logo.png' %}" alt="SevaJobs Logo" class="img-fluid" style="max-height: 60px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+          <img src="{% static 'images/logo.jpg' %}" alt="SevaJobs Logo" class="img-fluid" style="max-height: 60px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
         </div>
         <h2>Welcome back!</h2>
         <p>Log in to access your dashboard, track applications, and discover new opportunities matched to your profile.</p>
@@ -61,7 +61,7 @@
         <!-- Mobile brand -->
         <div class="text-center mb-4 d-lg-none">
           <a href="/" class="d-inline-block">
-            <img src="{% static 'images/logo.png' %}" alt="SevaJobs Logo" class="img-fluid" style="max-height: 50px; width: auto; object-fit: contain;">
+            <img src="{% static 'images/logo.jpg' %}" alt="SevaJobs Logo" class="img-fluid" style="max-height: 50px; width: auto; object-fit: contain;">
           </a>
         </div>
 
@@ -111,7 +111,7 @@
               </div>
               <div class="input-icon-group position-relative">
                 <i class="bi bi-lock input-icon"></i>
-                <input type="password" class="form-control form-control-lg" id="password" name="password"
+                <input type="password" class="form-control form-control-lg no-validation-icon" id="password" name="password"
                        placeholder="Enter your password" required>
                 <button type="button" class="btn btn-ghost position-absolute end-0 top-50 translate-middle-y me-1" data-toggle-password="password" aria-label="Toggle password">
                   <i class="bi bi-eye"></i>
@@ -122,9 +122,11 @@
               <i class="bi bi-box-arrow-in-right me-1"></i> Log in
             </button>
           </form>
+          {% if site_settings.allow_registrations %}
           <p class="text-center text-muted-2 fs-sm mb-0">
             Don't have an account? <a href="{% url 'accounts:register' %}" class="fw-semibold text-primary">Sign up free</a>
           </p>
+          {% endif %}
 
           {% if role_scope != 'admin' %}
           <div class="mt-4 text-center">
@@ -133,6 +135,23 @@
             </a>
           </div>
           {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Generic Alert Modal (for replacing window.alert) -->
+  <div class="modal fade" id="genericAlertModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-body text-center p-4">
+          <div class="mb-3">
+            <i class="bi bi-info-circle text-primary" id="genericAlertIcon" style="font-size: 3.5rem;"></i>
+          </div>
+          <h5 class="fw-bold mb-2" id="genericAlertTitle">Notice</h5>
+          <p class="text-muted-2 mb-4" id="genericAlertMessage">Message</p>
+          <div class="d-flex justify-content-center">
+            <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">OK</button>
+          </div>
         </div>
       </div>
     </div>

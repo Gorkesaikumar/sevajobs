@@ -29,16 +29,20 @@ class RoleScopedLoginView(View):
 
     @method_decorator(csrf_protect)
     def post(self, request):
-        email = request.POST.get("email", "").strip().lower()
-        password = request.POST.get("password", "")
+        from apps.accounts.forms import EmailLoginForm
+        
+        post_data = request.POST.copy()
+        email = post_data.get("email", "").strip().lower()
+        if email:
+            post_data["username"] = email
+            post_data["email"] = email
+            
+        form = EmailLoginForm(request, data=post_data)
         remember = request.POST.get("remember_me")
 
-        user = authenticate(request, email=email, password=password)
-        if user is not None:
-            if not user.is_active:
-                messages.error(request, "Your account has been deactivated. Please contact support.")
-                return render(request, self.template_name, {"role_scope": self.role_scope})
-                
+        if form.is_valid():
+            user = form.get_user()
+            
             if self.role_scope == 'admin' and not (user.is_admin_role or user.is_superuser):
                 messages.error(request, "You do not have permission to access the admin panel.")
                 return render(request, self.template_name, {"email": email, "role_scope": self.role_scope})
@@ -86,10 +90,15 @@ class SeekerLoginView(RoleScopedLoginView):
     role_scope = 'job_seeker'
 
 
+from apps.core.models import PlatformSettings
+
 class RegisterView(View):
     template_name = "pages/register.html"
 
     def get(self, request):
+        if not PlatformSettings.get_settings().allow_registrations:
+            messages.error(request, "User registration is currently disabled.")
+            return redirect("accounts:login")
         if request.user.is_authenticated:
             return redirect("/")
         role = request.GET.get("role", "job_seeker")
@@ -97,53 +106,53 @@ class RegisterView(View):
 
     @method_decorator(csrf_protect)
     def post(self, request):
-        first_name = request.POST.get("first_name", "").strip()
-        last_name = request.POST.get("last_name", "").strip()
-        email = request.POST.get("email", "").strip().lower()
-        phone = request.POST.get("phone", "").strip()
-        password = request.POST.get("password", "")
-        password2 = request.POST.get("password2", "")
-        role = request.POST.get("role", "job_seeker")
-
-        # Validation
-        errors = []
-        if not all([first_name, email, password, password2]):
-            errors.append("All required fields must be filled.")
-        if password != password2:
-            errors.append("Passwords do not match.")
-        if len(password) < 8:
-            errors.append("Password must be at least 8 characters.")
-        if User.objects.filter(email=email).exists():
-            errors.append("An account with this email already exists.")
-
-        if errors:
-            for err in errors:
-                messages.error(request, err)
-            return render(request, self.template_name, {
-                "first_name": first_name,
-                "last_name": last_name,
-                "email": email,
-                "phone": phone,
-                "selected_role": role,
-            })
-
-        user = User.objects.create_user(
-            email=email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name,
-            phone=phone,
-            role=role,
-        )
-        login(request, user)
-        request.session['current_role_scope'] = role
-        messages.success(request, "Welcome to SevaJobs! Let's set up your profile.")
+        if not PlatformSettings.get_settings().allow_registrations:
+            messages.error(request, "User registration is currently disabled.")
+            return redirect("accounts:login")
         
-        if role == 'admin':
-            return redirect("/dashboard/admin/")
-        elif role == 'recruiter':
-            return redirect("/dashboard/recruiter/")
-        return redirect("/dashboard/seeker/")
+        from apps.accounts.forms import UserRegistrationForm
+        form = UserRegistrationForm(request.POST)
+        
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            role = user.role
+            request.session['current_role_scope'] = role
+            messages.success(request, "Welcome to SevaJobs! Let's set up your profile.")
+            
+            if role == 'job_seeker':
+                from apps.accounts.models import JobSeekerProfile
+                profile, _ = JobSeekerProfile.objects.get_or_create(user=user)
+                if form.cleaned_data.get("designation"):
+                    profile.designation = form.cleaned_data["designation"]
+                if form.cleaned_data.get("subject"):
+                    profile.subject = form.cleaned_data["subject"]
+                if form.cleaned_data.get("current_salary"):
+                    profile.current_salary = form.cleaned_data["current_salary"]
+                profile.save()
+
+            if role == 'admin':
+                return redirect("/dashboard/admin/")
+            elif role == 'recruiter':
+                return redirect("/dashboard/recruiter/")
+            return redirect("/dashboard/seeker/")
+        else:
+            for field, errors in form.errors.items():
+                for err in errors:
+                    messages.error(request, err)
+            
+            # Re-populate the context so user doesn't lose data
+            context = {
+                "selected_role": request.POST.get("role", "job_seeker"),
+                "first_name": request.POST.get("first_name", ""),
+                "last_name": request.POST.get("last_name", ""),
+                "email": request.POST.get("email", ""),
+                "phone": request.POST.get("phone", ""),
+                "designation": request.POST.get("designation", ""),
+                "subject": request.POST.get("subject", ""),
+                "current_salary": request.POST.get("current_salary", ""),
+            }
+            return render(request, self.template_name, context)
 
 
 class LogoutView(View):

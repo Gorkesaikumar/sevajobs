@@ -77,8 +77,31 @@ class JobService:
     @transaction.atomic
     def submit_for_approval(self, job: Job, recruiter_profile, ip: str | None = None) -> Job:
         self._assert_owner(job, recruiter_profile)
+        from apps.core.models import PlatformSettings
         if job.status not in (Job.Status.DRAFT, Job.Status.EXPIRED):
             raise ValidationError({"detail": "Only draft jobs can be submitted for approval."})
+            
+        settings = PlatformSettings.get_settings()
+        if settings.auto_approve_jobs:
+            job.approval_status = Job.ApprovalStatus.APPROVED
+            job.status = Job.Status.ACTIVE
+            job.published_at = timezone.now()
+            job.rejection_reason = ""
+            job.save(update_fields=["approval_status", "status", "published_at", "rejection_reason"])
+            
+            actor = recruiter_profile.user
+            self._record_approval(job, JobApprovalHistory.Action.APPROVED, actor, comment="Auto-approved by system settings.")
+            AuditService.log(
+                user=actor, action=ActivityLog.Action.STATUS_CHANGE,
+                entity_type="Job", entity_id=job.id, ip=ip,
+                description=f"Job '{job.title}' auto-approved by system.",
+                metadata={"event": "auto_approve_jobs"},
+            )
+            from .visibility_services import ContactVisibilityService
+            ContactVisibilityService().initialise_for(job)
+            logger.info("Job %s auto-approved on submission", job.id)
+            return job
+
         job.approval_status = Job.ApprovalStatus.PENDING
         job.rejection_reason = ""
         job.save(update_fields=["approval_status", "rejection_reason"])
@@ -218,6 +241,56 @@ class JobService:
             )
         except Exception:  # pragma: no cover
             logger.exception("Failed to email approval decision for job %s", job.id)
+            
+        if approved and job.status == Job.Status.ACTIVE:
+            JobService._notify_matching_seekers(job)
+
+    @staticmethod
+    def _notify_matching_seekers(job: Job) -> None:
+        from apps.accounts.models import JobSeekerProfile
+        from apps.applications.models import JobAlert
+        from apps.notifications.services import NotificationService
+        from apps.notifications.models import Notification
+        
+        users_to_notify = set()
+        
+        # 1. Match via JobSeekerProfile
+        skill_ids = job.skills_required.values_list('id', flat=True)
+        if skill_ids:
+            profiles = JobSeekerProfile.objects.filter(
+                preferred_job_type=job.job_type,
+                skills__id__in=skill_ids
+            ).distinct().select_related('user')
+            for profile in profiles:
+                users_to_notify.add(profile.user)
+                
+        # 2. Match via JobAlerts
+        alerts = JobAlert.objects.filter(is_active=True).select_related('user')
+        for alert in alerts:
+            match = True
+            if alert.job_type and alert.job_type != job.job_type:
+                match = False
+            if match and alert.experience_level and alert.experience_level != job.experience_level:
+                match = False
+            if match and alert.location and alert.location.lower() not in (job.location or "").lower():
+                match = False
+            if match and alert.keyword:
+                kw = alert.keyword.lower()
+                title_desc = f"{job.title or ''} {job.description or ''}".lower()
+                if kw not in title_desc:
+                    match = False
+            if match:
+                users_to_notify.add(alert.user)
+        
+        for user in users_to_notify:
+            NotificationService.notify(
+                recipient=user,
+                notification_type=Notification.Type.JOB_POSTED,
+                title="New job matching your profile or alerts",
+                message=f"{job.title} at {job.company.name}",
+                entity_type="Job",
+                entity_id=job.id,
+            )
 
     @staticmethod
     def _assert_owner(job: Job, recruiter_profile) -> None:

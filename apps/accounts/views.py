@@ -44,6 +44,8 @@ class _SensitiveAnonThrottle(AnonRateThrottle):
 # ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
+from apps.core.models import PlatformSettings
+
 @extend_schema(tags=["auth"])
 class RegisterView(APIView):
     """POST /api/v1/auth/register/ — create a job-seeker or recruiter account."""
@@ -52,6 +54,10 @@ class RegisterView(APIView):
     serializer_class = RegisterSerializer
 
     def post(self, request):
+        if not PlatformSettings.get_settings().allow_registrations:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Registration is currently disabled.")
+            
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data

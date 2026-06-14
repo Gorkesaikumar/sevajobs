@@ -49,11 +49,79 @@
     });
   }
 
+  /* ------- Strict Frontend Validation ---------------------------------- */
+  function initStrictValidation() {
+    // 1. Mobile Number Strict Validation
+    document.querySelectorAll('[data-validate="mobile"], input[type="tel"]').forEach(input => {
+      // Reject non-numeric on keypress
+      input.addEventListener('keypress', e => {
+        // Allow control keys (backspace, tab, arrows)
+        if (e.key.length !== 1 || e.ctrlKey || e.metaKey) return;
+        // Allow numbers and optionally '+' as the first character
+        if (!/^[0-9+]$/.test(e.key)) {
+          e.preventDefault();
+        }
+      });
+      
+      // Cleanup on input/paste
+      input.addEventListener('input', () => {
+        let val = input.value;
+        // Keep only numbers and a leading plus if present
+        let cleanVal = val.replace(/[^\d+]/g, '');
+        // Ensure + is only at the start
+        if (cleanVal.indexOf('+') > 0) {
+          cleanVal = cleanVal.replace(/\+/g, '');
+        }
+        if (val !== cleanVal) {
+          input.value = cleanVal;
+        }
+      });
+    });
+
+    // 2. Text Input Trimming
+    document.querySelectorAll('input[type="text"], input[type="email"], textarea').forEach(input => {
+      input.addEventListener('blur', () => {
+        const original = input.value;
+        const trimmed = original.trim();
+        if (original !== trimmed) {
+          input.value = trimmed;
+        }
+      });
+    });
+  }
+
   /* ------- Bootstrap validation ---------------------------------------- */
   function initFormValidation() {
     document.querySelectorAll('.needs-validation').forEach(form => {
       form.addEventListener('submit', e => {
-        if (!form.checkValidity()) {
+        // Custom strict validations before native HTML5 validation
+        let customValid = true;
+        
+        // Block empty space submissions on required fields
+        form.querySelectorAll('input[required], textarea[required]').forEach(input => {
+           if (input.value.trim() === '') {
+             input.value = ''; // Force HTML5 required constraint to trigger
+             customValid = false;
+           }
+        });
+
+        // Enforce strong password if strength meter is present
+        const passMeter = form.querySelector('[data-password-strength]');
+        if (passMeter) {
+            const meterEl = document.getElementById(passMeter.dataset.passwordStrength);
+            if (meterEl && meterEl.dataset.strength < 4) { // Require 'Strong'
+                e.preventDefault();
+                e.stopPropagation();
+                customValid = false;
+                if (typeof window.showAlert === 'function') {
+                    window.showAlert("Please use a stronger password.", "Weak Password", "bi-shield-exclamation text-warning");
+                } else {
+                    alert("Please use a stronger password.");
+                }
+            }
+        }
+
+        if (!customValid || !form.checkValidity()) {
           e.preventDefault();
           e.stopPropagation();
         }
@@ -72,6 +140,37 @@
       input.addEventListener('change', () => {
         const file = input.files[0];
         if (!file) { preview.innerHTML = ''; return; }
+
+        // Size Limit: 5MB
+        const maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('File is too large! Maximum allowed size is 5MB.', 'File Size Limit', 'bi-file-earmark-x text-danger');
+            } else {
+                alert('File is too large! Maximum allowed size is 5MB.');
+            }
+            input.value = '';
+            preview.innerHTML = '';
+            return;
+        }
+
+        // Allowed Extensions / MIME Types
+        const allowedTypes = [
+            'application/pdf', 
+            'application/msword', 
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg', 'image/png', 'image/webp'
+        ];
+        if (!allowedTypes.includes(file.type)) {
+            if (typeof window.showAlert === 'function') {
+                window.showAlert('Invalid file type! Only PDF, DOCX, JPG, and PNG are allowed.', 'Invalid Format', 'bi-file-earmark-x text-danger');
+            } else {
+                alert('Invalid file type! Only PDF, DOCX, JPG, and PNG are allowed.');
+            }
+            input.value = '';
+            preview.innerHTML = '';
+            return;
+        }
 
         if (file.type.startsWith('image/')) {
           const reader = new FileReader();
@@ -220,6 +319,7 @@
 
   /* ------- Init all ---------------------------------------------------- */
   document.addEventListener('DOMContentLoaded', () => {
+    initStrictValidation();
     initPasswordStrength();
     initPasswordToggle();
     initFormValidation();

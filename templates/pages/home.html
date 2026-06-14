@@ -426,12 +426,18 @@
             Whether you're an educator looking for your dream role, or an institution searching for top teaching talent — SevaJobs has you covered.
           </p>
           <div class="d-flex flex-wrap justify-content-center gap-2">
+            {% if site_settings.allow_registrations %}
             <a href="{% url 'accounts:register' %}" class="btn btn-white btn-lg">
               <i class="bi bi-person-plus me-1"></i> I'm a Teacher
             </a>
             <a href="{% url 'accounts:register' %}?role=recruiter" class="btn btn-outline-light btn-lg">
               <i class="bi bi-building me-1"></i> Register Institution
             </a>
+            {% else %}
+            <a href="{% url 'accounts:login' %}" class="btn btn-white btn-lg">
+              <i class="bi bi-box-arrow-in-right me-1"></i> Log in
+            </a>
+            {% endif %}
           </div>
         </div>
       </div>

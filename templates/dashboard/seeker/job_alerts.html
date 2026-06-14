@@ -2,7 +2,79 @@
 {% block title %}Job Alerts — SevaJobs{% endblock %}
 {% block dashboard_content %}
 <h4 class="fw-800 mb-4">Job Alerts</h4>
-<div class="sj-card p-5">
-  <div class="text-center"><div class="ico ico-gradient-cool mx-auto mb-3" style="width:64px;height:64px;border-radius:18px;font-size:1.5rem;"><i class="bi bi-bell"></i></div><h5 class="fw-700">Coming Soon</h5><p class="text-muted-2 fs-sm">Job alert preferences will be available here. You'll be able to set keywords, categories, and locations to receive matching job notifications.</p></div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="sj-card p-4">
+      <h5 class="fw-bold mb-3">Create New Alert</h5>
+      <form method="post" action="{% url 'seeker:job-alerts' %}">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label text-muted-2 fs-sm fw-semibold">Keywords</label>
+          <input type="text" name="keyword" class="form-control" placeholder="e.g. Maths, science">
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-muted-2 fs-sm fw-semibold">Location</label>
+          <input type="text" name="location" class="form-control" placeholder="e.g. Remote, Hyderabad">
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-muted-2 fs-sm fw-semibold">Job Type</label>
+          <select name="job_type" class="form-select">
+            <option value="">Any Job Type</option>
+            {% for val, label in job_types %}
+              <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="form-label text-muted-2 fs-sm fw-semibold">Experience Level</label>
+          <select name="experience_level" class="form-select">
+            <option value="">Any Experience</option>
+            {% for val, label in experience_levels %}
+              <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-gradient w-100"><i class="bi bi-bell"></i> Create Alert</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="sj-card p-4 h-100">
+      <h5 class="fw-bold mb-3">Active Alerts</h5>
+      {% if job_alerts %}
+        <div class="list-group list-group-flush border-top">
+          {% for alert in job_alerts %}
+            <div class="list-group-item px-0 py-3 d-flex align-items-center justify-content-between">
+              <div>
+                <h6 class="mb-1 fw-semibold">
+                  {% if alert.keyword %}"{{ alert.keyword }}"{% else %}Any Keyword{% endif %}
+                  {% if alert.location %} in {{ alert.location }}{% endif %}
+                </h6>
+                <div class="text-muted-2 fs-sm d-flex gap-2">
+                  {% if alert.job_type %}<span class="badge bg-light text-dark"><i class="bi bi-briefcase"></i> {{ alert.get_job_type_display }}</span>{% endif %}
+                  {% if alert.experience_level %}<span class="badge bg-light text-dark"><i class="bi bi-bar-chart"></i> {{ alert.get_experience_level_display }}</span>{% endif %}
+                  {% if not alert.job_type and not alert.experience_level %}<span>Any Job Type / Any Experience</span>{% endif %}
+                </div>
+              </div>
+              <form method="post" action="{% url 'seeker:delete-job-alert' alert.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger btn-icon rounded-circle" data-bs-toggle="tooltip" title="Delete Alert">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <div class="ico mx-auto mb-3" style="width:64px;height:64px;border-radius:18px;font-size:1.5rem;background-color:#f3f4f6;color:#6b7280;"><i class="bi bi-bell-slash"></i></div>
+          <h6 class="fw-semibold text-muted">No active alerts</h6>
+          <p class="text-muted-2 fs-sm mb-0">Create an alert to get notified when matching jobs are posted.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 {% endblock %}

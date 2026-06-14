@@ -7,17 +7,57 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+{% load humanize %}
         <div class="d-grid gap-2">
-          <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" target="_blank" rel="noopener" class="btn btn-outline-light-brand">
+          <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri|urlencode }}" target="_blank" rel="noopener" class="btn btn-outline-light-brand">
             <i class="bi bi-linkedin me-2"></i> LinkedIn
           </a>
-          <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text=Check out this job: {{ job.title }}" target="_blank" rel="noopener" class="btn btn-outline-light-brand">
+          <a href="https://twitter.com/intent/tweet?text={% filter urlencode %}{{ job.get_job_type_display|default:'Job' }} Opportunity
+
+Institution: {{ job.company.name }}
+Position: {{ job.title }}
+Location: {{ job.location }}{% if job.salary_is_disclosed and job.salary_min %}
+Salary: ₹{{ job.salary_min|intcomma }}{% if job.salary_max %} - ₹{{ job.salary_max|intcomma }}{% endif %}{% endif %}{% if job.deadline %}
+Application Deadline: {{ job.deadline|date:'j F Y' }}{% endif %}
+
+Apply now and take the next step in your career.
+
+Apply Here:
+{{ request.build_absolute_uri }}
+
+Powered by SevaJobs{% endfilter %}" target="_blank" rel="noopener" class="btn btn-outline-light-brand">
             <i class="bi bi-twitter-x me-2"></i> Twitter / X
           </a>
-          <a href="https://wa.me/?text=Check out this job: {{ job.title }} {{ request.build_absolute_uri }}" target="_blank" rel="noopener" class="btn btn-outline-light-brand">
+          <a href="https://wa.me/?text={% filter urlencode %}{{ job.get_job_type_display|default:'Job' }} Opportunity
+
+Institution: {{ job.company.name }}
+Position: {{ job.title }}
+Location: {{ job.location }}{% if job.salary_is_disclosed and job.salary_min %}
+Salary: ₹{{ job.salary_min|intcomma }}{% if job.salary_max %} - ₹{{ job.salary_max|intcomma }}{% endif %}{% endif %}{% if job.deadline %}
+Application Deadline: {{ job.deadline|date:'j F Y' }}{% endif %}
+
+Apply now and take the next step in your career.
+
+Apply Here:
+{{ request.build_absolute_uri }}
+
+Powered by SevaJobs{% endfilter %}" target="_blank" rel="noopener" class="btn btn-outline-light-brand">
             <i class="bi bi-whatsapp me-2"></i> WhatsApp
           </a>
-          <a href="mailto:?subject=Job: {{ job.title }}&body=Check out this job: {{ request.build_absolute_uri }}" class="btn btn-outline-light-brand">
+          <a href="mailto:?subject={% filter urlencode %}Job Opportunity: {{ job.title }} at {{ job.company.name }}{% endfilter %}&body={% filter urlencode %}🎓 {{ job.get_job_type_display|default:'Job' }} Opportunity
+
+Institution: {{ job.company.name }}
+Position: {{ job.title }}
+Location: {{ job.location }}{% if job.salary_is_disclosed and job.salary_min %}
+Salary: ₹{{ job.salary_min|intcomma }}{% if job.salary_max %} - ₹{{ job.salary_max|intcomma }}{% endif %}{% endif %}{% if job.deadline %}
+Application Deadline: {{ job.deadline|date:'j F Y' }}{% endif %}
+
+Apply now and take the next step in your career.
+
+Apply Here:
+{{ request.build_absolute_uri }}
+
+Powered by SevaJobs{% endfilter %}" class="btn btn-outline-light-brand">
             <i class="bi bi-envelope me-2"></i> Email
           </a>
         </div>

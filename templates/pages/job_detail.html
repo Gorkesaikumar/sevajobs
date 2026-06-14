@@ -3,6 +3,11 @@
 
 {% block title %}{{ job.title }} at {{ job.company.name }} — SevaJobs{% endblock %}
 {% block meta_description %}{{ job.description|truncatechars:160 }}{% endblock %}
+
+{% block og_title %}{{ job.title }} at {{ job.company.name }} — SevaJobs{% endblock %}
+{% block og_description %}{{ job.description|truncatechars:160 }}{% endblock %}
+{% block og_image %}{% if job.company.logo %}{{ request.scheme }}://{{ request.get_host }}{{ job.company.logo.url }}{% else %}{{ block.super }}{% endif %}{% endblock %}
+
 {% block breadcrumb %}{% include "partials/_breadcrumb.html" %}{% endblock %}
 
 {% block content %}

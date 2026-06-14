@@ -241,9 +241,7 @@ img { max-width: 100%; height: auto; }
    5. NAVBAR
    -------------------------------------------------------------------------- */
 .navbar.sj-nav {
-  background: rgba(255,255,255,.88);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  background: #ffffff;
   border-bottom: 1px solid var(--sj-line);
   padding: .65rem 0;
   transition: all var(--sj-duration-md) var(--sj-ease);
@@ -978,5 +976,11 @@ img { max-width: 100%; height: auto; }
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-. i c o   {   d i s p l a y :   f l e x ;   a l i g n - i t e m s :   c e n t e r ;   j u s t i f y - c o n t e n t :   c e n t e r ;   }  
- 
+/* Fix password toggle overlap with validation icon */
+.was-validated .form-control.no-validation-icon:valid,
+.was-validated .form-control.no-validation-icon:invalid,
+.form-control.no-validation-icon.is-valid,
+.form-control.no-validation-icon.is-invalid {
+    background-image: none !important;
+    padding-right: 2.5rem !important;
+}

@@ -119,3 +119,45 @@ class SavedJob(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.user.email} ★ {self.job.title}"
+
+
+class JobAlert(BaseModel):
+    """
+    A user's saved preferences for job notifications.
+    """
+    
+    JOB_TYPE_CHOICES = (
+        ("full_time", "Full Time"),
+        ("part_time", "Part Time"),
+        ("contract", "Contract"),
+        ("freelance", "Freelance"),
+        ("internship", "Internship"),
+    )
+    
+    EXPERIENCE_LEVEL_CHOICES = (
+        ("fresher", "Fresher"),
+        ("junior", "Junior (1–3 yrs)"),
+        ("mid", "Mid (3–6 yrs)"),
+        ("senior", "Senior (6+ yrs)"),
+        ("lead", "Lead / Principal"),
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="job_alerts",
+        limit_choices_to={"role": "job_seeker"},
+    )
+    keyword = models.CharField(max_length=255, blank=True)
+    location = models.CharField(max_length=255, blank=True)
+    job_type = models.CharField(max_length=50, choices=JOB_TYPE_CHOICES, blank=True)
+    experience_level = models.CharField(max_length=50, choices=EXPERIENCE_LEVEL_CHOICES, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Job Alert"
+        verbose_name_plural = "Job Alerts"
+        indexes = [models.Index(fields=["user", "is_active"])]
+
+    def __str__(self) -> str:
+        return f"Alert for {self.user.email}: {self.keyword} @ {self.location}"

@@ -41,6 +41,12 @@ class RecruiterDashboardView(RecruiterMixin, TemplateView):
     sidebar_section = "dashboard"
 
     def get_context_data(self, **kwargs):
+        import json
+        from django.utils import timezone
+        from django.db.models.functions import TruncDate
+        from django.db.models import Count
+        from datetime import timedelta
+
         ctx = super().get_context_data(**kwargs)
         company = self.get_company()
         ctx["company"] = company
@@ -48,19 +54,59 @@ class RecruiterDashboardView(RecruiterMixin, TemplateView):
         if company:
             jobs = Job.objects.filter(company=company)
             ctx["active_jobs"] = jobs.filter(status=Job.Status.ACTIVE).count()
-            ctx["total_applications"] = JobApplication.objects.filter(job__company=company).count()
-            ctx["shortlisted"] = JobApplication.objects.filter(job__company=company, status="shortlisted").count()
+            
+            company_apps = JobApplication.objects.filter(job__company=company)
+            ctx["total_applications"] = company_apps.count()
+            ctx["shortlisted"] = company_apps.filter(status="shortlisted").count()
             ctx["pending_approvals"] = jobs.filter(approval_status=Job.ApprovalStatus.PENDING).count()
             ctx["recent_applications"] = (
-                JobApplication.objects.filter(job__company=company)
-                .select_related("applicant", "job")
-                .order_by("-applied_at")[:5]
+                company_apps.select_related("applicant", "job").order_by("-applied_at")[:5]
             )
             ctx["top_jobs"] = (
                 jobs.filter(status=Job.Status.ACTIVE)
                 .annotate(app_count=Count("applications"))
                 .order_by("-app_count")[:5]
             )
+
+            # --- Chart Data Calculation ---
+            # 1. Trend Chart (Last 14 Days)
+            today = timezone.now().date()
+            start_date = today - timedelta(days=13)
+            
+            trend_data = (
+                company_apps.filter(applied_at__date__gte=start_date)
+                .annotate(day=TruncDate('applied_at'))
+                .values('day')
+                .annotate(count=Count('id'))
+                .order_by('day')
+            )
+            
+            trend_dict = {item['day']: item['count'] for item in trend_data}
+            labels = []
+            values = []
+            for i in range(14):
+                d = start_date + timedelta(days=i)
+                labels.append(d.strftime("%b %d"))
+                values.append(trend_dict.get(d, 0))
+            
+            ctx["chart_trend_labels"] = json.dumps(labels)
+            ctx["chart_trend_values"] = json.dumps(values)
+
+            # 2. Doughnut Chart (Application Status Breakdown)
+            status_counts = company_apps.values('status').annotate(count=Count('id'))
+            status_dict = {item['status']: item['count'] for item in status_counts}
+            
+            # Map statuses to logical groups for the doughnut
+            groups = {
+                "Applied": status_dict.get("applied", 0),
+                "Under Review": status_dict.get("under_review", 0),
+                "Shortlisted": status_dict.get("shortlisted", 0),
+                "Rejected": status_dict.get("rejected", 0)
+            }
+            
+            ctx["chart_doughnut_labels"] = json.dumps(list(groups.keys()))
+            ctx["chart_doughnut_values"] = json.dumps(list(groups.values()))
+
         return ctx
 
 
@@ -310,6 +356,25 @@ class RecruiterCandidateDetailView(RecruiterMixin, TemplateView):
             elif action == "reject":
                 new_status = JobApplication.Status.REJECTED
                 msg = "Candidate rejected."
+            elif action == "schedule_interview":
+                new_status = JobApplication.Status.INTERVIEW_SCHEDULED
+                app.interview_mode = request.POST.get("interview_mode", "")
+                app.interview_location = request.POST.get("interview_location", "")
+                
+                interview_date = request.POST.get("interview_date")
+                interview_time = request.POST.get("interview_time")
+                if interview_date and interview_time:
+                    from django.utils.dateparse import parse_datetime
+                    from django.utils.timezone import make_aware
+                    dt_str = f"{interview_date}T{interview_time}"
+                    dt = parse_datetime(dt_str)
+                    if dt:
+                        from django.utils import timezone
+                        if timezone.is_naive(dt):
+                            dt = make_aware(dt)
+                        app.interview_at = dt
+                app.save()
+                msg = "Interview scheduled successfully."
                 
             if new_status:
                 ApplicationService().move_status(app, new_status=new_status, changed_by=request.user)
@@ -358,3 +423,42 @@ class RecruiterRejectedView(RecruiterMixin, TemplateView):
 class RecruiterSettingsView(RecruiterMixin, TemplateView):
     template_name = "dashboard/recruiter/settings.html"
     sidebar_section = "settings"
+
+
+class RecruiterKanbanView(RecruiterMixin, TemplateView):
+    template_name = "dashboard/recruiter/kanban.html"
+    sidebar_section = "kanban"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        company = self.get_company()
+        if company:
+            qs = JobApplication.objects.filter(job__company=company).select_related("applicant", "job").order_by("-updated_at")
+            ctx["under_review"] = qs.filter(status__in=[JobApplication.Status.APPLIED, JobApplication.Status.UNDER_REVIEW])
+            ctx["shortlisted"] = qs.filter(status=JobApplication.Status.SHORTLISTED)
+            ctx["interview_scheduled"] = qs.filter(status=JobApplication.Status.INTERVIEW_SCHEDULED)
+            ctx["selected"] = qs.filter(status=JobApplication.Status.SELECTED)
+            ctx["rejected"] = qs.filter(status=JobApplication.Status.REJECTED)
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        from django.http import JsonResponse
+        from apps.applications.services import ApplicationService
+        
+        action = request.POST.get("action")
+        if action == "update_status":
+            app_id = request.POST.get("app_id")
+            new_status = request.POST.get("new_status")
+            try:
+                app = JobApplication.objects.get(id=app_id, job__company=self.get_company())
+                # Validate new status
+                if new_status in [choice[0] for choice in JobApplication.Status.choices]:
+                    ApplicationService().move_status(app, new_status=new_status, changed_by=request.user)
+                    return JsonResponse({"success": True, "status_display": app.get_status_display()})
+                return JsonResponse({"success": False, "error": "Invalid status"})
+            except JobApplication.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Application not found"})
+            except Exception as e:
+                return JsonResponse({"success": False, "error": str(e)})
+                
+        return JsonResponse({"success": False, "error": "Invalid action"})

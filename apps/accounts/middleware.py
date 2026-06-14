@@ -70,7 +70,16 @@ class RoleBasedCookieInterceptorMiddleware:
         elif path.startswith('/dashboard/seeker') or path.startswith('/jobseeker/login') or path.startswith('/jobseeker/logout'):
             expected_cookie = 'sessionid_seeker'
         else:
-            expected_cookie = settings.SESSION_COOKIE_NAME
+            # On public pages, check if any role-specific session cookie exists.
+            # This ensures the navbar and 'apply' buttons recognize the logged-in user.
+            if 'sessionid_seeker' in request.COOKIES:
+                expected_cookie = 'sessionid_seeker'
+            elif 'sessionid_recruiter' in request.COOKIES:
+                expected_cookie = 'sessionid_recruiter'
+            elif 'sessionid_admin' in request.COOKIES:
+                expected_cookie = 'sessionid_admin'
+            else:
+                expected_cookie = settings.SESSION_COOKIE_NAME
 
         default_cookie_name = settings.SESSION_COOKIE_NAME
 
@@ -83,6 +92,17 @@ class RoleBasedCookieInterceptorMiddleware:
                 request.COOKIES.pop(default_cookie_name, None)
 
         response = self.get_response(request)
+
+        # After the view has run, if a role scope is present in the session (e.g. user just registered),
+        # ensure the outgoing cookie is assigned to the correct role-specific name.
+        if hasattr(request, 'session') and request.session.get('current_role_scope'):
+            scope = request.session.get('current_role_scope')
+            if scope == 'job_seeker':
+                expected_cookie = 'sessionid_seeker'
+            elif scope == 'recruiter':
+                expected_cookie = 'sessionid_recruiter'
+            elif scope == 'admin':
+                expected_cookie = 'sessionid_admin'
 
         # Swap OUT: If Django's SessionMiddleware set or deleted the default cookie, 
         # apply those exact changes to our expected role-specific cookie.

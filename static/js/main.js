@@ -135,4 +135,62 @@
     });
   });
 
+  /* ------- Save / Bookmark job ----------------------------------------- */
+  function initSaveJob() {
+    document.querySelectorAll('.sj-save-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const jobId = btn.dataset.jobId;
+        const isSaved = btn.classList.contains('saved');
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+
+        const body = new FormData();
+        if (csrfToken) body.append('csrfmiddlewaretoken', csrfToken.value);
+        body.append('job_id', jobId);
+
+        const url = isSaved ? '/dashboard/seeker/unsave-job/' : '/dashboard/seeker/save-job/';
+        fetch(url, { method: 'POST', body, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then(r => {
+            if (r.ok) {
+              if (isSaved && window.location.pathname.includes('/saved-jobs')) {
+                const cardWrapper = btn.closest('.sj-card').parentElement;
+                if (cardWrapper) cardWrapper.remove();
+                if (document.querySelectorAll('.sj-card').length === 0) {
+                  window.location.reload();
+                }
+              } else {
+                btn.classList.toggle('saved');
+                const icon = btn.querySelector('i');
+                if (icon) icon.className = btn.classList.contains('saved') ? 'bi bi-bookmark-fill' : 'bi bi-bookmark';
+              }
+            }
+          })
+          .catch(() => {});
+      });
+    });
+  }
+
+  // Init Save Job
+  initSaveJob();
+
 })();
+
+  /* ------- Global Alert Modal Wrapper ---------------------------------- */
+  window.showAlert = function(message, title = 'Notice', iconClass = 'bi-info-circle text-primary') {
+    const modalEl = document.getElementById('genericAlertModal');
+    if (!modalEl) {
+      alert(message); // Fallback if modal not present
+      return;
+    }
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    const titleEl = document.getElementById('genericAlertTitle');
+    const msgEl = document.getElementById('genericAlertMessage');
+    const iconEl = document.getElementById('genericAlertIcon');
+    
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    if (iconEl) iconEl.className = 'bi ' + iconClass;
+    
+    bsModal.show();
+  };

@@ -1,0 +1,20 @@
+<div class="kanban-card sj-card mb-3 p-3 bg-white" data-id="{{ app.id }}">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <span class="badge bg-soft-primary text-primary" style="font-size:0.65rem;">{{ app.job.title }}</span>
+    <span class="text-muted-2" style="font-size:0.65rem;">{{ app.applied_at|timesince }} ago</span>
+  </div>
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <div class="avatar flex-shrink-0" style="width:32px;height:32px;font-size:0.8rem;">
+      {{ app.applicant.first_name|slice:":1"|upper }}
+    </div>
+    <div class="min-w-0">
+      <div class="fw-700 fs-sm text-truncate">{{ app.applicant.full_name }}</div>
+      <div class="text-muted-2 fs-xs text-truncate">{{ app.applicant.email }}</div>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'recruiter:candidate-detail' pk=app.id %}" class="btn btn-sm btn-outline-light-brand flex-fill py-1" style="font-size:0.75rem;">
+      <i class="bi bi-eye"></i> View Profile
+    </a>
+  </div>
+</div>

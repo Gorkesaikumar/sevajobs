@@ -12,6 +12,7 @@
     <span class="badge bg-danger rounded-pill">{{ unread_applications_count }}</span>
   {% endif %}
 </a>
+<a class="nav-link {% if sidebar_section == 'kanban' %}active{% endif %}" href="{% url 'recruiter:kanban' %}"><i class="bi bi-kanban"></i> ATS Kanban Board</a>
 <a class="nav-link {% if sidebar_section == 'shortlisted' %}active{% endif %}" href="{% url 'recruiter:shortlisted' %}"><i class="bi bi-person-check"></i> Shortlisted</a>
 <a class="nav-link {% if sidebar_section == 'rejected' %}active{% endif %}" href="{% url 'recruiter:rejected' %}"><i class="bi bi-person-x"></i> Rejected</a>
 <div class="sidebar-section">Account</div>

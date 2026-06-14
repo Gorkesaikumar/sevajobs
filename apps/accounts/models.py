@@ -9,10 +9,11 @@ from django.core.validators import MaxValueValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 from apps.core.models import BaseModel, TimeStampedModel
+from apps.core.validators import SafeFileValidator
 
 phone_validator = RegexValidator(
-    regex=r"^\+?[1-9]\d{7,14}$",
-    message="Enter a valid phone number in E.164 format, e.g. +919876543210.",
+    regex=r"^[0-9]{10,15}$",
+    message="Enter a valid mobile number consisting only of digits (10 to 15 digits).",
 )
 
 
@@ -70,7 +71,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
         validators=[phone_validator],
         help_text="E.164 format. Unique — used as an alternate login identifier.",
     )
-    avatar = models.ImageField(upload_to="avatars/%Y/%m/", null=True, blank=True)
+    avatar = models.ImageField(upload_to="avatars/%Y/%m/", null=True, blank=True, validators=[SafeFileValidator(max_size_mb=2, allowed_extensions=['.jpg', '.jpeg', '.png', '.webp'])])
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
@@ -261,7 +262,7 @@ class Resume(BaseModel):
         limit_choices_to={"role": User.Role.JOB_SEEKER},
     )
     title = models.CharField(max_length=150)
-    file = models.FileField(upload_to="resumes/%Y/%m/")
+    file = models.FileField(upload_to="resumes/%Y/%m/", validators=[SafeFileValidator(max_size_mb=5)])
     is_primary = models.BooleanField(default=False)
     parsed_text = models.TextField(blank=True, help_text="Extracted text for full-text search.")
     file_size = models.PositiveIntegerField(default=0, help_text="Size in bytes.")

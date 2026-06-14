@@ -7,7 +7,7 @@
     <div class="row g-4">
       <div class="col-lg-4">
         <div class="mb-3">
-          <img src="{% static 'images/logo.png' %}" alt="SevaJobs Logo" class="img-fluid" style="max-height: 50px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+          <img src="{% static 'images/logo.jpg' %}" alt="SevaJobs Logo" class="img-fluid" style="max-height: 50px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
         </div>
         <p class="text-secondary mb-3" style="max-width:22rem;">
           India's premium job portal connecting passionate educators with the schools building the future. Find your dream teaching job today.
@@ -42,7 +42,9 @@
       <div class="col-12 col-sm-6 col-lg-2">
         <h6>For Schools</h6>
         <ul class="list-unstyled d-grid gap-2">
+          {% if site_settings.allow_registrations %}
           <li><a href="{% url 'accounts:register' %}?role=recruiter">Post a Job</a></li>
+          {% endif %}
           <li><a href="{% url 'core:job-search' %}">Search Teachers</a></li>
           <li><a href="{% url 'core:about' %}">Why SevaJobs</a></li>
           <li><a href="{% url 'core:contact' %}">Contact Sales</a></li>

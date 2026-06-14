@@ -133,7 +133,7 @@ class AdminUsersView(AdminMixin, TemplateView):
         response['Content-Disposition'] = 'attachment; filename="sevajobs_users.csv"'
         
         writer = csv.writer(response)
-        writer.writerow(['ID', 'Email', 'First Name', 'Last Name', 'Role', 'Status', 'Date Joined', 'Last Login', 'School/Company'])
+        writer.writerow(['ID', 'Email', 'First Name', 'Last Name', 'Role', 'Status', 'Date Joined', 'Last Login', 'School/Company', 'Designation', 'Subject', 'Current Salary'])
         
         for u in qs:
             try:
@@ -141,6 +141,20 @@ class AdminUsersView(AdminMixin, TemplateView):
             except Exception:
                 school_name = "N/A"
                 
+            try:
+                if u.role == 'job_seeker' and hasattr(u, 'job_seeker_profile'):
+                    designation = u.job_seeker_profile.designation
+                    subject = u.job_seeker_profile.subject
+                    salary = u.job_seeker_profile.current_salary or "N/A"
+                else:
+                    designation = "N/A"
+                    subject = "N/A"
+                    salary = "N/A"
+            except Exception:
+                designation = "N/A"
+                subject = "N/A"
+                salary = "N/A"
+
             writer.writerow([
                 str(u.id),
                 u.email,
@@ -150,7 +164,10 @@ class AdminUsersView(AdminMixin, TemplateView):
                 'Active' if u.is_active else 'Inactive',
                 u.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
                 u.last_login.strftime('%Y-%m-%d %H:%M:%S') if u.last_login else 'Never',
-                school_name
+                school_name,
+                designation,
+                subject,
+                salary
             ])
             
         return response

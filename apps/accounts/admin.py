@@ -34,9 +34,9 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(JobSeekerProfile)
 class JobSeekerProfileAdmin(admin.ModelAdmin):
-    list_display = ["user", "headline", "experience_years", "availability", "is_open_to_work"]
+    list_display = ["user", "designation", "subject", "current_salary", "experience_years", "availability", "is_open_to_work"]
     list_filter = ["availability", "is_open_to_work", "gender"]
-    search_fields = ["user__email", "headline"]
+    search_fields = ["user__email", "user__phone", "user__first_name", "user__last_name", "headline", "designation", "subject"]
     readonly_fields = ["id", "created_at", "updated_at"]
     filter_horizontal = ["skills", "qualifications"]
 

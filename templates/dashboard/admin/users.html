@@ -167,6 +167,24 @@
           </div>
         </div>
         
+        {% if u.role == 'job_seeker' and u.job_seeker_profile %}
+        <div class="bg-light rounded p-3 mb-3 text-start">
+          <div class="text-muted-2 fs-xs text-uppercase mb-2 fw-semibold">Professional Details</div>
+          <div class="d-flex align-items-center mb-2">
+            <i class="bi bi-briefcase text-primary me-2"></i>
+            <span class="fs-sm fw-medium text-dark">{{ u.job_seeker_profile.designation|default:"Not specified" }}</span>
+          </div>
+          <div class="d-flex align-items-center mb-2">
+            <i class="bi bi-book text-primary me-2"></i>
+            <span class="fs-sm fw-medium text-dark">{{ u.job_seeker_profile.subject|default:"Not specified" }}</span>
+          </div>
+          <div class="d-flex align-items-center">
+            <i class="bi bi-currency-rupee text-primary me-2"></i>
+            <span class="fs-sm fw-medium text-dark">{% if u.job_seeker_profile.current_salary %}{{ u.job_seeker_profile.current_salary }}{% else %}Not specified{% endif %}</span>
+          </div>
+        </div>
+        {% endif %}
+        
         <div class="row g-3">
           <div class="col-6">
             <div class="bg-light rounded p-3 text-center h-100">

@@ -172,14 +172,22 @@
                 window.location.href = window.location.pathname + '?_t=' + new Date().getTime();
               } else {
                 return r.json().then(data => {
-                  alert(data.detail || 'An error occurred.');
+                  if (typeof window.showAlert === 'function') {
+                      window.showAlert(data.detail || 'An error occurred.', 'Error', 'bi-exclamation-octagon text-danger');
+                  } else {
+                      alert(data.detail || 'An error occurred.');
+                  }
                   btn.disabled = false;
                   btn.innerHTML = originalHtml;
                 });
               }
             })
             .catch(() => {
-              alert('Network error. Please try again.');
+              if (typeof window.showAlert === 'function') {
+                  window.showAlert('Network error. Please try again.', 'Connection Error', 'bi-wifi-off text-warning');
+              } else {
+                  alert('Network error. Please try again.');
+              }
               btn.disabled = false;
               btn.innerHTML = originalHtml;
             });
