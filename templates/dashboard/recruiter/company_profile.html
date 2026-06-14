@@ -1,62 +1,426 @@
 {% extends "dashboard/recruiter/_layout.html" %}
-{% block title %}Company Profile — SevaJobs{% endblock %}
+{% block title %}Institute Profile — SevaJobs{% endblock %}
+
 {% block dashboard_content %}
-<h4 class="fw-800 mb-4">Company Profile</h4>
+<style>
+  .type-radio-input {
+    display: none;
+  }
+  .type-card {
+    border: 2px solid #e9ecef;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 1.5rem;
+    text-align: center;
+    background-color: #ffffff;
+  }
+  .type-card:hover {
+    border-color: #0d6efd;
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+  }
+  .type-radio-input:checked + .type-card {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+  }
+  .type-icon {
+    font-size: 2.5rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    transition: color 0.2s;
+  }
+  .type-radio-input:checked + .type-card .type-icon {
+    color: #0d6efd;
+  }
+  .type-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #343a40;
+  }
+  .type-radio-input:checked + .type-card .type-title {
+    color: #0d6efd;
+  }
+  .form-label {
+    font-weight: 600;
+    color: #495057;
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold text-dark m-0">Institute Profile</h4>
+  <p class="text-muted m-0">Manage your organization's public details</p>
+</div>
 
 <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
   {% csrf_token %}
   
-  <div class="sj-card p-4 mb-4">
-    <div class="d-flex align-items-center gap-4 mb-4">
-      <div class="sj-logo-lg" style="width: 80px; height: 80px; font-size: 2rem;">
-        {% if company and company.logo %}
-          <img src="{{ company.logo.url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">
-        {% elif company %}
-          {{ company.name|slice:":1"|upper }}
-        {% else %}
-          <i class="bi bi-building"></i>
-        {% endif %}
-      </div>
-      <div>
-        <label for="logo" class="form-label mb-1">Company Logo</label>
-        <input class="form-control form-control-sm" type="file" id="logo" name="logo" accept="image/*">
+  <div class="row g-4">
+    <!-- 1. Identity & Type Card -->
+    <div class="col-12">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-4 p-md-5">
+          <h5 class="fw-bold mb-4 text-primary border-bottom pb-2"><i class="bi bi-person-badge me-2"></i> Identity & Type</h5>
+          
+          <div class="row align-items-center mb-5">
+            <div class="col-12 col-md-auto mb-3 mb-md-0 d-flex justify-content-center">
+              <div class="sj-logo-lg bg-light d-flex align-items-center justify-content-center shadow-sm" id="logo_preview_container" style="width: 100px; height: 100px; font-size: 2.5rem; border-radius: 20px; border: 2px dashed #dee2e6;">
+                {% if company and company.logo %}
+                  <img id="logo_preview_img" src="{{ company.logo.url }}" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">
+                {% else %}
+                  <img id="logo_preview_img" src="" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:18px;display:none;">
+                  <div id="logo_placeholder_icon" class="text-muted">
+                    {% if company %}
+                      {{ company.name|slice:":1"|upper }}
+                    {% else %}
+                      <i class="bi bi-building"></i>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-12 col-md">
+              <label for="logo" class="form-label">Institute Logo *</label>
+              <input class="form-control" type="file" id="logo" name="logo" accept=".jpg,.jpeg,.png,.webp" {% if not company or not company.logo %}required{% endif %}>
+              <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i> Max size 2MB. Supported formats: JPG, PNG, WEBP.</div>
+            </div>
+          </div>
+
+          <label class="form-label d-block mb-3">Select Institute Type *</label>
+          <div class="row g-3">
+            <div class="col-6 col-md-4 col-lg-3">
+              <label class="w-100 h-100">
+                <input class="type-radio-input" type="radio" name="institute_type" id="type_school" value="school" required {% if company.institute_type == 'school' or not company %}checked{% endif %}>
+                <div class="type-card h-100">
+                  <i class="bi bi-backpack2 type-icon"></i>
+                  <div class="type-title">School</div>
+                </div>
+              </label>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+              <label class="w-100 h-100">
+                <input class="type-radio-input" type="radio" name="institute_type" id="type_college" value="college" required {% if company.institute_type == 'college' %}checked{% endif %}>
+                <div class="type-card h-100">
+                  <i class="bi bi-bank type-icon"></i>
+                  <div class="type-title">College</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    
-    <div class="row g-3">
-      <div class="col-md-6">
-        <label for="name" class="form-label">Company Name *</label>
-        <input type="text" class="form-control" id="name" name="name" value="{{ company.name|default:'' }}" required>
+
+    <!-- 2. Core Information Card -->
+    <div class="col-12">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-4 p-md-5">
+          <h5 class="fw-bold mb-4 text-primary border-bottom pb-2"><i class="bi bi-info-circle me-2"></i> Core Information</h5>
+          
+          <div class="row g-4">
+            <div class="col-12">
+              <label for="name" class="form-label"><span id="institute_name_label">Institute Name</span> *</label>
+              <input type="text" class="form-control form-control-lg" id="name" name="name" value="{{ company.name|default:'' }}" pattern="[A-Za-z0-9\s\.\-\&,']+" title="Only letters, numbers, spaces, and basic punctuation (.,-&') are allowed." required placeholder="Enter the official name">
+            </div>
+          </div>
+
+          <!-- School Fields -->
+          <div id="school_fields_container" style="display: none;" class="mt-4">
+            <h6 class="fw-bold text-secondary mb-3">School Specifics</h6>
+            <div class="row g-4 bg-light p-3 rounded-4 border">
+              <div class="col-md-6">
+                <label for="school_type" class="form-label">School Board *</label>
+                <select class="form-select school-required" id="school_type" name="school_type">
+                  <option value="">Select Board</option>
+                  <option value="cbse" {% if company.school_type == 'cbse' %}selected{% endif %}>CBSE</option>
+                  <option value="icse" {% if company.school_type == 'icse' %}selected{% endif %}>ICSE</option>
+                  <option value="state_board" {% if company.school_type == 'state_board' %}selected{% endif %}>State Board</option>
+                  <option value="international" {% if company.school_type == 'international' %}selected{% endif %}>International</option>
+                  <option value="other" {% if company.school_type == 'other' %}selected{% endif %}>Other</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="classes_offered" class="form-label">Classes Offered *</label>
+                <input type="text" class="form-control school-required" id="classes_offered" name="classes_offered" value="{{ company.classes_offered|default:'' }}" placeholder="e.g. Pre-K to 12th">
+              </div>
+              <div class="col-md-6">
+                <label for="medium_of_instruction" class="form-label">Medium of Instruction *</label>
+                <input type="text" class="form-control school-required" id="medium_of_instruction" name="medium_of_instruction" value="{{ company.medium_of_instruction|default:'' }}" placeholder="e.g. English, Hindi">
+              </div>
+              <div class="col-md-6">
+                <label for="principal_name" class="form-label">Principal Name *</label>
+                <input type="text" class="form-control school-required" id="principal_name" name="principal_name" value="{{ company.principal_name|default:'' }}" pattern="[A-Za-z0-9\s\.\-\&,']+" title="Only letters, numbers, spaces, and basic punctuation (.,-&') are allowed." placeholder="Name of the Principal">
+              </div>
+              <div class="col-md-6">
+                <label for="school_facilities" class="form-label">School Facilities</label>
+                <textarea class="form-control" id="school_facilities" name="school_facilities" rows="3" placeholder="Library, Lab, Sports, etc.">{{ company.school_facilities|default:'' }}</textarea>
+              </div>
+              <div class="col-md-6">
+                <label for="accreditation_details" class="form-label">Accreditation Details</label>
+                <textarea class="form-control" id="accreditation_details" name="accreditation_details" rows="3" placeholder="Awards or recognitions">{{ company.accreditation_details|default:'' }}</textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- College Fields -->
+          <div id="college_fields_container" style="display: none;" class="mt-4">
+            <h6 class="fw-bold text-secondary mb-3">College Specifics</h6>
+            <div class="row g-4 bg-light p-3 rounded-4 border">
+              <div class="col-md-6">
+                <label for="college_type" class="form-label">College Type *</label>
+                <input type="text" class="form-control college-required" id="college_type" name="college_type" value="{{ company.college_type|default:'' }}" placeholder="e.g. Engineering, Medical, Degree">
+              </div>
+              <div class="col-md-6">
+                <label for="university_affiliation" class="form-label">Affiliated University *</label>
+                <input type="text" class="form-control college-required" id="university_affiliation" name="university_affiliation" value="{{ company.university_affiliation|default:'' }}" placeholder="e.g. UGC Recognized, Autonomous">
+              </div>
+              <div class="col-md-6">
+                <label for="courses_offered" class="form-label">Courses Offered *</label>
+                <input type="text" class="form-control college-required" id="courses_offered" name="courses_offered" value="{{ company.courses_offered|default:'' }}" placeholder="e.g. B.Tech, M.Tech, MBA">
+              </div>
+              <div class="col-md-6">
+                <label for="director_name" class="form-label">Principal/Director Name *</label>
+                <input type="text" class="form-control college-required" id="director_name" name="director_name" value="{{ company.director_name|default:'' }}" pattern="[A-Za-z0-9\s\.\-\&,']+" title="Only letters, numbers, spaces, and basic punctuation (.,-&') are allowed." placeholder="Name of the Director">
+              </div>
+              <div class="col-md-6">
+                <label for="departments" class="form-label">Departments</label>
+                <textarea class="form-control" id="departments" name="departments" rows="3" placeholder="Computer Science, Mechanical, etc.">{{ company.departments|default:'' }}</textarea>
+              </div>
+              <div class="col-md-6">
+                <label for="college_accreditation_details" class="form-label">Accreditation Details</label>
+                <textarea class="form-control" id="college_accreditation_details" name="college_accreditation_details" rows="3" placeholder="Awards or recognitions">{{ company.college_accreditation_details|default:'' }}</textarea>
+              </div>
+              <div class="col-md-6">
+                <label for="naac_grade" class="form-label">NAAC Grade</label>
+                <input type="text" class="form-control" id="naac_grade" name="naac_grade" value="{{ company.naac_grade|default:'' }}" placeholder="e.g. A++, A">
+              </div>
+              <div class="col-md-6">
+                <label for="approval_details" class="form-label">UGC/AICTE Approval Details</label>
+                <textarea class="form-control" id="approval_details" name="approval_details" rows="1" placeholder="Approval numbers or details">{{ company.approval_details|default:'' }}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="col-md-6">
-        <label for="website" class="form-label">Website</label>
-        <input type="url" class="form-control" id="website" name="website" value="{{ company.website|default:'' }}" placeholder="https://...">
+    </div>
+
+    <!-- 3. Contact Details Card -->
+    <div class="col-12 col-xl-6">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-body p-4 p-md-5">
+          <h5 class="fw-bold mb-4 text-primary border-bottom pb-2"><i class="bi bi-telephone me-2"></i> Contact Details</h5>
+          
+          <div class="row g-4">
+            <div class="col-md-6">
+              <label for="email" class="form-label">Institute Email *</label>
+              <input type="email" class="form-control" id="email" name="email" value="{{ company.email|default:'' }}" placeholder="official@institute.edu" required>
+            </div>
+            <div class="col-md-6">
+              <label for="phone" class="form-label">Institute Mobile *</label>
+              <input type="tel" class="form-control" id="phone" name="phone" pattern="[0-9]{10,15}" value="{{ company.phone|default:'' }}" placeholder="10-15 digits only" required>
+              <div class="invalid-feedback">Please enter a valid 10-15 digit mobile number.</div>
+            </div>
+            <div class="col-12 mt-4">
+              <h6 class="fw-bold text-secondary mb-3">Primary Contact Person</h6>
+            </div>
+            <div class="col-md-12">
+              <label for="contact_person_name" class="form-label">Name *</label>
+              <input type="text" class="form-control" id="contact_person_name" name="contact_person_name" value="{{ company.contact_person_name|default:'' }}" pattern="[A-Za-z0-9\s\.\-\&,']+" title="Only letters, numbers, spaces, and basic punctuation (.,-&') are allowed." required>
+            </div>
+            <div class="col-md-6">
+              <label for="contact_person_designation" class="form-label">Designation *</label>
+              <input type="text" class="form-control" id="contact_person_designation" name="contact_person_designation" value="{{ company.contact_person_designation|default:'' }}" required placeholder="e.g. HR Manager">
+            </div>
+            <div class="col-md-6">
+              <label for="contact_person_mobile" class="form-label">Mobile Number *</label>
+              <input type="tel" class="form-control" id="contact_person_mobile" name="contact_person_mobile" pattern="[0-9]{10,15}" value="{{ company.contact_person_mobile|default:'' }}" placeholder="10-15 digits only" required>
+              <div class="invalid-feedback">Please enter a valid 10-15 digit mobile number.</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="col-md-6">
-        <label for="industry" class="form-label">Industry</label>
-        <input type="text" class="form-control" id="industry" name="industry" value="{{ company.industry|default:'' }}" placeholder="e.g. Technology, Healthcare">
+    </div>
+
+    <!-- 4. Location Details Card -->
+    <div class="col-12 col-xl-6">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-body p-4 p-md-5">
+          <h5 class="fw-bold mb-4 text-primary border-bottom pb-2"><i class="bi bi-geo-alt me-2"></i> Location</h5>
+          
+          <div class="row g-4">
+            <div class="col-12">
+              <label for="address" class="form-label">Street Address *</label>
+              <textarea class="form-control" id="address" name="address" rows="2" placeholder="Building, Street, Area" required>{{ company.address|default:'' }}</textarea>
+            </div>
+            <div class="col-md-6">
+              <label for="city" class="form-label">City *</label>
+              <input type="text" class="form-control" id="city" name="city" value="{{ company.city|default:'' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label for="state" class="form-label">State *</label>
+              <input type="text" class="form-control" id="state" name="state" value="{{ company.state|default:'' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label for="country" class="form-label">Country *</label>
+              <input type="text" class="form-control" id="country" name="country" value="{{ company.country|default:'India' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label for="pincode" class="form-label">Pincode *</label>
+              <input type="text" class="form-control" id="pincode" name="pincode" value="{{ company.pincode|default:'' }}" required>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="col-md-6">
-        <label for="size" class="form-label">Company Size</label>
-        <select class="form-select" id="size" name="size">
-          <option value="">Select size</option>
-          <option value="1-10" {% if company.size == '1-10' %}selected{% endif %}>Startup (1–10)</option>
-          <option value="11-50" {% if company.size == '11-50' %}selected{% endif %}>Small (11–50)</option>
-          <option value="51-200" {% if company.size == '51-200' %}selected{% endif %}>Medium (51–200)</option>
-          <option value="201-1000" {% if company.size == '201-1000' %}selected{% endif %}>Large (201–1000)</option>
-          <option value="1000+" {% if company.size == '1000+' %}selected{% endif %}>Enterprise (1000+)</option>
-        </select>
-      </div>
-      <div class="col-12">
-        <label for="description" class="form-label">About the Company</label>
-        <textarea class="form-control" id="description" name="description" rows="5" placeholder="What does your company do?">{{ company.description|default:'' }}</textarea>
+    </div>
+
+    <!-- 5. Additional Info Card -->
+    <div class="col-12">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-4 p-md-5">
+          <h5 class="fw-bold mb-4 text-primary border-bottom pb-2"><i class="bi bi-building me-2"></i> Additional Info (Optional)</h5>
+          
+          <div class="row g-4">
+            <div class="col-md-6">
+              <label for="website" class="form-label">Website</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                <input type="url" class="form-control" id="website" name="website" value="{{ company.website|default:'' }}" placeholder="https://...">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label for="industry" class="form-label">Industry</label>
+              <input type="text" class="form-control" id="industry" name="industry" value="{{ company.industry|default:'' }}" placeholder="e.g. Education, EdTech">
+            </div>
+            <div class="col-md-4">
+              <label for="size" class="form-label">Institute Size</label>
+              <select class="form-select" id="size" name="size">
+                <option value="">Select size</option>
+                <option value="1-10" {% if company.size == '1-10' %}selected{% endif %}>Startup (1–10)</option>
+                <option value="11-50" {% if company.size == '11-50' %}selected{% endif %}>Small (11–50)</option>
+                <option value="51-200" {% if company.size == '51-200' %}selected{% endif %}>Medium (51–200)</option>
+                <option value="201-1000" {% if company.size == '201-1000' %}selected{% endif %}>Large (201–1000)</option>
+                <option value="1000+" {% if company.size == '1000+' %}selected{% endif %}>Enterprise (1000+)</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="number_of_students" class="form-label">Number of Students</label>
+              <input type="number" class="form-control" id="number_of_students" name="number_of_students" value="{{ company.number_of_students|default:'' }}" min="0">
+            </div>
+            <div class="col-md-4">
+              <label for="number_of_staff" class="form-label">Number of Staff</label>
+              <input type="number" class="form-control" id="number_of_staff" name="number_of_staff" value="{{ company.number_of_staff|default:'' }}" min="0">
+            </div>
+            <div class="col-12">
+              <label for="description" class="form-label">About the Institute</label>
+              <textarea class="form-control" id="description" name="description" rows="5" placeholder="Provide a brief history, mission, or vision of your institute...">{{ company.description|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="d-flex gap-2">
-    <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Save Company</button>
+  <div class="d-flex justify-content-end mt-5 mb-3">
+    <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm"><i class="bi bi-check2-circle me-2"></i> Save Profile</button>
   </div>
 </form>
 
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Institute Type Logic
+    const schoolRadio = document.getElementById("type_school");
+    const collegeRadio = document.getElementById("type_college");
+    const schoolContainer = document.getElementById("school_fields_container");
+    const collegeContainer = document.getElementById("college_fields_container");
+
+    const instituteNameLabel = document.getElementById("institute_name_label");
+    const schoolRequiredFields = document.querySelectorAll(".school-required");
+    const collegeRequiredFields = document.querySelectorAll(".college-required");
+
+    function toggleFields() {
+      if (schoolRadio.checked) {
+        schoolContainer.style.display = "block";
+        collegeContainer.style.display = "none";
+        instituteNameLabel.textContent = "School Name";
+        
+        // Make school fields required
+        schoolRequiredFields.forEach(field => {
+          field.required = true;
+        });
+        
+        // Clear college fields
+        collegeRequiredFields.forEach(field => {
+          field.required = false;
+          field.value = "";
+        });
+        document.getElementById("departments").value = "";
+        document.getElementById("college_accreditation_details").value = "";
+        document.getElementById("naac_grade").value = "";
+        document.getElementById("approval_details").value = "";
+        
+      } else {
+        schoolContainer.style.display = "none";
+        collegeContainer.style.display = "block";
+        instituteNameLabel.textContent = "College Name";
+        
+        // Make college fields required
+        collegeRequiredFields.forEach(field => {
+          field.required = true;
+        });
+        
+        // Remove required attribute and clear values for school fields
+        schoolRequiredFields.forEach(field => {
+          field.required = false;
+          field.value = "";
+        });
+        document.getElementById("school_facilities").value = "";
+        document.getElementById("accreditation_details").value = "";
+      }
+    }
+
+    schoolRadio.addEventListener("change", toggleFields);
+    collegeRadio.addEventListener("change", toggleFields);
+    toggleFields(); // Initial state
+
+    // Logo Upload Logic
+    const logoInput = document.getElementById("logo");
+    const previewImg = document.getElementById("logo_preview_img");
+    const placeholderIcon = document.getElementById("logo_placeholder_icon");
+
+    if (logoInput) {
+      logoInput.addEventListener("change", function(e) {
+        const file = this.files[0];
+        if (!file) {
+          if (placeholderIcon) placeholderIcon.style.display = "flex";
+          previewImg.style.display = "none";
+          previewImg.src = "";
+          return;
+        }
+        
+        // Validate Size
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        if (file.size > maxSize) {
+          alert("The selected file is too large. Maximum size is 2MB.");
+          this.value = ""; // Clear input
+          return;
+        }
+
+        // Validate Type
+        const validTypes = ["image/jpeg", "image/png", "image/webp"];
+        if (!validTypes.includes(file.type)) {
+          alert("Invalid file format. Please select a JPG, PNG, or WEBP image.");
+          this.value = ""; // Clear input
+          return;
+        }
+
+        // Generate Preview
+        const objectUrl = URL.createObjectURL(file);
+        previewImg.src = objectUrl;
+        previewImg.style.display = "block";
+        if (placeholderIcon) placeholderIcon.style.display = "none";
+      });
+    }
+  });
+</script>
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends "dashboard/_layout.html" %}
 {% block sidebar_nav %}
 <a class="nav-link {% if sidebar_section == 'dashboard' %}active{% endif %}" href="{% url 'recruiter:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
-<a class="nav-link {% if sidebar_section == 'company' %}active{% endif %}" href="{% url 'recruiter:company-profile' %}"><i class="bi bi-buildings"></i> Company Profile</a>
+<a class="nav-link {% if sidebar_section == 'company' %}active{% endif %}" href="{% url 'recruiter:company-profile' %}"><i class="bi bi-buildings"></i> Institute Profile</a>
 <div class="sidebar-section">Jobs</div>
 <a class="nav-link {% if sidebar_section == 'post-job' %}active{% endif %}" href="{% url 'recruiter:post-job' %}"><i class="bi bi-plus-circle"></i> Post a Job</a>
 <a class="nav-link {% if sidebar_section == 'manage-jobs' %}active{% endif %}" href="{% url 'recruiter:manage-jobs' %}"><i class="bi bi-briefcase"></i> Manage Jobs</a>

@@ -131,20 +131,235 @@ class RecruiterCompanyProfileView(RecruiterMixin, TemplateView):
         industry = request.POST.get("industry", "").strip()
         size = request.POST.get("size", "").strip()
         
-        if not name:
-            messages.error(request, "Company name is required.")
+        institute_type = request.POST.get("institute_type", "school").strip()
+        school_type = request.POST.get("school_type", "").strip()
+        classes_offered = request.POST.get("classes_offered", "").strip()
+        medium_of_instruction = request.POST.get("medium_of_instruction", "").strip()
+        principal_name = request.POST.get("principal_name", "").strip()
+        school_facilities = request.POST.get("school_facilities", "").strip()
+        accreditation_details = request.POST.get("accreditation_details", "").strip()
+        
+        university_affiliation = request.POST.get("university_affiliation", "").strip()
+        college_type = request.POST.get("college_type", "").strip()
+        courses_offered = request.POST.get("courses_offered", "").strip()
+        departments = request.POST.get("departments", "").strip()
+        director_name = request.POST.get("director_name", "").strip()
+        college_accreditation_details = request.POST.get("college_accreditation_details", "").strip()
+        naac_grade = request.POST.get("naac_grade", "").strip()
+        approval_details = request.POST.get("approval_details", "").strip()
+
+        email = request.POST.get("email", "").strip()
+        phone = request.POST.get("phone", "").strip()
+        contact_person_name = request.POST.get("contact_person_name", "").strip()
+        contact_person_designation = request.POST.get("contact_person_designation", "").strip()
+        contact_person_mobile = request.POST.get("contact_person_mobile", "").strip()
+        
+        address = request.POST.get("address", "").strip()
+        city = request.POST.get("city", "").strip()
+        state = request.POST.get("state", "").strip()
+        country = request.POST.get("country", "India").strip()
+        pincode = request.POST.get("pincode", "").strip()
+
+        number_of_students = request.POST.get("number_of_students", "").strip()
+        number_of_staff = request.POST.get("number_of_staff", "").strip()
+
+        # Required fields validation
+        required_fields = {
+            "Institute Name": name,
+            "Institute Email": email,
+            "Institute Mobile Number": phone,
+            "Contact Person Name": contact_person_name,
+            "Contact Person Designation": contact_person_designation,
+            "Contact Person Mobile Number": contact_person_mobile,
+            "Address": address,
+            "City": city,
+            "State": state,
+            "Country": country,
+            "Pincode": pincode,
+        }
+
+        missing_fields = [label for label, val in required_fields.items() if not val]
+        if missing_fields:
+            messages.error(request, f"Missing required fields: {', '.join(missing_fields)}")
             return redirect("recruiter:company-profile")
             
+        from django.core.validators import URLValidator, validate_email
+        from django.core.exceptions import ValidationError
+        import re
+
+        # Email validation
+        try:
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, "Please enter a valid email address.")
+            return redirect("recruiter:company-profile")
+
+        # Website validation
+        if website:
+            url_validator = URLValidator()
+            if not website.startswith(('http://', 'https://')):
+                website = 'https://' + website
+            try:
+                url_validator(website)
+            except ValidationError:
+                messages.error(request, "Please enter a valid website URL.")
+                return redirect("recruiter:company-profile")
+
+        # Duplicate Name Validation
+        from apps.recruiters.models import Company
+        duplicate_query = Company.objects.filter(name__iexact=name)
+        if company:
+            duplicate_query = duplicate_query.exclude(pk=company.pk)
+        if duplicate_query.exists():
+            messages.error(request, "An institute with this exact name already exists. Please choose a different name.")
+            return redirect("recruiter:company-profile")
+
+        # Regex Validations for names
+        name_regex = re.compile(r"^[A-Za-z0-9\s\.\-\&,']+$")
+        names_to_validate = {
+            "Institute Name": name,
+            "Contact Person Name": contact_person_name,
+        }
+        for label, val in names_to_validate.items():
+            if val and not name_regex.match(val):
+                messages.error(request, f"{label} contains invalid characters. Only letters, numbers, spaces, and basic punctuation (.,-&') are allowed.")
+                return redirect("recruiter:company-profile")
+
+        mobile_regex = re.compile(r"^\d{10,15}$")
+        if not mobile_regex.match(phone):
+            messages.error(request, "Institute Mobile Number must contain only 10-15 digits.")
+            return redirect("recruiter:company-profile")
+        if not mobile_regex.match(contact_person_mobile):
+            messages.error(request, "Contact Person Mobile Number must contain only 10-15 digits.")
+            return redirect("recruiter:company-profile")
+
+        if institute_type not in ["school", "college"]:
+            messages.error(request, "Invalid institute type selected.")
+            return redirect("recruiter:company-profile")
+
+        if institute_type == "school":
+            school_required = {
+                "School Type": school_type,
+                "Classes Offered": classes_offered,
+                "Medium of Instruction": medium_of_instruction,
+                "Principal Name": principal_name,
+            }
+            missing_school = [label for label, val in school_required.items() if not val]
+            if missing_school:
+                messages.error(request, f"Missing required school fields: {', '.join(missing_school)}")
+                return redirect("recruiter:company-profile")
+            
+            if principal_name and not name_regex.match(principal_name):
+                messages.error(request, "Principal Name contains invalid characters.")
+                return redirect("recruiter:company-profile")
+                
+            college_type = ""
+            university_affiliation = ""
+            courses_offered = ""
+            departments = ""
+            director_name = ""
+            college_accreditation_details = ""
+            naac_grade = ""
+            approval_details = ""
+        elif institute_type == "college":
+            college_required = {
+                "College Type": college_type,
+                "Affiliated University": university_affiliation,
+                "Courses Offered": courses_offered,
+                "Principal/Director Name": director_name,
+            }
+            missing_college = [label for label, val in college_required.items() if not val]
+            if missing_college:
+                messages.error(request, f"Missing required college fields: {', '.join(missing_college)}")
+                return redirect("recruiter:company-profile")
+                
+            if director_name and not name_regex.match(director_name):
+                messages.error(request, "Principal/Director Name contains invalid characters.")
+                return redirect("recruiter:company-profile")
+                
+            school_type = ""
+            classes_offered = ""
+            medium_of_instruction = ""
+            principal_name = ""
+            school_facilities = ""
+            accreditation_details = ""
+
+        # Validate Logo presence and file security
+        if not company or not company.logo:
+            if "logo" not in request.FILES:
+                messages.error(request, "Institute Logo is required.")
+                return redirect("recruiter:company-profile")
+                
+        if "logo" in request.FILES:
+            logo_file = request.FILES["logo"]
+            if logo_file.size > 2 * 1024 * 1024:
+                messages.error(request, "Logo file size must not exceed 2MB.")
+                return redirect("recruiter:company-profile")
+            
+            valid_mimes = ['image/jpeg', 'image/png', 'image/webp']
+            if logo_file.content_type not in valid_mimes:
+                messages.error(request, "Invalid logo format. Only JPG, PNG, and WEBP are allowed.")
+                return redirect("recruiter:company-profile")
+
         validated_data = {
             "name": name,
             "description": description,
             "website": website,
             "industry": industry,
             "size": size,
+            "institute_type": institute_type,
+            "school_type": school_type,
+            "classes_offered": classes_offered,
+            "medium_of_instruction": medium_of_instruction,
+            "principal_name": principal_name,
+            "school_facilities": school_facilities,
+            "accreditation_details": accreditation_details,
+            "college_type": college_type,
+            "university_affiliation": university_affiliation,
+            "courses_offered": courses_offered,
+            "departments": departments,
+            "director_name": director_name,
+            "college_accreditation_details": college_accreditation_details,
+            "naac_grade": naac_grade,
+            "approval_details": approval_details,
+            "email": email,
+            "phone": phone,
+            "contact_person_name": contact_person_name,
+            "contact_person_designation": contact_person_designation,
+            "contact_person_mobile": contact_person_mobile,
+            "address": address,
+            "city": city,
+            "state": state,
+            "country": country,
+            "pincode": pincode,
         }
+
+        if number_of_students and number_of_students.isdigit():
+            validated_data["number_of_students"] = int(number_of_students)
+        else:
+            validated_data["number_of_students"] = None
+            
+        if number_of_staff and number_of_staff.isdigit():
+            validated_data["number_of_staff"] = int(number_of_staff)
+        else:
+            validated_data["number_of_staff"] = None
         
         if "logo" in request.FILES:
-            validated_data["logo"] = request.FILES["logo"]
+            uploaded_logo = request.FILES["logo"]
+            
+            # File size validation (2MB = 2 * 1024 * 1024 bytes)
+            if uploaded_logo.size > 2 * 1024 * 1024:
+                messages.error(request, "Logo file size must not exceed 2MB.")
+                return redirect("recruiter:company-profile")
+                
+            # Content type validation
+            valid_types = ['image/jpeg', 'image/png', 'image/webp']
+            if uploaded_logo.content_type not in valid_types:
+                messages.error(request, "Invalid file format. Please upload JPG, PNG, or WEBP.")
+                return redirect("recruiter:company-profile")
+                
+            from apps.core.utils import optimize_logo
+            validated_data["logo"] = optimize_logo(uploaded_logo)
             
         if company:
             # Update existing company
@@ -177,7 +392,7 @@ class RecruiterPostJobView(RecruiterMixin, TemplateView):
 
         company = self.get_company()
         if not company:
-            messages.error(request, "You must create a company profile before posting a job.")
+            messages.error(request, "You must create a institute profile before posting a job.")
             return redirect("recruiter:company-profile")
 
         title = request.POST.get("title", "").strip()

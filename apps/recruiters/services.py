@@ -7,7 +7,7 @@ logger = logging.getLogger("apps.recruiters")
 
 
 class CompanyService:
-    def create(self, validated_data: dict) -> Company:
+    def create(self, validated_data: dict) -> Institute:
         name = validated_data.get("name", "")
         validated_data["slug"] = self._unique_slug(name)
         company = Company.objects.create(**validated_data)

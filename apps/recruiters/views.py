@@ -77,7 +77,7 @@ class RecruiterProfileView(APIView):
 
 
 # ===========================================================================
-# Feature: Company Profile (manage the recruiter's own company)
+# Feature: Institute Profile (manage the recruiter's own company)
 # ===========================================================================
 @extend_schema(tags=["recruiters"])
 class MyCompanyView(APIView):

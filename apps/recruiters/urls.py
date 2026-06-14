@@ -4,7 +4,7 @@ from . import views
 app_name = "recruiters"
 
 urlpatterns = [
-    # Company directory + onboarding
+    # Institute directory + onboarding
     path("companies/", views.CompanyListCreateView.as_view(), name="company-list"),
     path("profile/", views.RecruiterProfileView.as_view(), name="recruiter-profile"),
 

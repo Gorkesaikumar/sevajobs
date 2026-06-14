@@ -166,11 +166,11 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endblock %}
 
 {% block modals %}
-<!-- Delete Company Modal -->
+<!-- Delete Institute Modal -->
 <div class="modal fade" id="deleteCompanyModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title fw-bold text-danger">Delete Company</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-header"><h5 class="modal-title fw-bold text-danger">Delete Institute</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <form method="post">
         {% csrf_token %}
         <input type="hidden" name="action" value="delete_company">
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 {% for c in companies %}
-<!-- View Company Modal -->
+<!-- View Institute Modal -->
 <div class="modal fade" id="viewCompanyModal{{ c.id }}" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">

@@ -19,7 +19,7 @@
         {% endif %}
       </div>
       <h1 class="mb-0">Welcome back, {{ request.user.first_name|default:"Recruiter" }}!</h1>
-      <p class="subtitle mb-0">{{ company.name|default:"Set up your company profile to get started" }}</p>
+      <p class="subtitle mb-0">{{ company.name|default:"Set up your institute profile to get started" }}</p>
     </div>
     <div class="d-flex gap-2 flex-shrink-0">
       <a href="{% url 'recruiter:post-job' %}" class="btn btn-gradient">
