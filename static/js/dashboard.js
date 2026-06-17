@@ -172,10 +172,19 @@
                 window.location.href = window.location.pathname + '?_t=' + new Date().getTime();
               } else {
                 return r.json().then(data => {
+                  let errMsg = 'An error occurred.';
+                  if (data && data.error && data.error.message) {
+                      errMsg = data.error.message;
+                  } else if (data && typeof data.error === 'string') {
+                      errMsg = data.error;
+                  } else if (data && data.detail) {
+                      errMsg = data.detail;
+                  }
+                  
                   if (typeof window.showAlert === 'function') {
-                      window.showAlert(data.detail || 'An error occurred.', 'Error', 'bi-exclamation-octagon text-danger');
+                      window.showAlert(errMsg, 'Error', 'bi-exclamation-octagon text-danger');
                   } else {
-                      alert(data.detail || 'An error occurred.');
+                      alert(errMsg);
                   }
                   btn.disabled = false;
                   btn.innerHTML = originalHtml;
