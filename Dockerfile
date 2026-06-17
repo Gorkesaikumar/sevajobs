@@ -11,7 +11,7 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev gcc curl \
+    libpq-dev gcc curl postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies

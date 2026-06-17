@@ -9,7 +9,18 @@ from apps.accounts import template_views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 def health_check(request):
-    return JsonResponse({"status": "healthy"})
+    try:
+        from django.db import connection
+        connection.ensure_connection()
+        
+        from django.core.cache import cache
+        cache.set('health_check', 'ok', 5)
+        if cache.get('health_check') != 'ok':
+            raise Exception("Cache error")
+            
+        return JsonResponse({"status": "ok"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=503)
 
 urlpatterns = [
     # Health Check

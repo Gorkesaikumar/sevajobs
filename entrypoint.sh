@@ -3,8 +3,8 @@
 set -e
 
 echo "Waiting for PostgreSQL to start..."
-while ! curl http://${DB_HOST:-db}:5432/ 2>&1 | grep '52'; do
-  sleep 0.1
+while ! pg_isready -h ${DB_HOST:-db} -U ${DB_USER:-postgres} -q; do
+  sleep 1
 done
 echo "PostgreSQL started"
 
