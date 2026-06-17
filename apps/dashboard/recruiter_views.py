@@ -167,18 +167,8 @@ class RecruiterCompanyProfileView(RecruiterMixin, TemplateView):
         
         company = self.get_company()
         name = request.POST.get("name", "").strip()
-        description = request.POST.get("description", "").strip()
-        website = request.POST.get("website", "").strip()
-        industry = request.POST.get("industry", "").strip()
-        size = request.POST.get("size", "").strip()
         
         institute_type = request.POST.get("institute_type", "school").strip()
-        school_type = request.POST.get("school_type", "").strip()
-        classes_offered = request.POST.get("classes_offered", "").strip()
-        medium_of_instruction = request.POST.get("medium_of_instruction", "").strip()
-        principal_name = request.POST.get("principal_name", "").strip()
-        school_facilities = request.POST.get("school_facilities", "").strip()
-        accreditation_details = request.POST.get("accreditation_details", "").strip()
         
         university_affiliation = request.POST.get("university_affiliation", "").strip()
         college_type = request.POST.get("college_type", "").strip()
@@ -200,9 +190,6 @@ class RecruiterCompanyProfileView(RecruiterMixin, TemplateView):
         state = request.POST.get("state", "").strip()
         country = request.POST.get("country", "India").strip()
         pincode = request.POST.get("pincode", "").strip()
-
-        number_of_students = request.POST.get("number_of_students", "").strip()
-        number_of_staff = request.POST.get("number_of_staff", "").strip()
 
         # Required fields validation
         required_fields = {
@@ -234,17 +221,6 @@ class RecruiterCompanyProfileView(RecruiterMixin, TemplateView):
         except ValidationError:
             messages.error(request, "Please enter a valid email address.")
             return redirect("recruiter:company-profile")
-
-        # Website validation
-        if website:
-            url_validator = URLValidator()
-            if not website.startswith(('http://', 'https://')):
-                website = 'https://' + website
-            try:
-                url_validator(website)
-            except ValidationError:
-                messages.error(request, "Please enter a valid website URL.")
-                return redirect("recruiter:company-profile")
 
         # Duplicate Name Validation
         from apps.recruiters.models import Company
@@ -279,21 +255,6 @@ class RecruiterCompanyProfileView(RecruiterMixin, TemplateView):
             return redirect("recruiter:company-profile")
 
         if institute_type == "school":
-            school_required = {
-                "School Type": school_type,
-                "Classes Offered": classes_offered,
-                "Medium of Instruction": medium_of_instruction,
-                "Principal Name": principal_name,
-            }
-            missing_school = [label for label, val in school_required.items() if not val]
-            if missing_school:
-                messages.error(request, f"Missing required school fields: {', '.join(missing_school)}")
-                return redirect("recruiter:company-profile")
-            
-            if principal_name and not name_regex.match(principal_name):
-                messages.error(request, "Principal Name contains invalid characters.")
-                return redirect("recruiter:company-profile")
-                
             college_type = ""
             university_affiliation = ""
             courses_offered = ""
@@ -317,13 +278,6 @@ class RecruiterCompanyProfileView(RecruiterMixin, TemplateView):
             if director_name and not name_regex.match(director_name):
                 messages.error(request, "Principal/Director Name contains invalid characters.")
                 return redirect("recruiter:company-profile")
-                
-            school_type = ""
-            classes_offered = ""
-            medium_of_instruction = ""
-            principal_name = ""
-            school_facilities = ""
-            accreditation_details = ""
 
         # Validate Logo presence and file security
         if not company or not company.logo:
@@ -344,17 +298,7 @@ class RecruiterCompanyProfileView(RecruiterMixin, TemplateView):
 
         validated_data = {
             "name": name,
-            "description": description,
-            "website": website,
-            "industry": industry,
-            "size": size,
             "institute_type": institute_type,
-            "school_type": school_type,
-            "classes_offered": classes_offered,
-            "medium_of_instruction": medium_of_instruction,
-            "principal_name": principal_name,
-            "school_facilities": school_facilities,
-            "accreditation_details": accreditation_details,
             "college_type": college_type,
             "university_affiliation": university_affiliation,
             "courses_offered": courses_offered,
@@ -375,16 +319,7 @@ class RecruiterCompanyProfileView(RecruiterMixin, TemplateView):
             "pincode": pincode,
         }
 
-        if number_of_students and number_of_students.isdigit():
-            validated_data["number_of_students"] = int(number_of_students)
-        else:
-            validated_data["number_of_students"] = None
-            
-        if number_of_staff and number_of_staff.isdigit():
-            validated_data["number_of_staff"] = int(number_of_staff)
-        else:
-            validated_data["number_of_staff"] = None
-        
+
         if "logo" in request.FILES:
             uploaded_logo = request.FILES["logo"]
             
@@ -455,7 +390,7 @@ def _parse_job_post(request, *, for_update: bool = False):
     description = request.POST.get("description", "").strip()
     location = request.POST.get("location", "").strip()
     job_type = request.POST.get("job_type", "full_time").strip()
-    experience_level = request.POST.get("experience_level", "fresher").strip()
+    experience_level = request.POST.get("experience_level", "FRESHER").strip()
     action = request.POST.get("action", "draft").strip()
 
     if not title:
@@ -508,7 +443,6 @@ def _parse_job_post(request, *, for_update: bool = False):
         "segment": segment,
         "description": description,
         "responsibilities": request.POST.get("responsibilities", "").strip(),
-        "requirements": request.POST.get("requirements", "").strip(),
         "benefits": request.POST.get("benefits", "").strip(),
         "job_type": job_type,
         "experience_level": experience_level,
@@ -537,11 +471,6 @@ def _parse_job_post(request, *, for_update: bool = False):
     category_text = request.POST.get("category", "").strip()
     if category_text:
         metadata["category_label"] = category_text
-
-    skills_raw = request.POST.get("skills", "")
-    skills_list = [s.strip() for s in skills_raw.split(",") if s.strip()]
-    if skills_list:
-        metadata["skills_text"] = skills_list
 
     validated_data["metadata"] = metadata
 

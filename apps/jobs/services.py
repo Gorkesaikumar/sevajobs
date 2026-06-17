@@ -18,7 +18,7 @@ from .repository import JobRepository
 
 logger = logging.getLogger("apps.jobs")
 
-_M2M_FIELDS = ("skills_required", "preferred_qualifications")
+_M2M_FIELDS = ("preferred_qualifications",)
 
 
 class JobService:
@@ -68,7 +68,6 @@ class JobService:
         clone.applications_count = 0
         clone.save()
         # Copy many-to-many relationships.
-        clone.skills_required.set(job.skills_required.all())
         clone.preferred_qualifications.set(job.preferred_qualifications.all())
         logger.info("Job %s cloned to %s", job.id, clone.id)
         return clone
@@ -254,17 +253,7 @@ class JobService:
         
         users_to_notify = set()
         
-        # 1. Match via JobSeekerProfile
-        skill_ids = job.skills_required.values_list('id', flat=True)
-        if skill_ids:
-            profiles = JobSeekerProfile.objects.filter(
-                preferred_job_type=job.job_type,
-                skills__id__in=skill_ids
-            ).distinct().select_related('user')
-            for profile in profiles:
-                users_to_notify.add(profile.user)
-                
-        # 2. Match via JobAlerts
+        # 1. Match via JobAlerts
         alerts = JobAlert.objects.filter(is_active=True).select_related('user')
         for alert in alerts:
             match = True

@@ -100,7 +100,7 @@ class JobAdmin(admin.ModelAdmin):
         "id", "views_count", "applications_count", "published_at",
         "reviewed_by", "reviewed_at", "created_at", "updated_at",
     ]
-    filter_horizontal = ["skills_required", "preferred_qualifications"]
+    filter_horizontal = ["preferred_qualifications"]
     autocomplete_fields = ["company", "recruiter", "category", "minimum_qualification"]
     actions = ["approve_jobs", "reject_jobs", "feature_jobs", "expire_jobs"]
 

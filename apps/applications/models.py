@@ -176,11 +176,13 @@ class JobAlert(BaseModel):
     )
     
     EXPERIENCE_LEVEL_CHOICES = (
-        ("fresher", "Fresher"),
-        ("junior", "Junior (1–3 yrs)"),
-        ("mid", "Mid (3–6 yrs)"),
-        ("senior", "Senior (6+ yrs)"),
-        ("lead", "Lead / Principal"),
+        ("FRESHER", "Fresher (0 Years)"),
+        ("1_3_YEARS", "1 – 3 Years"),
+        ("3_6_YEARS", "3 – 6 Years"),
+        ("6_10_YEARS", "6 – 10 Years"),
+        ("10_14_YEARS", "10 – 14 Years"),
+        ("14_18_YEARS", "14 – 18 Years"),
+        ("18_PLUS_YEARS", "18+ Years"),
     )
 
     user = models.ForeignKey(

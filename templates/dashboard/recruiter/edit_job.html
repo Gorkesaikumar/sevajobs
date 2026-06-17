@@ -44,10 +44,6 @@
         <textarea class="form-control" name="responsibilities" rows="4" {% if is_locked %}disabled{% endif %}>{{ job.responsibilities }}</textarea>
       </div>
       <div class="col-12">
-        <label class="form-label">Requirements</label>
-        <textarea class="form-control" name="requirements" rows="4" {% if is_locked %}disabled{% endif %}>{{ job.requirements }}</textarea>
-      </div>
-      <div class="col-12">
         <label class="form-label">Benefits</label>
         <textarea class="form-control" name="benefits" rows="2" {% if is_locked %}disabled{% endif %}>{{ job.benefits }}</textarea>
       </div>
@@ -97,13 +93,6 @@
         <div class="form-check">
           <input class="form-check-input" type="checkbox" id="is_remote" name="is_remote" {% if job.is_remote %}checked{% endif %} {% if is_locked %}disabled{% endif %}>
           <label class="form-check-label" for="is_remote">Online / Remote</label>
-        </div>
-      </div>
-      <div class="col-12">
-        <label class="form-label">Required Skills (comma-separated)</label>
-        <div class="sj-tag-input">
-          <input type="hidden" name="skills" value="{% for s in metadata.skills_text %}{{ s }}{% if not forloop.last %},{% endif %}{% endfor %}">
-          <input type="text" placeholder="Type a skill and press Enter" {% if is_locked %}disabled{% endif %}>
         </div>
       </div>
     </div>

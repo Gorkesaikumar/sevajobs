@@ -8,114 +8,163 @@
 <section class="section-sm">
   <div class="container">
     <!-- Institute Header -->
-    <div class="sj-card p-4 p-md-5 mb-4">
-      <div class="d-flex align-items-start gap-4 flex-wrap flex-md-nowrap">
-        <div class="sj-logo-lg flex-shrink-0" style="width:96px;height:96px;font-size:2rem;border-radius:20px;">
+    <div class="sj-card p-4 p-md-5 mb-4 position-relative overflow-hidden" style="background: linear-gradient(to right, #ffffff, #f8fafc);">
+      <!-- Subtle background decoration -->
+      <div class="position-absolute end-0 top-0 w-50 h-100 opacity-25" style="background: radial-gradient(circle at top right, rgba(var(--sj-primary-rgb), 0.15), transparent 70%); pointer-events: none;"></div>
+      
+      <div class="d-flex align-items-start gap-4 flex-wrap flex-md-nowrap position-relative z-1">
+        <div class="sj-logo-lg flex-shrink-0 bg-white shadow-sm" style="width:110px;height:110px;font-size:2.5rem;border-radius:24px; padding: 4px;">
           {% if company.logo %}
             <img src="{{ company.logo.url }}" alt="{{ company.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:20px;">
           {% else %}
-            {{ company.name|slice:":1"|upper }}
+            <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-primary fw-bold" style="border-radius:20px;">
+              {{ company.name|slice:":1"|upper }}
+            </div>
           {% endif %}
         </div>
-        <div class="flex-grow-1">
-          <div class="d-flex align-items-center gap-2 mb-1">
-            <h1 class="h3 fw-800 mb-0">{{ company.name }}</h1>
-            {% if company.is_verified %}<span class="sj-badge is-verified"><i class="bi bi-patch-check-fill"></i> Verified</span>{% endif %}
+        <div class="flex-grow-1 pt-2">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <h1 class="h3 fw-800 mb-0 text-dark">{{ company.name }}</h1>
+            {% if company.is_verified %}<span class="sj-badge is-verified fs-xs"><i class="bi bi-patch-check-fill"></i> Verified</span>{% endif %}
           </div>
-          {% if company.tagline %}<p class="text-muted-2 mb-2">{{ company.tagline }}</p>{% endif %}
-          <div class="d-flex flex-wrap gap-3 mt-2">
-            {% if company.industry %}<span class="sj-chip"><i class="bi bi-building"></i> {{ company.industry }}</span>{% endif %}
-            {% if company.location %}<span class="sj-chip"><i class="bi bi-geo-alt"></i> {{ company.location }}</span>{% endif %}
-            {% if company.size %}<span class="sj-chip"><i class="bi bi-people"></i> {{ company.get_size_display }}</span>{% endif %}
-            {% if company.founded_year %}<span class="sj-chip"><i class="bi bi-calendar3"></i> Founded {{ company.founded_year }}</span>{% endif %}
+          <div class="d-flex flex-wrap align-items-center gap-3 mt-1 mb-3 text-muted fs-sm">
+            {% if company.institute_type %}<span class="d-flex align-items-center gap-1"><i class="bi bi-building"></i> {{ company.get_institute_type_display|default:"Institution" }}</span>{% endif %}
+            {% if company.location %}<span class="d-flex align-items-center gap-1"><i class="bi bi-geo-alt"></i> {{ company.location }}</span>{% endif %}
+            <span class="d-flex align-items-center gap-1"><i class="bi bi-calendar3"></i> Joined {{ company.created_at|date:"M Y" }}</span>
           </div>
-        </div>
-        <div class="d-flex gap-2 flex-shrink-0">
-          {% if company.website %}
-            <a href="{{ company.website }}" target="_blank" rel="noopener" class="btn btn-outline-light-brand btn-sm"><i class="bi bi-globe me-1"></i> Website</a>
+          {% if company.about %}
+            <div class="text-muted-2 fs-sm mb-0 pe-lg-5" style="line-height: 1.6;">{{ company.about|linebreaksbr }}</div>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <div class="row g-4">
-      <div class="col-lg-8">
-        <!-- About -->
-        {% if company.description %}
-        <div class="sj-card p-4 p-md-5 mb-4">
-          <h4 class="fw-700 mb-3">About {{ company.name }}</h4>
-          <div class="text-muted-2 lh-lg">{{ company.description|linebreaksbr }}</div>
+    <!-- KPI Statistics Section -->
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="sj-card p-4 text-center hover-lift h-100 d-flex flex-column justify-content-center border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-primary mx-auto mb-3 text-primary"><i class="bi bi-briefcase"></i></div>
+          <h2 class="fw-900 mb-1 text-dark">{{ total_active_jobs }}</h2>
+          <span class="text-muted fs-xs fw-bold text-uppercase letter-spacing-1">Active Jobs</span>
         </div>
-        {% endif %}
+      </div>
+      <div class="col-md-4">
+        <div class="sj-card p-4 text-center hover-lift h-100 d-flex flex-column justify-content-center border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-success mx-auto mb-3 text-success"><i class="bi bi-people"></i></div>
+          <h2 class="fw-900 mb-1 text-dark">{{ total_open_vacancies }}</h2>
+          <span class="text-muted fs-xs fw-bold text-uppercase letter-spacing-1">Total Vacancies</span>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="sj-card p-4 text-center hover-lift h-100 d-flex flex-column justify-content-center border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-info mx-auto mb-3 text-info"><i class="bi bi-file-earmark-text"></i></div>
+          <h2 class="fw-900 mb-1 text-dark">{{ total_applications }}</h2>
+          <span class="text-muted fs-xs fw-bold text-uppercase letter-spacing-1">Applications Received</span>
+        </div>
+      </div>
+    </div>
 
-        <!-- Active Jobs -->
-        <div class="mb-4">
-          <div class="d-flex align-items-center justify-content-between mb-3">
-            <h4 class="fw-700 mb-0">Open Positions <span class="sj-badge ms-2">{{ active_jobs.count }}</span></h4>
-          </div>
-          {% if active_jobs %}
-            <div class="row g-3">
-              {% for job in active_jobs %}
-                <div class="col-md-6">
-                  {% include "partials/_job_card.html" with job=job %}
-                </div>
-              {% endfor %}
+    <div class="row g-4">
+      <!-- Sidebar Filters -->
+      <div class="col-lg-3">
+        <div class="sj-card p-4 sticky-top bg-light border-0 shadow-sm" style="top: 80px; border-radius: 16px;">
+          <h6 class="fw-800 mb-4 text-dark"><i class="bi bi-funnel text-primary me-2"></i>Filter Openings</h6>
+          <form method="get" id="filterForm">
+            <div class="mb-4">
+              <label class="form-label fs-xs fw-bold text-muted text-uppercase letter-spacing-1 mb-2">Role / Department</label>
+              <select name="category" class="form-select form-select-sm bg-white border-0 shadow-sm py-2" onchange="this.form.submit()">
+                <option value="">All Roles</option>
+                {% for cat in categories %}
+                  <option value="{{ cat.slug }}" {% if request.GET.category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+              </select>
             </div>
-          {% else %}
-            <div class="sj-empty py-5">
-              <div class="icon"><i class="bi bi-briefcase"></i></div>
-              <h5>No open positions</h5>
-              <p class="text-muted-2 fs-sm">This company doesn't have any active openings at the moment.</p>
+            <div class="mb-4">
+              <label class="form-label fs-xs fw-bold text-muted text-uppercase letter-spacing-1 mb-2">Employment Type</label>
+              <select name="job_type" class="form-select form-select-sm bg-white border-0 shadow-sm py-2" onchange="this.form.submit()">
+                <option value="">All Types</option>
+                {% for value, label in job_types %}
+                  <option value="{{ value }}" {% if request.GET.job_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
             </div>
-          {% endif %}
+            <div class="mb-4">
+              <label class="form-label fs-xs fw-bold text-muted text-uppercase letter-spacing-1 mb-2">Experience</label>
+              <select name="experience" class="form-select form-select-sm bg-white border-0 shadow-sm py-2" onchange="this.form.submit()">
+                <option value="">Any Experience</option>
+                {% for value, label in experience_levels %}
+                  <option value="{{ value }}" {% if request.GET.experience == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="form-label fs-xs fw-bold text-muted text-uppercase letter-spacing-1 mb-2">Location</label>
+              <input type="text" name="location" class="form-control form-control-sm bg-white border-0 shadow-sm py-2" placeholder="e.g. Pune" value="{{ request.GET.location }}">
+            </div>
+            <div class="d-grid gap-2 mt-4 pt-2 border-top">
+              <button type="submit" class="btn btn-primary btn-sm fw-semibold py-2">Apply Filters</button>
+              <a href="?" class="btn btn-light btn-sm fw-semibold py-2">Clear All</a>
+            </div>
+          </form>
         </div>
       </div>
 
-      <!-- Sidebar -->
-      <div class="col-lg-4">
-        <div class="sj-card p-4 mb-4">
-          <h6 class="fw-700 mb-3">Quick Facts</h6>
-          <ul class="list-unstyled d-grid gap-3 mb-0">
-            {% if company.industry %}
-            <li class="d-flex align-items-center gap-2 fs-sm">
-              <i class="bi bi-building text-muted" style="width:1.2rem;"></i>
-              <span class="text-muted-2">Industry</span>
-              <span class="fw-semibold ms-auto">{{ company.industry }}</span>
-            </li>
-            {% endif %}
-            {% if company.size %}
-            <li class="d-flex align-items-center gap-2 fs-sm">
-              <i class="bi bi-people text-muted" style="width:1.2rem;"></i>
-              <span class="text-muted-2">Size</span>
-              <span class="fw-semibold ms-auto">{{ company.get_size_display }}</span>
-            </li>
-            {% endif %}
-            {% if company.location %}
-            <li class="d-flex align-items-center gap-2 fs-sm">
-              <i class="bi bi-geo-alt text-muted" style="width:1.2rem;"></i>
-              <span class="text-muted-2">Location</span>
-              <span class="fw-semibold ms-auto">{{ company.location }}</span>
-            </li>
-            {% endif %}
-            <li class="d-flex align-items-center gap-2 fs-sm">
-              <i class="bi bi-briefcase text-muted" style="width:1.2rem;"></i>
-              <span class="text-muted-2">Open Jobs</span>
-              <span class="fw-semibold ms-auto text-primary">{{ active_jobs.count }}</span>
-            </li>
-          </ul>
-        </div>
-
-        {% if company.social_linkedin or company.social_twitter %}
-        <div class="sj-card p-4 mb-4">
-          <h6 class="fw-700 mb-3">Connect</h6>
-          <div class="d-flex gap-2">
-            {% if company.social_linkedin %}<a href="{{ company.social_linkedin }}" target="_blank" rel="noopener" class="btn btn-outline-light-brand btn-sm"><i class="bi bi-linkedin me-1"></i> LinkedIn</a>{% endif %}
-            {% if company.social_twitter %}<a href="{{ company.social_twitter }}" target="_blank" rel="noopener" class="btn btn-outline-light-brand btn-sm"><i class="bi bi-twitter-x me-1"></i> Twitter</a>{% endif %}
+      <div class="col-lg-9">
+        <!-- Active Jobs -->
+        <div class="mb-4">
+          <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+            <h4 class="fw-800 mb-0 text-dark">Open Positions at This Institution</h4>
           </div>
+          {% if active_jobs %}
+            <div class="d-flex flex-column gap-3">
+              {% for job in active_jobs %}
+                <article class="sj-card p-4 hover-lift position-relative border-0 shadow-sm transition-all">
+                  <div class="row align-items-center">
+                    <div class="col-md-9 mb-3 mb-md-0">
+                      <div class="d-flex align-items-center gap-2 mb-2">
+                        <h3 class="h5 mb-0 fw-800 text-dark text-truncate">
+                          <a href="{% url 'core:job-detail' slug=job.slug %}" class="text-reset stretched-link">{{ job.title }}</a>
+                        </h3>
+                        {% if job.category %}
+                          <span class="badge bg-soft-primary text-primary px-2 py-1 rounded-pill fw-semibold">{{ job.category.name }}</span>
+                        {% endif %}
+                      </div>
+                      
+                      <div class="d-flex flex-wrap align-items-center gap-3 gap-md-4 mt-3 text-muted-2 fs-sm fw-medium">
+                        <span class="d-flex align-items-center gap-1"><i class="bi bi-geo-alt text-muted"></i>{{ job.location }}</span>
+                        <span class="d-flex align-items-center gap-1"><i class="bi bi-briefcase text-muted"></i>{{ job.get_job_type_display }}</span>
+                        <span class="d-flex align-items-center gap-1"><i class="bi bi-clock-history text-muted"></i>{{ job.get_experience_level_display }}</span>
+                        {% if job.salary_is_disclosed and job.salary_min %}
+                          <span class="d-flex align-items-center gap-1 text-success"><i class="bi bi-currency-rupee"></i>{{ job.salary_min|intcomma }}{% if job.salary_max %} - {{ job.salary_max|intcomma }}{% endif %}</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="col-md-3 text-md-end">
+                      <div class="d-flex flex-row flex-md-column justify-content-between align-items-center align-items-md-end h-100">
+                        <a href="{% url 'core:job-detail' slug=job.slug %}" class="btn btn-primary px-4 py-2 fw-semibold position-relative z-1 rounded-pill">Apply Now</a>
+                        <div class="text-end mt-md-3">
+                          <div class="fs-xs text-muted fw-medium mb-1">Posted {{ job.published_at|timesince }} ago</div>
+                          {% if job.applications_count > 0 %}
+                            <div class="fs-xs text-primary fw-bold"><i class="bi bi-lightning-charge-fill me-1"></i>{{ job.applications_count }} applicant{{ job.applications_count|pluralize }}</div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="sj-card p-5 text-center">
+              <div class="ico ico-xl bg-soft-secondary mx-auto mb-3 text-muted"><i class="bi bi-building-slash"></i></div>
+              <h5 class="fw-800">No Active Openings Currently</h5>
+              <p class="text-muted-2 mx-auto" style="max-width: 400px;">This institution doesn't have any active openings matching your criteria right now. Follow this institution and check back later for new opportunities.</p>
+              <button type="button" class="btn btn-outline-primary mt-2 px-4" onclick="document.getElementById('genericAlertMessage').innerText='Following institutions will be available soon!'; new bootstrap.Modal(document.getElementById('genericAlertModal')).show();">
+                <i class="bi bi-plus-lg me-1"></i> Follow Institution
+              </button>
+            </div>
+          {% endif %}
         </div>
-        {% endif %}
-
-        {% include "partials/_ad_sidebar.html" with sidebar_ad=sidebar_ad %}
       </div>
     </div>
   </div>

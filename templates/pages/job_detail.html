@@ -139,15 +139,13 @@
             </div>
             <div>
               <h6 class="mb-0">{{ job.company.name }}</h6>
-              {% if job.company.industry %}<small class="text-muted-2">{{ job.company.industry }}</small>{% endif %}
+
             </div>
           </div>
-          {% if job.company.description %}
-            <p class="text-muted-2 fs-sm mb-3">{{ job.company.description|truncatechars:200 }}</p>
-          {% endif %}
+
           <ul class="list-unstyled d-grid gap-2 mb-3">
             {% if job.company.location %}<li class="fs-sm"><i class="bi bi-geo-alt text-muted me-2"></i>{{ job.company.location }}</li>{% endif %}
-            {% if job.company.website %}<li class="fs-sm"><i class="bi bi-globe text-muted me-2"></i><a href="{{ job.company.website }}" target="_blank" rel="noopener">{{ job.company.website|cut:"https://"|truncatechars:30 }}</a></li>{% endif %}
+
           </ul>
           <a href="{% url 'core:company-detail' slug=job.company.slug %}" class="btn btn-outline-light-brand btn-sm w-100">
             View Institution Profile <i class="bi bi-arrow-right ms-1"></i>

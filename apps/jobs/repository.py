@@ -13,7 +13,7 @@ class JobRepository:
         return (
             Job.objects
             .select_related("recruiter", "company", "category", "minimum_qualification")
-            .prefetch_related("skills_required", "preferred_qualifications")
+            .prefetch_related("preferred_qualifications")
         )
 
     @staticmethod

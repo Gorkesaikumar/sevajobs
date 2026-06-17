@@ -15,8 +15,8 @@ class JobForm(forms.ModelForm):
     class Meta:
         model = Job
         fields = [
-            "title", "description", "responsibilities", "requirements", "benefits",
-            "category", "skills_required", "minimum_qualification", "preferred_qualifications",
+            "title", "description", "responsibilities", "benefits",
+            "category", "minimum_qualification", "preferred_qualifications",
             "location", "is_remote", "job_type", "experience_level",
             "min_experience_years", "max_experience_years",
             "salary_min", "salary_max", "salary_currency", "salary_is_disclosed",
@@ -25,10 +25,8 @@ class JobForm(forms.ModelForm):
         widgets = {
             "description": forms.Textarea(attrs={"rows": 5}),
             "responsibilities": forms.Textarea(attrs={"rows": 4}),
-            "requirements": forms.Textarea(attrs={"rows": 4}),
             "benefits": forms.Textarea(attrs={"rows": 3}),
             "deadline": forms.DateInput(attrs={"type": "date"}),
-            "skills_required": forms.SelectMultiple(attrs={"class": "select2"}),
             "preferred_qualifications": forms.SelectMultiple(attrs={"class": "select2"}),
         }
 

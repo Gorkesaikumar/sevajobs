@@ -18,23 +18,11 @@ class Company(BaseModel):
     verified brand.
     """
 
-    class Size(models.TextChoices):
-        STARTUP = "1-10", "Startup (1–10)"
-        SMALL = "11-50", "Small (11–50)"
-        MEDIUM = "51-200", "Medium (51–200)"
-        LARGE = "201-1000", "Large (201–1000)"
-        ENTERPRISE = "1000+", "Enterprise (1000+)"
 
     class InstituteType(models.TextChoices):
         SCHOOL = "school", "School"
         COLLEGE = "college", "College"
 
-    class SchoolType(models.TextChoices):
-        CBSE = "cbse", "CBSE"
-        ICSE = "icse", "ICSE"
-        STATE_BOARD = "state_board", "State Board"
-        INTERNATIONAL = "international", "International"
-        OTHER = "other", "Other"
 
     institute_type = models.CharField(max_length=20, choices=InstituteType.choices, default=InstituteType.SCHOOL, db_index=True)
     
@@ -43,13 +31,6 @@ class Company(BaseModel):
         message="Only letters, numbers, spaces, and basic punctuation (.,-&') are allowed."
     )
     
-    # School Fields
-    school_type = models.CharField(max_length=20, choices=SchoolType.choices, blank=True)
-    classes_offered = models.CharField(max_length=150, blank=True)
-    medium_of_instruction = models.CharField(max_length=100, blank=True)
-    principal_name = models.CharField(max_length=255, validators=[name_regex], blank=True)
-    school_facilities = models.TextField(blank=True)
-    accreditation_details = models.TextField(blank=True)
 
     # College Fields
     college_type = models.CharField(max_length=150, blank=True)
@@ -64,10 +45,6 @@ class Company(BaseModel):
     name = models.CharField(max_length=255, validators=[name_regex], unique=True, db_index=True)
     slug = models.SlugField(max_length=280, unique=True)
     logo = models.ImageField(upload_to="company_logos/%Y/%m/", null=True, blank=True)
-    website = models.URLField(blank=True)
-    description = models.TextField(blank=True)
-    industry = models.CharField(max_length=120, blank=True, db_index=True)
-    size = models.CharField(max_length=10, choices=Size.choices, blank=True)
     founded_year = models.PositiveSmallIntegerField(
         null=True, blank=True,
         validators=[MinValueValidator(1800), MaxValueValidator(2100)],
@@ -92,9 +69,6 @@ class Company(BaseModel):
     country = models.CharField(max_length=100, default="India", blank=True)
     pincode = models.CharField(max_length=20, blank=True)
 
-    # Additional Optional Fields
-    number_of_students = models.PositiveIntegerField(null=True, blank=True)
-    number_of_staff = models.PositiveIntegerField(null=True, blank=True)
 
     # Social and Meta
     linkedin_url = models.URLField(blank=True)

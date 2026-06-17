@@ -118,11 +118,13 @@ class Job(BaseModel):
         INTERNSHIP = "internship", "Internship"
 
     class ExperienceLevel(models.TextChoices):
-        FRESHER = "fresher", "Fresher"
-        JUNIOR = "junior", "Junior (1–3 yrs)"
-        MID = "mid", "Mid (3–6 yrs)"
-        SENIOR = "senior", "Senior (6+ yrs)"
-        LEAD = "lead", "Lead / Principal"
+        FRESHER = "FRESHER", "Fresher (0 Years)"
+        ONE_THREE_YEARS = "1_3_YEARS", "1 – 3 Years"
+        THREE_SIX_YEARS = "3_6_YEARS", "3 – 6 Years"
+        SIX_TEN_YEARS = "6_10_YEARS", "6 – 10 Years"
+        TEN_FOURTEEN_YEARS = "10_14_YEARS", "10 – 14 Years"
+        FOURTEEN_EIGHTEEN_YEARS = "14_18_YEARS", "14 – 18 Years"
+        EIGHTEEN_PLUS_YEARS = "18_PLUS_YEARS", "18+ Years"
 
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
@@ -158,7 +160,6 @@ class Job(BaseModel):
     category = models.ForeignKey(
         JobCategory, on_delete=models.SET_NULL, null=True, related_name="jobs"
     )
-    skills_required = models.ManyToManyField(Skill, blank=True, related_name="jobs")
     preferred_qualifications = models.ManyToManyField(
         Qualification, blank=True, related_name="jobs"
     )
@@ -174,7 +175,6 @@ class Job(BaseModel):
     slug = models.SlugField(max_length=280, unique=True, db_index=True)
     description = models.TextField()
     responsibilities = models.TextField(blank=True)
-    requirements = models.TextField(blank=True)
     benefits = models.TextField(blank=True)
     metadata = models.JSONField(default=dict, blank=True)
 

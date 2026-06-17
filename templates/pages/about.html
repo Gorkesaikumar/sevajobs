@@ -1,124 +1,113 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}About Us — SevaJobs{% endblock %}
+{% block title %}About Us | India's No.1 Teacher Recruitment & School Hiring Platform | SevaJobs{% endblock %}
+
+{% block head %}
+<meta name="description" content="Learn about SevaJobs, India's leading specialized recruitment platform connecting schools, colleges, and teaching professionals. Discover education jobs across India.">
+<meta name="keywords" content="Teacher Recruitment, School Recruitment, Education Jobs, Teacher Jobs India, School Hiring Platform">
+<style>
+  .sj-timeline {
+    position: relative;
+    padding-left: 3rem;
+    margin-bottom: 2rem;
+  }
+  .sj-timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--sj-gradient);
+  }
+  .sj-timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+  }
+  .sj-timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -3rem;
+    top: 0.25rem;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: white;
+    border: 4px solid var(--sj-primary);
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.8);
+  }
+  .sj-timeline-date {
+    font-weight: 800;
+    color: var(--sj-primary);
+    margin-bottom: 0.25rem;
+  }
+</style>
+{% endblock %}
+
 {% block breadcrumb %}{% include "partials/_breadcrumb.html" %}{% endblock %}
 
 {% block content %}
-<section class="section">
-  <div class="container">
+<!-- ====== SECTION 1: HERO ====== -->
+<section class="section position-relative pb-5">
+  <div class="container text-center">
     <div class="row justify-content-center">
-      <div class="col-lg-8 text-center mb-5">
-        <span class="sj-badge mb-2">Our Story</span>
-        <h1 class="fw-800">Making <span class="text-gradient">employment accessible</span> to every Indian</h1>
-        <p class="text-muted-2 lead">SevaJobs was founded with a singular mission — to bridge the gap between India's incredible talent and the schools/colleges building our future.</p>
-      </div>
-    </div>
-
-    <!-- Mission / Vision / Values -->
-    <div class="row g-4 mb-5">
-      <div class="col-md-4 reveal">
-        <div class="sj-card p-5 text-center h-100">
-          <div class="ico ico-gradient-primary mx-auto mb-3" style="width:64px;height:64px;border-radius:18px;font-size:1.5rem;">
-            <i class="bi bi-bullseye"></i>
-          </div>
-          <h4 class="fw-700">Our Mission</h4>
-          <p class="text-muted-2 fs-sm mb-0">To democratize access to quality employment by leveraging technology that connects talent with opportunity, regardless of background or location.</p>
-        </div>
-      </div>
-      <div class="col-md-4 reveal" style="animation-delay:.15s;">
-        <div class="sj-card p-5 text-center h-100">
-          <div class="ico ico-gradient-cool mx-auto mb-3" style="width:64px;height:64px;border-radius:18px;font-size:1.5rem;">
-            <i class="bi bi-eye"></i>
-          </div>
-          <h4 class="fw-700">Our Vision</h4>
-          <p class="text-muted-2 fs-sm mb-0">To become India's most trusted and impactful job platform — one that transforms lives through meaningful career connections at scale.</p>
-        </div>
-      </div>
-      <div class="col-md-4 reveal" style="animation-delay:.3s;">
-        <div class="sj-card p-5 text-center h-100">
-          <div class="ico ico-gradient-green mx-auto mb-3" style="width:64px;height:64px;border-radius:18px;font-size:1.5rem;">
-            <i class="bi bi-heart"></i>
-          </div>
-          <h4 class="fw-700">Our Values</h4>
-          <p class="text-muted-2 fs-sm mb-0">Integrity, inclusivity, innovation, and impact. We believe every job seeker deserves a fair chance and every recruiter deserves quality talent.</p>
+      <div class="col-lg-10">
+        <span class="sj-badge mb-3">About SevaJobs</span>
+        <h1 class="fw-800 display-5 mb-4">India's Specialized Recruitment Platform for <span class="text-gradient">Teachers & Educational Institutions</span></h1>
+        <p class="lead text-muted-2 mx-auto mb-5" style="max-width: 800px;">
+          Connecting schools, colleges, principals, lecturers, and teaching professionals across India through a dedicated education-focused recruitment ecosystem.
+        </p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+          <a href="{% url 'core:job-search' %}" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm"><i class="bi bi-search me-2"></i>Find Jobs</a>
+          <a href="{% url 'accounts:register' %}?role=recruiter" class="btn btn-outline-primary btn-lg rounded-pill px-4 shadow-sm"><i class="bi bi-building me-2"></i>Post Jobs</a>
         </div>
       </div>
     </div>
+  </div>
+</section>
 
-    <!-- Stats bar -->
-    <div class="sj-card p-4 mb-5" style="background:var(--sj-gradient);border:0;">
-      <div class="row g-4 text-center text-white">
-        <div class="col-6 col-md-3">
-          <div style="font-size:2rem;font-weight:800;line-height:1;" data-counter="10000">10,000</div>
-          <div class="mt-1 fs-sm" style="color:rgba(255,255,255,.7);">Active Jobs</div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div style="font-size:2rem;font-weight:800;line-height:1;" data-counter="500">500</div>
-          <div class="mt-1 fs-sm" style="color:rgba(255,255,255,.7);">Top Schools/Colleges</div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div style="font-size:2rem;font-weight:800;line-height:1;" data-counter="50000">50,000</div>
-          <div class="mt-1 fs-sm" style="color:rgba(255,255,255,.7);">Candidates</div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div style="font-size:2rem;font-weight:800;line-height:1;" data-counter="12000">12,000</div>
-          <div class="mt-1 fs-sm" style="color:rgba(255,255,255,.7);">Successful Placements</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Why SevaJobs -->
-    <div class="row align-items-center g-5 mb-5">
+<!-- ====== SECTION 2: WHO WE ARE ====== -->
+<section class="section bg-light">
+  <div class="container">
+    <div class="row align-items-center g-5">
       <div class="col-lg-6">
-        <span class="sj-badge mb-2">Why SevaJobs?</span>
-        <h2 class="fw-800">Built for India's<br><span class="text-gradient">dynamic workforce</span></h2>
-        <p class="text-muted-2">We understand the Indian job market deeply — from Tier 1 metros to growing Tier 2 & 3 cities.</p>
-        <div class="d-grid gap-3 mt-4">
-          <div class="d-flex gap-3 align-items-start">
-            <div class="ico bg-soft-primary flex-shrink-0" style="width:42px;height:42px;border-radius:10px;"><i class="bi bi-shield-check"></i></div>
-            <div><h6 class="fw-700 mb-1">Verified Employers</h6><p class="text-muted-2 fs-sm mb-0">Every company is verified before listing jobs, ensuring a fraud-free experience.</p></div>
-          </div>
-          <div class="d-flex gap-3 align-items-start">
-            <div class="ico bg-soft-success flex-shrink-0" style="width:42px;height:42px;border-radius:10px;"><i class="bi bi-lightning-charge"></i></div>
-            <div><h6 class="fw-700 mb-1">AI-Powered Matching</h6><p class="text-muted-2 fs-sm mb-0">Smart algorithms match your skills to the most relevant opportunities.</p></div>
-          </div>
-          <div class="d-flex gap-3 align-items-start">
-            <div class="ico bg-soft-warning flex-shrink-0" style="width:42px;height:42px;border-radius:10px;"><i class="bi bi-translate"></i></div>
-            <div><h6 class="fw-700 mb-1">Multilingual Support</h6><p class="text-muted-2 fs-sm mb-0">Access the platform in Hindi, English, Tamil, Telugu, and more regional languages.</p></div>
-          </div>
-        </div>
+        <span class="sj-badge mb-2"><i class="bi bi-info-circle me-1"></i>Who We Are</span>
+        <h2 class="fw-800 mb-4">Founded in 2016</h2>
+        <p class="text-muted-2 mb-4">
+          SevaJobs is a specialized recruitment platform serving schools, colleges, educational institutions, and teaching professionals across India. Headquartered in Kalaburgi with a presence in Bangalore & Mumbai, we are dedicated to becoming the No.1 Teacher Recruitment platform in India.
+        </p>
+        <ul class="list-unstyled mb-0">
+          <li class="mb-3 d-flex align-items-center"><i class="bi bi-check-circle-fill text-success me-3 fs-5"></i><span class="fw-semibold">Education Recruitment Experts</span></li>
+          <li class="mb-3 d-flex align-items-center"><i class="bi bi-check-circle-fill text-success me-3 fs-5"></i><span class="fw-semibold">PAN India Presence</span></li>
+          <li class="mb-3 d-flex align-items-center"><i class="bi bi-check-circle-fill text-success me-3 fs-5"></i><span class="fw-semibold">Dedicated Teacher Recruitment</span></li>
+          <li class="mb-0 d-flex align-items-center"><i class="bi bi-check-circle-fill text-success me-3 fs-5"></i><span class="fw-semibold">Recruitment Consultancy Services</span></li>
+        </ul>
       </div>
       <div class="col-lg-6">
-        <div class="sj-card p-3" style="background:var(--sj-gradient-dark);border:0;">
-          <div class="row g-3">
-            <div class="col-6">
-              <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1);">
-                <i class="bi bi-graph-up-arrow text-info mb-2" style="font-size:1.5rem;"></i>
-                <div class="fw-800 text-white">98%</div>
-                <div class="fs-xs" style="color:rgba(255,255,255,.6);">Employer satisfaction</div>
-              </div>
+        <!-- Section 3: Our Journey (Timeline) -->
+        <div class="sj-card p-5 border-0 shadow-sm">
+          <h3 class="fw-800 mb-4">Our Journey</h3>
+          <div class="sj-timeline mt-4">
+            <div class="sj-timeline-item">
+              <div class="sj-timeline-date">Nov 2016</div>
+              <h6 class="fw-bold mb-1">Company Incorporated</h6>
+              <p class="text-muted-2 fs-sm mb-0">Started as Huncheshwarseva Services Private Limited.</p>
             </div>
-            <div class="col-6">
-              <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1);">
-                <i class="bi bi-clock-history text-warning mb-2" style="font-size:1.5rem;"></i>
-                <div class="fw-800 text-white">72hr</div>
-                <div class="fs-xs" style="color:rgba(255,255,255,.6);">Avg. response time</div>
-              </div>
+            <div class="sj-timeline-item">
+              <div class="sj-timeline-date">2018</div>
+              <h6 class="fw-bold mb-1">Expanded Teacher Recruitment</h6>
+              <p class="text-muted-2 fs-sm mb-0">Became a preferred platform for teaching professionals.</p>
             </div>
-            <div class="col-6">
-              <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1);">
-                <i class="bi bi-geo-alt text-success mb-2" style="font-size:1.5rem;"></i>
-                <div class="fw-800 text-white">28+</div>
-                <div class="fs-xs" style="color:rgba(255,255,255,.6);">States covered</div>
-              </div>
+            <div class="sj-timeline-item">
+              <div class="sj-timeline-date">2020+</div>
+              <h6 class="fw-bold mb-1">Diversification</h6>
+              <p class="text-muted-2 fs-sm mb-0">Expanded into multiple industries like Healthcare, Manufacturing, etc.</p>
             </div>
-            <div class="col-6">
-              <div class="sj-card p-3 text-center" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1);">
-                <i class="bi bi-award text-danger mb-2" style="font-size:1.5rem;"></i>
-                <div class="fw-800 text-white">4.8★</div>
-                <div class="fs-xs" style="color:rgba(255,255,255,.6);">User rating</div>
-              </div>
+            <div class="sj-timeline-item">
+              <div class="sj-timeline-date">Today</div>
+              <h6 class="fw-bold mb-1">PAN India Operations</h6>
+              <p class="text-muted-2 fs-sm mb-0">Serving educational institutions and job seekers across India.</p>
             </div>
           </div>
         </div>
@@ -126,4 +115,230 @@
     </div>
   </div>
 </section>
+
+<!-- ====== SECTION 4: WHY CHOOSE SEVAJOBS ====== -->
+<section class="section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fw-800 mb-3">Why Choose <span class="text-gradient">SevaJobs</span></h2>
+      <p class="text-muted-2 mx-auto" style="max-width:600px;">We provide unparalleled value to both job seekers and employers.</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-3">
+        <div class="sj-card p-4 text-center h-100 border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-primary mx-auto mb-3"><i class="bi bi-person-workspace text-primary"></i></div>
+          <h6 class="fw-bold">Dedicated Teacher Recruitment</h6>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="sj-card p-4 text-center h-100 border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-success mx-auto mb-3"><i class="bi bi-geo-alt text-success"></i></div>
+          <h6 class="fw-bold">PAN India Reach</h6>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="sj-card p-4 text-center h-100 border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-warning mx-auto mb-3"><i class="bi bi-lightning-charge text-warning"></i></div>
+          <h6 class="fw-bold">Fast Hiring Process</h6>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="sj-card p-4 text-center h-100 border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-info mx-auto mb-3"><i class="bi bi-piggy-bank text-info"></i></div>
+          <h6 class="fw-bold">Cost Effective Recruitment</h6>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="sj-card p-4 text-center h-100 border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-danger mx-auto mb-3"><i class="bi bi-shield-check text-danger"></i></div>
+          <h6 class="fw-bold">Verified Candidate Database</h6>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="sj-card p-4 text-center h-100 border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-secondary mx-auto mb-3"><i class="bi bi-headset text-secondary"></i></div>
+          <h6 class="fw-bold">Recruitment Support Team</h6>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="sj-card p-4 text-center h-100 border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-primary mx-auto mb-3"><i class="bi bi-file-earmark-person text-primary"></i></div>
+          <h6 class="fw-bold">Resume Services</h6>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="sj-card p-4 text-center h-100 border-0 shadow-sm">
+          <div class="ico ico-lg bg-soft-success mx-auto mb-3"><i class="bi bi-briefcase text-success"></i></div>
+          <h6 class="fw-bold">Executive Search Services</h6>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== SECTION 5 & 6: BENEFITS ====== -->
+<section class="section bg-light">
+  <div class="container">
+    <div class="row g-5">
+      
+      <!-- Section 5: Teachers -->
+      <div class="col-lg-6">
+        <div class="sj-card p-5 border-0 shadow-sm h-100">
+          <div class="d-flex align-items-center mb-4">
+            <div class="ico ico-lg bg-soft-primary me-3"><i class="bi bi-person-fill text-primary"></i></div>
+            <h3 class="fw-800 mb-0">Benefits for Teachers</h3>
+          </div>
+          <p class="text-muted-2 mb-4">An all-in-one platform where your search ends.</p>
+          <ul class="list-unstyled">
+            <li class="mb-3"><i class="bi bi-check2-circle text-primary me-2"></i> Free Registration (K12, Principal, Academic Head)</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-primary me-2"></i> Unlimited Job Applications</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-primary me-2"></i> Direct School Opportunities & Calls</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-primary me-2"></i> Personalized Job Recommendations</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-primary me-2"></i> Nationwide Opportunities</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-primary me-2"></i> Recruitment & Interview Support</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-primary me-2"></i> Resume Assistance (Forward & Builder)</li>
+            <li class="mb-0"><i class="bi bi-check2-circle text-primary me-2"></i> Career Growth Support</li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- Section 6: Schools -->
+      <div class="col-lg-6">
+        <div class="sj-card p-5 border-0 shadow-sm h-100">
+          <div class="d-flex align-items-center mb-4">
+            <div class="ico ico-lg bg-soft-success me-3"><i class="bi bi-buildings-fill text-success"></i></div>
+            <h3 class="fw-800 mb-0">Benefits for Schools</h3>
+          </div>
+          <p class="text-muted-2 mb-4">Hire faster, smarter, and with 99% accuracy.</p>
+          <ul class="list-unstyled">
+            <li class="mb-3"><i class="bi bi-check2-circle text-success me-2"></i> Teacher-Focused Candidate Pool</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-success me-2"></i> Reduced Recruitment Costs</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-success me-2"></i> Faster Hiring & Free Replacement Services</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-success me-2"></i> Higher Candidate Accuracy</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-success me-2"></i> Direct Teacher Access (24x7 Leisure Recruiting)</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-success me-2"></i> Fast Forwarding Resume Services</li>
+            <li class="mb-3"><i class="bi bi-check2-circle text-success me-2"></i> Candidate Shortlisting Support by Subject Experts</li>
+            <li class="mb-0"><i class="bi bi-check2-circle text-success me-2"></i> Free Logo Display for One Month</li>
+          </ul>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- ====== SECTION 7: INDUSTRIES WE SERVE ====== -->
+<section class="section">
+  <div class="container text-center">
+    <h2 class="fw-800 mb-3">Industries We Serve</h2>
+    <p class="text-muted-2 mx-auto mb-5" style="max-width:600px;">While our core expertise is education, since 2018 we have diversified our talent acquisition services to serve multiple sectors.</p>
+    
+    <div class="row g-3 justify-content-center">
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="sj-card p-3 border-0 shadow-sm">
+          <i class="bi bi-book text-primary fs-3 mb-2 d-block"></i>
+          <span class="fw-bold fs-sm">Education</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="sj-card p-3 border-0 shadow-sm">
+          <i class="bi bi-heart-pulse text-danger fs-3 mb-2 d-block"></i>
+          <span class="fw-bold fs-sm">Healthcare</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="sj-card p-3 border-0 shadow-sm">
+          <i class="bi bi-gear text-secondary fs-3 mb-2 d-block"></i>
+          <span class="fw-bold fs-sm">Manufacturing</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="sj-card p-3 border-0 shadow-sm">
+          <i class="bi bi-truck text-warning fs-3 mb-2 d-block"></i>
+          <span class="fw-bold fs-sm">Logistics</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="sj-card p-3 border-0 shadow-sm">
+          <i class="bi bi-building text-info fs-3 mb-2 d-block"></i>
+          <span class="fw-bold fs-sm">Real Estate</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="sj-card p-3 border-0 shadow-sm">
+          <i class="bi bi-car-front text-dark fs-3 mb-2 d-block"></i>
+          <span class="fw-bold fs-sm">Automobile</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="sj-card p-3 border-0 shadow-sm">
+          <i class="bi bi-bank text-success fs-3 mb-2 d-block"></i>
+          <span class="fw-bold fs-sm">Finance & NBFC</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="sj-card p-3 border-0 shadow-sm">
+          <i class="bi bi-capsule text-primary fs-3 mb-2 d-block"></i>
+          <span class="fw-bold fs-sm">Pharma</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="sj-card p-3 border-0 shadow-sm">
+          <i class="bi bi-cart text-warning fs-3 mb-2 d-block"></i>
+          <span class="fw-bold fs-sm">FMCG</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2">
+        <div class="sj-card p-3 border-0 shadow-sm">
+          <i class="bi bi-rocket text-secondary fs-3 mb-2 d-block"></i>
+          <span class="fw-bold fs-sm">Aerospace</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== SECTION 8 & 9: MISSION & VISION ====== -->
+<section class="section text-white text-center" style="background:var(--sj-gradient);">
+  <div class="container">
+    <div class="row g-5 justify-content-center">
+      <div class="col-md-5">
+        <div class="ico ico-xl bg-white text-primary mx-auto mb-4 shadow">
+          <i class="bi bi-bullseye"></i>
+        </div>
+        <h3 class="fw-800 mb-3">Our Mission</h3>
+        <p class="mb-0" style="color:rgba(255,255,255,.9);">
+          To simplify and improve recruitment for educational institutions while helping teachers discover meaningful career opportunities across India.
+        </p>
+      </div>
+      <div class="col-md-5">
+        <div class="ico ico-xl bg-white text-success mx-auto mb-4 shadow">
+          <i class="bi bi-eye"></i>
+        </div>
+        <h3 class="fw-800 mb-3">Our Vision</h3>
+        <p class="mb-0" style="color:rgba(255,255,255,.9);">
+          To become India's No.1 specialized recruitment platform for teachers, schools, colleges, and educational professionals.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== SECTION 10: CALL TO ACTION ====== -->
+<section class="section pb-5">
+  <div class="container text-center">
+    <h2 class="fw-800 mb-4">Ready to Hire or Find Your Next Opportunity?</h2>
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+      <a href="{% url 'core:job-search' %}" class="btn btn-outline-primary btn-lg rounded-pill px-4 shadow-sm">Find Jobs</a>
+      <a href="{% url 'accounts:register' %}?role=seeker" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm">Register as Teacher</a>
+      <a href="{% url 'accounts:register' %}?role=recruiter" class="btn btn-success btn-lg rounded-pill px-4 shadow-sm">Register as School</a>
+      {% if user.is_authenticated and user.is_recruiter %}
+        <a href="{% url 'recruiter:post-job' %}" class="btn btn-outline-success btn-lg rounded-pill px-4 shadow-sm">Post a Job</a>
+      {% else %}
+        <a href="{% url 'accounts:register' %}?role=recruiter" class="btn btn-outline-success btn-lg rounded-pill px-4 shadow-sm">Post a Job</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
 {% endblock %}

@@ -20,11 +20,6 @@ class JobFilter(django_filters.FilterSet):
     # Education (minimum qualification level)
     education_level = django_filters.NumberFilter(field_name="minimum_qualification__level")
 
-    # Skills — match ANY of the supplied skills
-    skills = django_filters.ModelMultipleChoiceFilter(
-        field_name="skills_required", queryset=Skill.objects.all()
-    )
-    skill = django_filters.CharFilter(field_name="skills_required__name", lookup_expr="iexact")
 
     category = django_filters.UUIDFilter(field_name="category__id")
     posted_after = django_filters.DateFilter(field_name="created_at", lookup_expr="date__gte")

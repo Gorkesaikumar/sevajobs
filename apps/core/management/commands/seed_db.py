@@ -170,7 +170,6 @@ class Command(BaseCommand):
                 published_at=timezone.now() - timezone.timedelta(days=random.randint(0, 10))
             )
             
-            job.skills_required.add(*random.sample(skills, k=random.randint(2, 5)))
             job.preferred_qualifications.add(*random.sample(qualifications, k=random.randint(1, 3)))
             
             JobContactVisibility.objects.create(

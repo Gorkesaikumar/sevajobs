@@ -43,7 +43,6 @@ class JobListSerializer(serializers.ModelSerializer):
 
 
 class JobDetailSerializer(JobListSerializer):
-    skills_required = SkillSerializer(many=True, read_only=True)
     preferred_qualifications = QualificationSerializer(many=True, read_only=True)
     minimum_qualification = QualificationSerializer(read_only=True)
     recruiter_contact = serializers.SerializerMethodField()
@@ -51,8 +50,8 @@ class JobDetailSerializer(JobListSerializer):
 
     class Meta(JobListSerializer.Meta):
         fields = JobListSerializer.Meta.fields + [
-            "description", "responsibilities", "requirements", "benefits",
-            "skills_required", "preferred_qualifications", "minimum_qualification",
+            "description", "responsibilities", "benefits",
+            "preferred_qualifications", "minimum_qualification",
             "rejection_reason", "recruiter_contact", "contact_visibility",
         ]
 
@@ -95,8 +94,8 @@ class JobWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Job
         fields = [
-            "title", "description", "responsibilities", "requirements", "benefits",
-            "category", "skills_required", "preferred_qualifications", "minimum_qualification",
+            "title", "description", "responsibilities", "benefits",
+            "category", "preferred_qualifications", "minimum_qualification",
             "location", "is_remote", "job_type", "experience_level",
             "min_experience_years", "max_experience_years",
             "salary_min", "salary_max", "salary_currency", "salary_is_disclosed",

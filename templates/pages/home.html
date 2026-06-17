@@ -98,21 +98,8 @@
   </div>
 </section>
 
-<!-- ====== TRUST STRIP ====== -->
-<section class="py-4 border-bottom">
-  <div class="container">
-    <div class="text-center mb-3">
-      <span class="text-muted-2 fs-sm fw-600 text-uppercase" style="letter-spacing:.06em;">Trusted by 500+ top educational institutions</span>
-    </div>
-    <div class="d-flex flex-wrap justify-content-center align-items-center gap-4 gap-lg-5 opacity-50">
-      {% for name in "Delhi Public School,Kendriya Vidyalaya,Ryan International,Amity University,Podar International,VIBGYOR High,EuroKids"|split:"," %}
-        <span class="fw-800 text-muted" style="font-size:1.1rem;">{{ name }}</span>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
 <!-- ====== KPI STATS ====== -->
+
 <section class="section-sm">
   <div class="container">
     <div class="row g-3 justify-content-center">
@@ -164,8 +151,334 @@
 </section>
 {% endif %}
 
+<!-- ====== WHY SEVAJOBS ====== -->
+<section class="section bg-light" id="why-sevajobs" aria-label="Why Choose SevaJobs">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="sj-badge mb-3"><i class="bi bi-star-fill text-warning me-1"></i>About Us</span>
+      <h2 class="fw-800 mb-3">Why <span class="text-gradient">SevaJobs?</span></h2>
+      <p class="lead mx-auto text-muted-2" style="max-width:600px;">India's specialized recruitment platform connecting schools, colleges, and teaching professionals since 2016.</p>
+    </div>
+    <div class="row g-4 justify-content-center">
+      <!-- Card 1 -->
+      <div class="col-md-6 col-lg-4">
+        <div class="sj-card p-4 h-100 text-center">
+          <div class="ico ico-lg bg-soft-primary mx-auto mb-3"><i class="bi bi-person-video3 text-primary"></i></div>
+          <h5 class="fw-bold">Teacher-Focused Recruitment</h5>
+          <p class="text-muted-2 fs-sm mb-0">Exclusive platform designed specifically for the education sector and teaching professionals.</p>
+        </div>
+      </div>
+      <!-- Card 2 -->
+      <div class="col-md-6 col-lg-4">
+        <div class="sj-card p-4 h-100 text-center">
+          <div class="ico ico-lg bg-soft-success mx-auto mb-3"><i class="bi bi-globe-central-south-asia text-success"></i></div>
+          <h5 class="fw-bold">PAN India Network</h5>
+          <p class="text-muted-2 fs-sm mb-0">Connecting talent with opportunities across Tier 1 metros and growing Tier 2 & 3 cities.</p>
+        </div>
+      </div>
+      <!-- Card 3 -->
+      <div class="col-md-6 col-lg-4">
+        <div class="sj-card p-4 h-100 text-center">
+          <div class="ico ico-lg bg-soft-warning mx-auto mb-3"><i class="bi bi-lightning-charge text-warning"></i></div>
+          <h5 class="fw-bold">Fast Hiring Process</h5>
+          <p class="text-muted-2 fs-sm mb-0">Reduced recruitment time with our verified database and direct access to candidates.</p>
+        </div>
+      </div>
+      <!-- Card 4 -->
+      <div class="col-md-6 col-lg-4">
+        <div class="sj-card p-4 h-100 text-center">
+          <div class="ico ico-lg bg-soft-info mx-auto mb-3"><i class="bi bi-piggy-bank text-info"></i></div>
+          <h5 class="fw-bold">Cost Effective Hiring</h5>
+          <p class="text-muted-2 fs-sm mb-0">Affordable solutions compared to generic job portals, ensuring high accuracy.</p>
+        </div>
+      </div>
+      <!-- Card 5 -->
+      <div class="col-md-6 col-lg-4">
+        <div class="sj-card p-4 h-100 text-center">
+          <div class="ico ico-lg bg-soft-danger mx-auto mb-3"><i class="bi bi-headset text-danger"></i></div>
+          <h5 class="fw-bold">Dedicated Support</h5>
+          <p class="text-muted-2 fs-sm mb-0">Expert assistance for candidate shortlisting and recruitment consulting.</p>
+        </div>
+      </div>
+      <!-- Card 6 -->
+      <div class="col-md-6 col-lg-4">
+        <div class="sj-card p-4 h-100 text-center">
+          <div class="ico ico-lg bg-soft-secondary mx-auto mb-3"><i class="bi bi-shield-check text-secondary"></i></div>
+          <h5 class="fw-bold">Trusted Since 2016</h5>
+          <p class="text-muted-2 fs-sm mb-0">Incorporated in 2016, we have set benchmarks in teacher talent acquisition.</p>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mt-5">
+      <a href="{% url 'core:about' %}" class="btn btn-primary rounded-pill px-4">Learn More About Us <i class="bi bi-arrow-right ms-2"></i></a>
+    </div>
+  </div>
+</section>
+
+<!-- ====== RECRUITER HUB ====== -->
+<section class="sj-recruiter-hub section" id="recruiter-hub" aria-label="Recruitment tools for schools and colleges">
+  <div class="container">
+
+    <!-- Section heading -->
+    <div class="text-center mb-5">
+      <span class="sj-badge mb-3"><i class="bi bi-buildings me-1"></i>For Schools &amp; Colleges</span>
+      <h2 class="fw-800 mb-3">Recruit Faster with <span style="background:var(--sj-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">SevaJobs</span></h2>
+      <p class="lead mx-auto" style="max-width:520px;">Everything schools and colleges need to hire teachers and staff efficiently.</p>
+    </div>
+
+    <!-- 6 Action Cards: 3-col desktop / 2-col tablet / 1-col mobile -->
+    <div class="row g-4 stagger-children" id="sj-recruiter-cards">
+
+      <!-- Card 1: Post Jobs Free -->
+      <div class="col-12 col-md-6 col-lg-4 animate-fade-up">
+        <div class="sj-action-card" data-sj-track="recruiter-card" data-card="post-job">
+          <div class="ac-icon ico-gradient-primary">
+            <i class="bi bi-plus-circle-fill"></i>
+          </div>
+          <h5>Post Jobs Free</h5>
+          <p class="ac-desc">Create job postings and receive applications from qualified teachers and educational professionals.</p>
+          <ul class="ac-features">
+            <li><i class="bi bi-check-circle-fill"></i>Create Jobs</li>
+            <li><i class="bi bi-check-circle-fill"></i>Manage Applications</li>
+            <li><i class="bi bi-check-circle-fill"></i>Track Hiring Progress</li>
+          </ul>
+          {% if user.is_authenticated and user.is_recruiter %}
+            <a href="{% url 'recruiter:post-job' %}" class="ac-btn" id="cta-post-job">Post Job <i class="bi bi-arrow-right"></i></a>
+          {% else %}
+            <a href="{% url 'accounts:register' %}?role=recruiter" class="ac-btn" id="cta-post-job">Post Job <i class="bi bi-arrow-right"></i></a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Card 2: Find Teachers Nearby -->
+      <div class="col-12 col-md-6 col-lg-4 animate-fade-up">
+        <div class="sj-action-card" data-sj-track="recruiter-card" data-card="find-teachers">
+          <div class="ac-icon ico-gradient-cool">
+            <i class="bi bi-person-lines-fill"></i>
+          </div>
+          <h5>Find Teachers Nearby</h5>
+          <p class="ac-desc">Search and filter teacher profiles based on location, qualification, experience, and subject specialization.</p>
+          <ul class="ac-features">
+            <li><i class="bi bi-check-circle-fill"></i>Candidate Search</li>
+            <li><i class="bi bi-check-circle-fill"></i>Advanced Filters</li>
+            <li><i class="bi bi-check-circle-fill"></i>Direct Contact</li>
+          </ul>
+          <a href="{% url 'core:job-search' %}" class="ac-btn" id="cta-find-teachers">View Teachers <i class="bi bi-arrow-right"></i></a>
+        </div>
+      </div>
+
+      <!-- Card 3: Walk-In Recruitment -->
+      <div class="col-12 col-md-6 col-lg-4 animate-fade-up">
+        <div class="sj-action-card" data-sj-track="recruiter-card" data-card="walk-in">
+          <div class="ac-icon ico-gradient-warm">
+            <i class="bi bi-calendar-event-fill"></i>
+          </div>
+          <h5>Walk-In Recruitment</h5>
+          <p class="ac-desc">Create walk-in hiring drives and invite candidates to attend interviews at your institution.</p>
+          <ul class="ac-features">
+            <li><i class="bi bi-check-circle-fill"></i>Walk-In Events</li>
+            <li><i class="bi bi-check-circle-fill"></i>Interview Scheduling</li>
+            <li><i class="bi bi-check-circle-fill"></i>Candidate Tracking</li>
+          </ul>
+          {% if user.is_authenticated and user.is_recruiter %}
+            <a href="{% url 'recruiter:post-job' %}" class="ac-btn" id="cta-walk-in">Create Walk-In <i class="bi bi-arrow-right"></i></a>
+          {% else %}
+            <a href="{% url 'accounts:register' %}?role=recruiter" class="ac-btn" id="cta-walk-in">Create Walk-In <i class="bi bi-arrow-right"></i></a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Card 4: Manage Interviews -->
+      <div class="col-12 col-md-6 col-lg-4 animate-fade-up">
+        <div class="sj-action-card" data-sj-track="recruiter-card" data-card="manage-interviews">
+          <div class="ac-icon ico-gradient-green">
+            <i class="bi bi-kanban-fill"></i>
+          </div>
+          <h5>Manage Interviews</h5>
+          <p class="ac-desc">Schedule interviews, shortlist candidates, and manage recruitment activities from one dashboard.</p>
+          <ul class="ac-features">
+            <li><i class="bi bi-check-circle-fill"></i>ATS Pipeline</li>
+            <li><i class="bi bi-check-circle-fill"></i>Interview Tracking</li>
+            <li><i class="bi bi-check-circle-fill"></i>Selection Workflow</li>
+          </ul>
+          {% if user.is_authenticated and user.is_recruiter %}
+            <a href="{% url 'recruiter:interviews' %}" class="ac-btn" id="cta-manage-interviews">Manage Interviews <i class="bi bi-arrow-right"></i></a>
+          {% else %}
+            <a href="{% url 'accounts:register' %}?role=recruiter" class="ac-btn" id="cta-manage-interviews">Manage Interviews <i class="bi bi-arrow-right"></i></a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Card 5: Hire Teaching Staff -->
+      <div class="col-12 col-md-6 col-lg-4 animate-fade-up">
+        <div class="sj-action-card" data-sj-track="recruiter-card" data-card="hire-staff">
+          <div class="ac-icon" style="background:linear-gradient(135deg,#8b5cf6 0%,#ec4899 100%);color:#fff;">
+            <i class="bi bi-mortarboard-fill"></i>
+          </div>
+          <h5>Hire Teaching Staff</h5>
+          <p class="ac-desc">Hire teachers, lecturers, professors, principals, and non-teaching staff using a streamlined hiring workflow.</p>
+          <ul class="ac-features">
+            <li><i class="bi bi-check-circle-fill"></i>School Hiring</li>
+            <li><i class="bi bi-check-circle-fill"></i>College Hiring</li>
+            <li><i class="bi bi-check-circle-fill"></i>Administrative Hiring</li>
+          </ul>
+          {% if user.is_authenticated and user.is_recruiter %}
+            <a href="{% url 'recruiter:post-teaching-job' %}" class="ac-btn" id="cta-hire-staff">Start Hiring <i class="bi bi-arrow-right"></i></a>
+          {% else %}
+            <a href="{% url 'accounts:register' %}?role=recruiter" class="ac-btn" id="cta-hire-staff">Start Hiring <i class="bi bi-arrow-right"></i></a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Card 6: Track Applications -->
+      <div class="col-12 col-md-6 col-lg-4 animate-fade-up">
+        <div class="sj-action-card" data-sj-track="recruiter-card" data-card="track-applications">
+          <div class="ac-icon" style="background:linear-gradient(135deg,#f59e0b 0%,#10b981 100%);color:#fff;">
+            <i class="bi bi-graph-up-arrow"></i>
+          </div>
+          <h5>Track Applications</h5>
+          <p class="ac-desc">Monitor applications, shortlist candidates, send offers, and manage the complete recruitment lifecycle.</p>
+          <ul class="ac-features">
+            <li><i class="bi bi-check-circle-fill"></i>Application Tracking</li>
+            <li><i class="bi bi-check-circle-fill"></i>Shortlisting</li>
+            <li><i class="bi bi-check-circle-fill"></i>Offer Management</li>
+          </ul>
+          {% if user.is_authenticated and user.is_recruiter %}
+            <a href="{% url 'recruiter:applications' %}" class="ac-btn" id="cta-track-apps">View Dashboard <i class="bi bi-arrow-right"></i></a>
+          {% else %}
+            <a href="{% url 'accounts:register' %}?role=recruiter" class="ac-btn" id="cta-track-apps">View Dashboard <i class="bi bi-arrow-right"></i></a>
+          {% endif %}
+        </div>
+      </div>
+
+    </div><!-- /row -->
+
+    <!-- Bottom CTA strip -->
+    <div class="text-center mt-5">
+      {% if user.is_authenticated and user.is_recruiter %}
+        <a href="{% url 'recruiter:dashboard' %}" class="btn btn-white btn-lg me-2" id="cta-recruiter-dashboard">
+          <i class="bi bi-speedometer2 me-1"></i>Go to Dashboard
+        </a>
+      {% else %}
+        <a href="{% url 'accounts:register' %}?role=recruiter" class="btn btn-white btn-lg me-2" id="cta-register-institution">
+          <i class="bi bi-building-add me-1"></i>Register Institution Free
+        </a>
+        <a href="{% url 'recruiter-login' %}" class="btn btn-outline-light btn-lg" id="cta-recruiter-login">
+          <i class="bi bi-box-arrow-in-right me-1"></i>Recruiter Login
+        </a>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+
+<!-- ====== HOW SEVAJOBS WORKS FOR SCHOOLS & COLLEGES ====== -->
+<section class="section" id="how-it-works-schools" aria-label="How SevaJobs works for schools and colleges">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="sj-badge mb-2"><i class="bi bi-diagram-3 me-1"></i>Simple Process</span>
+      <h2 class="fw-800">How SevaJobs Works for <span class="text-gradient">Schools &amp; Colleges</span></h2>
+      <p class="text-muted-2 mx-auto mt-2" style="max-width:500px;">Six streamlined steps from job posting to successful hiring — everything managed in one platform.</p>
+    </div>
+
+    <div class="sj-timeline-recruiter">
+      <!-- Horizontal connecting line (desktop only, rendered via CSS) -->
+      <div class="timeline-connector" aria-hidden="true"></div>
+
+      <div class="row g-4 stagger-children">
+
+        <!-- Step 1 -->
+        <div class="col-6 col-md-4 col-lg-2 animate-fade-up">
+          <div class="sj-timeline-step">
+            <div class="step-bubble ico-gradient-primary">
+              <i class="bi bi-pencil-square"></i>
+            </div>
+            <div class="step-content">
+              <div class="step-num">Step 1</div>
+              <h6>Post a Job</h6>
+              <p>Create a detailed job listing in minutes with our guided form.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="col-6 col-md-4 col-lg-2 animate-fade-up">
+          <div class="sj-timeline-step">
+            <div class="step-bubble ico-gradient-cool">
+              <i class="bi bi-inbox-fill"></i>
+            </div>
+            <div class="step-content">
+              <div class="step-num">Step 2</div>
+              <h6>Receive Applications</h6>
+              <p>Qualified candidates apply instantly to your open positions.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="col-6 col-md-4 col-lg-2 animate-fade-up">
+          <div class="sj-timeline-step">
+            <div class="step-bubble ico-gradient-green">
+              <i class="bi bi-funnel-fill"></i>
+            </div>
+            <div class="step-content">
+              <div class="step-num">Step 3</div>
+              <h6>Shortlist Candidates</h6>
+              <p>Filter, review profiles, and shortlist the best-fit applicants.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="col-6 col-md-4 col-lg-2 animate-fade-up">
+          <div class="sj-timeline-step">
+            <div class="step-bubble ico-gradient-warm">
+              <i class="bi bi-calendar-check-fill"></i>
+            </div>
+            <div class="step-content">
+              <div class="step-num">Step 4</div>
+              <h6>Schedule Interviews</h6>
+              <p>Coordinate interview slots directly through the platform.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="col-6 col-md-4 col-lg-2 animate-fade-up">
+          <div class="sj-timeline-step">
+            <div class="step-bubble" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;border:3px solid var(--sj-bg);">
+              <i class="bi bi-award-fill"></i>
+            </div>
+            <div class="step-content">
+              <div class="step-num">Step 5</div>
+              <h6>Select &amp; Send Offers</h6>
+              <p>Choose your candidate and send a digital offer letter instantly.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="col-6 col-md-4 col-lg-2 animate-fade-up">
+          <div class="sj-timeline-step">
+            <div class="step-bubble" style="background:linear-gradient(135deg,#f59e0b,#10b981);color:#fff;border:3px solid var(--sj-bg);">
+              <i class="bi bi-patch-check-fill"></i>
+            </div>
+            <div class="step-content">
+              <div class="step-num">Step 6</div>
+              <h6>Complete Hiring</h6>
+              <p>Mark the candidate as joined and close the recruitment cycle.</p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+    </div><!-- /sj-timeline-recruiter -->
+  </div>
+</section>
+
 <!-- ====== FEATURED JOB CATEGORIES (EDUCATIONAL) ====== -->
 <section class="section" id="categories">
+
   <div class="container">
     <div class="text-center mb-5">
       <span class="sj-badge is-new mb-2">Institution Types</span>
@@ -176,7 +489,7 @@
       {% for type in "School Teaching Jobs,College Lecturer Jobs,University Faculty Jobs,Principal Jobs,Pre-Primary Jobs,Coaching Institute Jobs,Online Teaching Jobs,Administrative Jobs"|split:"," %}
       <div class="col-6 col-md-4 col-lg-3 animate-fade-up">
         <a href="{% url 'core:job-search' %}?q={{ type|urlencode }}" class="sj-card p-4 d-flex flex-column align-items-center text-center h-100 text-reset hover-lift">
-          <div class="ico bg-soft-primary mb-3 d-flex align-items-center justify-content-center" style="width:56px;height:56px;border-radius:14px;">
+          <div class="ico ico-lg bg-soft-primary mb-3">
             <i class="bi {% cycle 'bi-book' 'bi-award' 'bi-bank' 'bi-person-badge' 'bi-balloon' 'bi-journal-richtext' 'bi-laptop' 'bi-file-earmark-person' %}" style="font-size:1.3rem;"></i>
           </div>
           <h6 class="mb-1">{{ type }}</h6>
@@ -188,26 +501,8 @@
   </div>
 </section>
 
-<!-- ====== JOBS BY SUBJECT (NEW SECTION) ====== -->
-<section class="section bg-soft" id="subjects">
-  <div class="container">
-    <div class="text-center mb-5">
-      <h2 class="fw-800">Jobs by <span class="text-gradient">Subject</span></h2>
-      <p class="text-muted-2 mx-auto" style="max-width:480px;">Specialized positions tailored for your academic expertise</p>
-    </div>
-    <div class="row g-3 stagger-children">
-      {% for subject in "Mathematics,Physics,Chemistry,Biology,English,Social Studies,Computer Science,Commerce,Economics,Telugu,Hindi,Sanskrit"|split:"," %}
-      <div class="col-6 col-md-3 col-lg-2 animate-fade-up">
-        <a href="{% url 'core:job-search' %}?q={{ subject|urlencode }}" class="card border-0 shadow-sm h-100 text-reset text-center p-3 hover-lift" style="border-radius: 12px;">
-          <div class="fw-bold fs-6">{{ subject }}</div>
-        </a>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
 <!-- ====== LATEST EDUCATIONAL JOBS ====== -->
+
 {% if featured_jobs %}
 <section class="section" id="featured-jobs">
   <div class="container">
@@ -242,21 +537,21 @@
           <span class="sj-badge mb-2 bg-white"><i class="bi bi-building"></i> For Institutions</span>
           <h3 class="fw-800 mb-4">Why Schools <span class="text-gradient">Choose Us</span></h3>
           <div class="d-flex align-items-start mb-4">
-            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-check-circle text-primary"></i></div>
+            <div class="ico ico-md bg-white shadow-sm me-3"><i class="bi bi-check-circle text-primary"></i></div>
             <div>
               <h6 class="fw-bold mb-1">Verified Teacher Profiles</h6>
               <p class="text-muted fs-sm mb-0">Access thoroughly vetted candidates with verified credentials and experience.</p>
             </div>
           </div>
           <div class="d-flex align-items-start mb-4">
-            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-lightning text-warning"></i></div>
+            <div class="ico ico-md bg-white shadow-sm me-3"><i class="bi bi-lightning text-warning"></i></div>
             <div>
               <h6 class="fw-bold mb-1">Fast Hiring Process</h6>
               <p class="text-muted fs-sm mb-0">Streamlined tools to post jobs, filter applications, and hire the best educators quickly.</p>
             </div>
           </div>
           <div class="d-flex align-items-start">
-            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-kanban text-info"></i></div>
+            <div class="ico ico-md bg-white shadow-sm me-3"><i class="bi bi-kanban text-info"></i></div>
             <div>
               <h6 class="fw-bold mb-1">Easy Candidate Management</h6>
               <p class="text-muted fs-sm mb-0">Track applications, view resumes directly, and manage interviews in one dashboard.</p>
@@ -271,21 +566,21 @@
           <span class="sj-badge mb-2 bg-white"><i class="bi bi-person-badge"></i> For Educators</span>
           <h3 class="fw-800 mb-4">Why Teachers <span class="text-gradient">Choose Us</span></h3>
           <div class="d-flex align-items-start mb-4">
-            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-shield-check text-success"></i></div>
+            <div class="ico ico-md bg-white shadow-sm me-3"><i class="bi bi-shield-check text-success"></i></div>
             <div>
               <h6 class="fw-bold mb-1">Verified Opportunities</h6>
               <p class="text-muted fs-sm mb-0">Apply safely to direct openings from reputed schools and colleges across India.</p>
             </div>
           </div>
           <div class="d-flex align-items-start mb-4">
-            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-graph-up-arrow text-primary"></i></div>
+            <div class="ico ico-md bg-white shadow-sm me-3"><i class="bi bi-graph-up-arrow text-primary"></i></div>
             <div>
               <h6 class="fw-bold mb-1">Career Growth</h6>
               <p class="text-muted fs-sm mb-0">Discover opportunities that match your expertise and take your career to the next level.</p>
             </div>
           </div>
           <div class="d-flex align-items-start">
-            <div class="ico bg-white shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style="width:48px;height:48px;border-radius:12px;"><i class="bi bi-bell text-danger"></i></div>
+            <div class="ico ico-md bg-white shadow-sm me-3"><i class="bi bi-bell text-danger"></i></div>
             <div>
               <h6 class="fw-bold mb-1">Instant Job Alerts</h6>
               <p class="text-muted fs-sm mb-0">Never miss out! Get notified instantly when matching jobs are posted by top institutions.</p>
@@ -309,8 +604,7 @@
       {% for step in "Create Profile,Find Jobs,Apply & Get Hired"|split:"," %}
       <div class="col-md-4">
         <div class="text-center animate-fade-up">
-          <div class="ico mx-auto mb-3 d-flex align-items-center justify-content-center {% cycle 'ico-gradient-primary' 'ico-gradient-cool' 'ico-gradient-green' %}"
-               style="width:72px;height:72px;border-radius:20px;font-size:1.6rem;">
+          <div class="ico ico-xl mx-auto mb-3 {% cycle 'ico-gradient-primary' 'ico-gradient-cool' 'ico-gradient-green' %}">
             {% if forloop.counter == 1 %}<i class="bi bi-person-plus"></i>
             {% elif forloop.counter == 2 %}<i class="bi bi-search"></i>
             {% else %}<i class="bi bi-rocket-takeoff"></i>{% endif %}
@@ -449,7 +743,44 @@
 
 {% block extra_js %}
 <script src="{% static 'js/search.js' %}" defer></script>
+<script>
+  // Recruiter card analytics tracking
+  (function () {
+    document.addEventListener('click', function (e) {
+      const card = e.target.closest('[data-sj-track="recruiter-card"]');
+      if (!card) return;
+      const cardName = card.getAttribute('data-card') || 'unknown';
+      const payload = JSON.stringify({ event: 'recruiter_card_click', card: cardName, ts: Date.now() });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/v1/analytics/track/', payload);
+      }
+      // console.log('[SevaJobs Analytics]', cardName);
+    });
+
+    // Scroll-reveal for timeline steps
+    if ('IntersectionObserver' in window) {
+      const revealTargets = document.querySelectorAll('.sj-timeline-step');
+      const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15 });
+
+      revealTargets.forEach(function (el) {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(16px)';
+        el.style.transition = 'opacity .45s ease, transform .45s ease';
+        observer.observe(el);
+      });
+    }
+  })();
+</script>
 {% endblock %}
+
 
 {% block modals %}
 {{ block.super }}

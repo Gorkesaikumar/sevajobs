@@ -48,7 +48,7 @@ class SeekerDashboardView(SeekerMixin, TemplateView):
         base_qs = Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).select_related("company")
         
         if profile:
-            from django.db.models import Count, Q, Case, When, Value, IntegerField, F
+            from django.db.models import Case, When, Value, IntegerField, F
             
             # Score job type
             job_type_match = Case(
@@ -57,29 +57,15 @@ class SeekerDashboardView(SeekerMixin, TemplateView):
                 output_field=IntegerField()
             ) if profile.preferred_job_type else Value(0, output_field=IntegerField())
             
-            # Score skills
-            skill_ids = list(profile.skills.values_list('id', flat=True)) if profile.skills.exists() else []
+            qs = base_qs.annotate(
+                type_score=job_type_match,
+            ).annotate(
+                relevance_score=F('type_score')
+            ).filter(relevance_score__gt=0).order_by('-published_at', '-relevance_score')
             
-            if skill_ids:
-                qs = base_qs.annotate(
-                    skill_match_count=Count('skills_required', filter=Q(skills_required__in=skill_ids)),
-                    type_score=job_type_match,
-                ).annotate(
-                    relevance_score=F('skill_match_count') * 3 + F('type_score')
-                ).filter(relevance_score__gt=0).order_by('-published_at', '-relevance_score')
-                
-                # Fallback if no matching jobs
-                if not qs.exists():
-                    qs = base_qs.order_by('-published_at')
-            else:
-                qs = base_qs.annotate(
-                    type_score=job_type_match,
-                ).annotate(
-                    relevance_score=F('type_score')
-                ).filter(relevance_score__gt=0).order_by('-published_at', '-relevance_score')
-                
-                if not qs.exists():
-                    qs = base_qs.order_by('-published_at')
+            # Fallback if no matching jobs
+            if not qs.exists():
+                qs = base_qs.order_by('-published_at')
         else:
             qs = base_qs.order_by('-published_at')
             

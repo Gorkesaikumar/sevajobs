@@ -94,10 +94,6 @@
         <textarea class="form-control" name="responsibilities" rows="4" placeholder="e.g., Teach Physics for 11th and 12th CBSE, prepare lesson plans, conduct labs…"></textarea>
       </div>
       <div class="col-12">
-        <label class="form-label">Required Teaching Qualifications & Certifications</label>
-        <textarea class="form-control" name="requirements" rows="4" placeholder="e.g., B.Ed required, Minimum 5 years teaching experience, CTET qualified preferred…"></textarea>
-      </div>
-      <div class="col-12">
         <label class="form-label">Benefits</label>
         <textarea class="form-control" name="benefits" rows="2" placeholder="e.g., PF, Medical, Free transport, Staff child concession…"></textarea>
       </div>
@@ -119,11 +115,13 @@
       <div class="col-md-4">
         <label class="form-label">Experience Level *</label>
         <select class="form-select" name="experience_level" required>
-          <option value="fresher">Fresher</option>
-          <option value="junior">Junior (1-3 yrs)</option>
-          <option value="mid">Mid Level (3-6 yrs)</option>
-          <option value="senior">Senior (6+ yrs)</option>
-          <option value="lead">HOD / Principal</option>
+          <option value="FRESHER">Fresher (0 Years)</option>
+          <option value="1_3_YEARS">1 – 3 Years</option>
+          <option value="3_6_YEARS">3 – 6 Years</option>
+          <option value="6_10_YEARS">6 – 10 Years</option>
+          <option value="10_14_YEARS">10 – 14 Years</option>
+          <option value="14_18_YEARS">14 – 18 Years</option>
+          <option value="18_PLUS_YEARS">18+ Years</option>
         </select>
       </div>
       <div class="col-md-4"><label class="form-label">Vacancies</label><input type="number" class="form-control" name="vacancies" min="1" value="1"></div>
@@ -132,7 +130,6 @@
       <div class="col-md-3"><label class="form-label">Salary Max (₹)</label><input type="number" class="form-control" name="salary_max" min="0"></div>
       <div class="col-md-4"><label class="form-label">Application Deadline</label><input type="date" class="form-control" name="deadline"></div>
       <div class="col-md-4 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" id="is_remote" name="is_remote"><label class="form-check-label" for="is_remote">Online Teaching / Remote</label></div></div>
-      <div class="col-12"><label class="form-label">Required Skills</label><div class="sj-tag-input"><input type="hidden" name="skills"><input type="text" placeholder="Type skill (e.g. Smartboard, Zoom, Lesson Planning) and press Enter"></div></div>
     </div>
   </div>
   

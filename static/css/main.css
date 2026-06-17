@@ -913,6 +913,21 @@ img {
   color: var(--sj-danger);
 }
 
+/* Base Icon Container: Guarantees perfect centering */
+.ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* Standardized Icon Sizes & Border Radii */
+.ico-sm { width: 32px; height: 32px; border-radius: 8px; font-size: 1.1rem; }
+.ico-md { width: 44px; height: 44px; border-radius: 12px; font-size: 1.25rem; }
+.ico-lg { width: 56px; height: 56px; border-radius: 14px; font-size: 1.5rem; }
+.ico-xl { width: 72px; height: 72px; border-radius: 20px; font-size: 2rem; }
+
 .sj-stat .ico {
   width: 50px;
   height: 50px;
@@ -1677,7 +1692,253 @@ img {
 }
 
 /* --------------------------------------------------------------------------
-   24. UTILITIES
+   24. RECRUITER HUB SECTION
+   -------------------------------------------------------------------------- */
+
+/* Section wrapper — dark gradient backdrop */
+.sj-recruiter-hub {
+  background: var(--sj-gradient-dark);
+  position: relative;
+  overflow: hidden;
+}
+
+.sj-recruiter-hub::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(800px 500px at 110% 50%, rgba(79, 70, 229, .25), transparent),
+    radial-gradient(600px 400px at -10% 80%, rgba(6, 182, 212, .18), transparent);
+  pointer-events: none;
+}
+
+.sj-recruiter-hub .container {
+  position: relative;
+  z-index: 1;
+}
+
+/* Section heading overrides for dark background */
+.sj-recruiter-hub h2,
+.sj-recruiter-hub .display-5 {
+  color: #fff;
+}
+
+.sj-recruiter-hub p.lead {
+  color: rgba(255, 255, 255, .75);
+}
+
+.sj-recruiter-hub .sj-badge {
+  background: rgba(255, 255, 255, .12);
+  color: rgba(255, 255, 255, .9);
+  border: 1px solid rgba(255, 255, 255, .15);
+  backdrop-filter: blur(8px);
+}
+
+/* Action card */
+.sj-action-card {
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: var(--sj-radius-lg);
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  backdrop-filter: blur(10px);
+  transition: all var(--sj-duration-md) var(--sj-ease);
+  position: relative;
+  overflow: hidden;
+}
+
+.sj-action-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.sj-action-card:hover {
+  background: rgba(255, 255, 255, .13);
+  border-color: rgba(255, 255, 255, .28);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, .3);
+}
+
+.sj-action-card .ac-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin-bottom: 1.1rem;
+  flex-shrink: 0;
+}
+
+.sj-action-card h5 {
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--sj-fs-lg);
+  margin-bottom: .5rem;
+}
+
+.sj-action-card .ac-desc {
+  color: rgba(255, 255, 255, .65);
+  font-size: var(--sj-fs-sm);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  flex-grow: 1;
+}
+
+.sj-action-card .ac-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.sj-action-card .ac-features li {
+  font-size: var(--sj-fs-xs);
+  font-weight: 600;
+  color: rgba(255, 255, 255, .55);
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.sj-action-card .ac-features li i {
+  color: rgba(255, 255, 255, .4);
+  font-size: .75rem;
+}
+
+.sj-action-card .ac-btn {
+  margin-top: auto;
+  background: rgba(255, 255, 255, .14);
+  border: 1px solid rgba(255, 255, 255, .2);
+  color: #fff;
+  border-radius: var(--sj-radius-sm);
+  font-size: var(--sj-fs-sm);
+  font-weight: 600;
+  padding: .6rem 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  transition: all var(--sj-duration) var(--sj-ease);
+  text-decoration: none;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.sj-action-card .ac-btn:hover {
+  background: #fff;
+  color: var(--sj-primary);
+  border-color: #fff;
+  box-shadow: 0 4px 14px rgba(255, 255, 255, .2);
+}
+
+/* --------------------------------------------------------------------------
+   25. HOW IT WORKS TIMELINE (recruiter)
+   -------------------------------------------------------------------------- */
+.sj-timeline-recruiter {
+  position: relative;
+}
+
+/* Horizontal connector line on desktop */
+.sj-timeline-recruiter .timeline-connector {
+  display: none;
+}
+
+@media (min-width: 992px) {
+  .sj-timeline-recruiter .timeline-connector {
+    display: block;
+    position: absolute;
+    top: 28px;
+    left: calc(16.666% + 28px);
+    right: calc(16.666% + 28px);
+    height: 2px;
+    background: linear-gradient(90deg, var(--sj-primary-200), var(--sj-primary), var(--sj-accent));
+    z-index: 0;
+    border-radius: 2px;
+  }
+}
+
+.sj-timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.sj-timeline-step .step-bubble {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--sj-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  margin-bottom: .85rem;
+  border: 3px solid var(--sj-bg);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.sj-timeline-step .step-num {
+  font-size: var(--sj-fs-xs);
+  font-weight: 700;
+  color: var(--sj-primary);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: .3rem;
+}
+
+.sj-timeline-step h6 {
+  font-weight: 700;
+  color: var(--sj-ink);
+  margin-bottom: .35rem;
+  font-size: var(--sj-fs-base);
+}
+
+.sj-timeline-step p {
+  font-size: var(--sj-fs-xs);
+  color: var(--sj-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Mobile: vertical timeline with left line */
+@media (max-width: 767.98px) {
+  .sj-timeline-recruiter .row {
+    position: relative;
+  }
+
+  .sj-timeline-step {
+    flex-direction: row;
+    text-align: left;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .sj-timeline-step .step-bubble {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .sj-timeline-step .step-content {
+    padding-top: .25rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   26. UTILITIES
    -------------------------------------------------------------------------- */
 .text-ink {
   color: var(--sj-ink) !important;

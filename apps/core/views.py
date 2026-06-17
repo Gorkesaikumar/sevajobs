@@ -1,7 +1,7 @@
 """Template views for public pages and core functionality."""
 
 from django.views.generic import TemplateView, DetailView
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -25,7 +25,7 @@ class HomeView(TemplateView):
                 is_featured=True,
             )
             .select_related("company", "category")
-            .prefetch_related("skills_required")[:6]
+            .order_by("-published_at")[:6]
         )
         ctx["categories"] = JobCategory.objects.filter(is_active=True, parent__isnull=True)[:8]
         ctx["total_jobs"] = Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).count()
@@ -108,7 +108,7 @@ class JobSearchView(TemplateView):
         qs = Job.objects.filter(
             status=Job.Status.ACTIVE,
             approval_status=Job.ApprovalStatus.APPROVED,
-        ).select_related("company", "category").prefetch_related("skills_required")
+        ).select_related("company", "category")
 
         # Search
         q = self.request.GET.get("q", "")
@@ -172,7 +172,7 @@ class JobDetailPageView(DetailView):
     def get_queryset(self):
         return Job.objects.select_related(
             "company", "category", "recruiter", "minimum_qualification"
-        ).prefetch_related("skills_required", "preferred_qualifications")
+        ).prefetch_related("preferred_qualifications")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -238,17 +238,48 @@ class CompanyDetailPageView(DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["active_jobs"] = (
-            Job.objects.filter(
-                company=self.object,
-                status=Job.Status.ACTIVE,
-                approval_status=Job.ApprovalStatus.APPROVED,
-            )
-            .select_related("category")
-            .prefetch_related("skills_required")
+        qs = Job.objects.filter(
+            company=self.object,
+            status=Job.Status.ACTIVE,
+            approval_status=Job.ApprovalStatus.APPROVED,
         )
+
+        aggregates = qs.aggregate(
+            total_vacancies=Sum("vacancies"),
+            total_applications=Sum("applications_count")
+        )
+        total_open_vacancies = aggregates["total_vacancies"] or 0
+        total_applications = aggregates["total_applications"] or 0
+        total_active_jobs = qs.count()
+
+        # Apply filters
+        category_slug = self.request.GET.get("category")
+        if category_slug:
+            qs = qs.filter(category__slug=category_slug)
+
+        job_type = self.request.GET.get("job_type")
+        if job_type:
+            qs = qs.filter(job_type=job_type)
+
+        experience = self.request.GET.get("experience")
+        if experience:
+            qs = qs.filter(experience_level=experience)
+
+        location = self.request.GET.get("location")
+        if location:
+            qs = qs.filter(location__icontains=location)
+
+        ctx["active_jobs"] = qs.select_related("category").order_by("-published_at")
+        ctx["total_open_vacancies"] = total_open_vacancies
+        ctx["total_active_jobs"] = total_active_jobs
+        ctx["total_applications"] = total_applications
+        
+        ctx["job_types"] = Job.JobType.choices
+        ctx["experience_levels"] = Job.ExperienceLevel.choices
+        ctx["categories"] = JobCategory.objects.filter(is_active=True).order_by("name")
+        
         ctx["breadcrumbs"] = [
-            {"label": "Schools/Colleges", "url": "/companies/"},
+            {"label": "Schools/Colleges", "url": "/schools/"},
             {"label": self.object.name},
         ]
         return ctx

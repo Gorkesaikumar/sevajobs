@@ -50,10 +50,13 @@
               </div>
               <div class="col-lg-3">
                 <div class="mega-col-title">By Experience</div>
-                <a href="{% url 'core:job-search' %}?experience_level=fresher" class="mega-link"><i class="bi bi-mortarboard"></i> Fresher</a>
-                <a href="{% url 'core:job-search' %}?experience_level=junior" class="mega-link"><i class="bi bi-person"></i> Junior (1-3 yrs)</a>
-                <a href="{% url 'core:job-search' %}?experience_level=mid" class="mega-link"><i class="bi bi-person-check"></i> Mid (3-6 yrs)</a>
-                <a href="{% url 'core:job-search' %}?experience_level=senior" class="mega-link"><i class="bi bi-person-badge"></i> Senior (6+ yrs)</a>
+                <a href="{% url 'core:job-search' %}?experience_level=FRESHER" class="mega-link"><i class="bi bi-mortarboard"></i> Fresher (0 Years)</a>
+                <a href="{% url 'core:job-search' %}?experience_level=1_3_YEARS" class="mega-link"><i class="bi bi-person"></i> 1 – 3 Years</a>
+                <a href="{% url 'core:job-search' %}?experience_level=3_6_YEARS" class="mega-link"><i class="bi bi-person-check"></i> 3 – 6 Years</a>
+                <a href="{% url 'core:job-search' %}?experience_level=6_10_YEARS" class="mega-link"><i class="bi bi-person-badge"></i> 6 – 10 Years</a>
+                <a href="{% url 'core:job-search' %}?experience_level=10_14_YEARS" class="mega-link"><i class="bi bi-person-badge"></i> 10 – 14 Years</a>
+                <a href="{% url 'core:job-search' %}?experience_level=14_18_YEARS" class="mega-link"><i class="bi bi-person-badge"></i> 14 – 18 Years</a>
+                <a href="{% url 'core:job-search' %}?experience_level=18_PLUS_YEARS" class="mega-link"><i class="bi bi-person-badge"></i> 18+ Years</a>
               </div>
               <div class="col-lg-3">
                 <div class="mega-col-title">Popular Locations</div>
@@ -77,6 +80,16 @@
           </a>
         </li>
         {% endif %}
+        <li class="nav-item">
+          <a class="nav-link {% block nav_about %}{% endblock %}" href="{% url 'core:about' %}">
+            <i class="bi bi-info-circle d-lg-none me-2"></i>About Us
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% block nav_contact %}{% endblock %}" href="{% url 'core:contact' %}">
+            <i class="bi bi-envelope d-lg-none me-2"></i>Contact Us
+          </a>
+        </li>
       </ul>
 
       <div class="d-flex align-items-center gap-2">

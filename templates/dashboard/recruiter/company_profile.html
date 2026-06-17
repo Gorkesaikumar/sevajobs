@@ -125,43 +125,6 @@
             </div>
           </div>
 
-          <!-- School Fields -->
-          <div id="school_fields_container" style="display: none;" class="mt-4">
-            <h6 class="fw-bold text-secondary mb-3">School Specifics</h6>
-            <div class="row g-4 bg-light p-3 rounded-4 border">
-              <div class="col-md-6">
-                <label for="school_type" class="form-label">School Board *</label>
-                <select class="form-select school-required" id="school_type" name="school_type">
-                  <option value="">Select Board</option>
-                  <option value="cbse" {% if company.school_type == 'cbse' %}selected{% endif %}>CBSE</option>
-                  <option value="icse" {% if company.school_type == 'icse' %}selected{% endif %}>ICSE</option>
-                  <option value="state_board" {% if company.school_type == 'state_board' %}selected{% endif %}>State Board</option>
-                  <option value="international" {% if company.school_type == 'international' %}selected{% endif %}>International</option>
-                  <option value="other" {% if company.school_type == 'other' %}selected{% endif %}>Other</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label for="classes_offered" class="form-label">Classes Offered *</label>
-                <input type="text" class="form-control school-required" id="classes_offered" name="classes_offered" value="{{ company.classes_offered|default:'' }}" placeholder="e.g. Pre-K to 12th">
-              </div>
-              <div class="col-md-6">
-                <label for="medium_of_instruction" class="form-label">Medium of Instruction *</label>
-                <input type="text" class="form-control school-required" id="medium_of_instruction" name="medium_of_instruction" value="{{ company.medium_of_instruction|default:'' }}" placeholder="e.g. English, Hindi">
-              </div>
-              <div class="col-md-6">
-                <label for="principal_name" class="form-label">Principal Name *</label>
-                <input type="text" class="form-control school-required" id="principal_name" name="principal_name" value="{{ company.principal_name|default:'' }}" pattern="[A-Za-z0-9\s\.\-\&,']+" title="Only letters, numbers, spaces, and basic punctuation (.,-&') are allowed." placeholder="Name of the Principal">
-              </div>
-              <div class="col-md-6">
-                <label for="school_facilities" class="form-label">School Facilities</label>
-                <textarea class="form-control" id="school_facilities" name="school_facilities" rows="3" placeholder="Library, Lab, Sports, etc.">{{ company.school_facilities|default:'' }}</textarea>
-              </div>
-              <div class="col-md-6">
-                <label for="accreditation_details" class="form-label">Accreditation Details</label>
-                <textarea class="form-control" id="accreditation_details" name="accreditation_details" rows="3" placeholder="Awards or recognitions">{{ company.accreditation_details|default:'' }}</textarea>
-              </div>
-            </div>
-          </div>
 
           <!-- College Fields -->
           <div id="college_fields_container" style="display: none;" class="mt-4">
@@ -274,51 +237,7 @@
       </div>
     </div>
 
-    <!-- 5. Additional Info Card -->
-    <div class="col-12">
-      <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-body p-4 p-md-5">
-          <h5 class="fw-bold mb-4 text-primary border-bottom pb-2"><i class="bi bi-building me-2"></i> Additional Info (Optional)</h5>
-          
-          <div class="row g-4">
-            <div class="col-md-6">
-              <label for="website" class="form-label">Website</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                <input type="url" class="form-control" id="website" name="website" value="{{ company.website|default:'' }}" placeholder="https://...">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <label for="industry" class="form-label">Industry</label>
-              <input type="text" class="form-control" id="industry" name="industry" value="{{ company.industry|default:'' }}" placeholder="e.g. Education, EdTech">
-            </div>
-            <div class="col-md-4">
-              <label for="size" class="form-label">Institute Size</label>
-              <select class="form-select" id="size" name="size">
-                <option value="">Select size</option>
-                <option value="1-10" {% if company.size == '1-10' %}selected{% endif %}>Startup (1–10)</option>
-                <option value="11-50" {% if company.size == '11-50' %}selected{% endif %}>Small (11–50)</option>
-                <option value="51-200" {% if company.size == '51-200' %}selected{% endif %}>Medium (51–200)</option>
-                <option value="201-1000" {% if company.size == '201-1000' %}selected{% endif %}>Large (201–1000)</option>
-                <option value="1000+" {% if company.size == '1000+' %}selected{% endif %}>Enterprise (1000+)</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label for="number_of_students" class="form-label">Number of Students</label>
-              <input type="number" class="form-control" id="number_of_students" name="number_of_students" value="{{ company.number_of_students|default:'' }}" min="0">
-            </div>
-            <div class="col-md-4">
-              <label for="number_of_staff" class="form-label">Number of Staff</label>
-              <input type="number" class="form-control" id="number_of_staff" name="number_of_staff" value="{{ company.number_of_staff|default:'' }}" min="0">
-            </div>
-            <div class="col-12">
-              <label for="description" class="form-label">About the Institute</label>
-              <textarea class="form-control" id="description" name="description" rows="5" placeholder="Provide a brief history, mission, or vision of your institute...">{{ company.description|default:'' }}</textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+
   </div>
 
   <div class="d-flex justify-content-end mt-5 mb-3">
@@ -331,23 +250,15 @@
     // Institute Type Logic
     const schoolRadio = document.getElementById("type_school");
     const collegeRadio = document.getElementById("type_college");
-    const schoolContainer = document.getElementById("school_fields_container");
     const collegeContainer = document.getElementById("college_fields_container");
 
     const instituteNameLabel = document.getElementById("institute_name_label");
-    const schoolRequiredFields = document.querySelectorAll(".school-required");
     const collegeRequiredFields = document.querySelectorAll(".college-required");
 
     function toggleFields() {
       if (schoolRadio.checked) {
-        schoolContainer.style.display = "block";
         collegeContainer.style.display = "none";
         instituteNameLabel.textContent = "School Name";
-        
-        // Make school fields required
-        schoolRequiredFields.forEach(field => {
-          field.required = true;
-        });
         
         // Clear college fields
         collegeRequiredFields.forEach(field => {
@@ -360,7 +271,6 @@
         document.getElementById("approval_details").value = "";
         
       } else {
-        schoolContainer.style.display = "none";
         collegeContainer.style.display = "block";
         instituteNameLabel.textContent = "College Name";
         
@@ -368,14 +278,6 @@
         collegeRequiredFields.forEach(field => {
           field.required = true;
         });
-        
-        // Remove required attribute and clear values for school fields
-        schoolRequiredFields.forEach(field => {
-          field.required = false;
-          field.value = "";
-        });
-        document.getElementById("school_facilities").value = "";
-        document.getElementById("accreditation_details").value = "";
       }
     }
 

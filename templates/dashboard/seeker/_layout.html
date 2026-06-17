@@ -7,7 +7,12 @@
 <a class="nav-link {% if sidebar_section == 'resumes' %}active{% endif %}" href="{% url 'seeker:resumes' %}"><i class="bi bi-file-earmark-text"></i> Resumes</a>
 <div class="sidebar-section">Jobs</div>
 <a class="nav-link {% if sidebar_section == 'applied' %}active{% endif %}" href="{% url 'seeker:applied-jobs' %}"><i class="bi bi-send-check"></i> Applied Jobs</a>
-<a class="nav-link {% if sidebar_section == 'interviews' %}active{% endif %}" href="{% url 'seeker:interviews' %}"><i class="bi bi-camera-video"></i> My Interviews</a>
+<a class="nav-link {% if sidebar_section == 'interviews' %}active{% endif %} d-flex justify-content-between align-items-center" href="{% url 'seeker:interviews' %}">
+  <span><i class="bi bi-camera-video"></i> My Interviews</span>
+  {% if pending_interviews_count %}
+  <span class="badge bg-primary rounded-pill">{{ pending_interviews_count }}</span>
+  {% endif %}
+</a>
 <a class="nav-link {% if sidebar_section == 'offers' %}active{% endif %}" href="{% url 'seeker:offers' %}"><i class="bi bi-briefcase-fill"></i> Selected / Rejected</a>
 <a class="nav-link {% if sidebar_section == 'saved' %}active{% endif %}" href="{% url 'seeker:saved-jobs' %}"><i class="bi bi-bookmark"></i> Saved Jobs</a>
 <a class="nav-link {% if sidebar_section == 'alerts' %}active{% endif %}" href="{% url 'seeker:job-alerts' %}"><i class="bi bi-bell"></i> Job Alerts</a>
