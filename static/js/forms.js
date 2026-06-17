@@ -113,11 +113,7 @@
                 e.preventDefault();
                 e.stopPropagation();
                 customValid = false;
-                if (typeof window.showAlert === 'function') {
-                    window.showAlert("Please use a stronger password.", "Weak Password", "bi-shield-exclamation text-warning");
-                } else {
-                    alert("Please use a stronger password.");
-                }
+                window.showAlert("Please use a stronger password.", "Weak Password", "bi-shield-exclamation text-warning");
             }
         }
 
@@ -144,11 +140,7 @@
         // Size Limit: 5MB
         const maxSize = 5 * 1024 * 1024;
         if (file.size > maxSize) {
-            if (typeof window.showAlert === 'function') {
-                window.showAlert('File is too large! Maximum allowed size is 5MB.', 'File Size Limit', 'bi-file-earmark-x text-danger');
-            } else {
-                alert('File is too large! Maximum allowed size is 5MB.');
-            }
+            window.showAlert('File is too large! Maximum allowed size is 5MB.', 'File Size Limit', 'bi-file-earmark-x text-danger');
             input.value = '';
             preview.innerHTML = '';
             return;
@@ -162,11 +154,7 @@
             'image/jpeg', 'image/png', 'image/webp'
         ];
         if (!allowedTypes.includes(file.type)) {
-            if (typeof window.showAlert === 'function') {
-                window.showAlert('Invalid file type! Only PDF, DOCX, JPG, and PNG are allowed.', 'Invalid Format', 'bi-file-earmark-x text-danger');
-            } else {
-                alert('Invalid file type! Only PDF, DOCX, JPG, and PNG are allowed.');
-            }
+            window.showAlert('Invalid file type! Only PDF, DOCX, JPG, and PNG are allowed.', 'Invalid Format', 'bi-file-earmark-x text-danger');
             input.value = '';
             preview.innerHTML = '';
             return;

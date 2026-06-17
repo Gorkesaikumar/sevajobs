@@ -17,7 +17,32 @@
           <td class="fw-semibold">{{ job.app_count }}</td>
           <td>{{ job.views_count|intcomma }}</td>
           <td class="fs-sm text-muted-2">{{ job.created_at|date:"M j" }}</td>
-          <td><div class="sj-table-actions"><a href="{% url 'core:job-detail' slug=job.slug %}" class="btn btn-ghost btn-sm" title="View"><i class="bi bi-eye"></i></a><a href="#" class="btn btn-ghost btn-sm" title="Edit"><i class="bi bi-pencil"></i></a></div></td>
+          <td>
+            <div class="sj-table-actions d-flex gap-1">
+              <a href="{% url 'core:job-detail' slug=job.slug %}" class="btn btn-ghost btn-sm" title="View"><i class="bi bi-eye"></i></a>
+              {% if job.status == 'active' and job.approval_status == 'approved' %}
+                <form method="post" action="{% url 'recruiter:job-action' pk=job.pk %}" class="d-inline" onsubmit="return confirm('Close this job? It will no longer accept applications.');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="close">
+                  <button type="submit" class="btn btn-ghost btn-sm" title="Close"><i class="bi bi-x-circle"></i></button>
+                </form>
+              {% else %}
+                <a href="{% url 'recruiter:edit-job' pk=job.pk %}" class="btn btn-ghost btn-sm" title="Edit"><i class="bi bi-pencil"></i></a>
+                {% if job.status == 'expired' or job.status == 'closed' or job.approval_status == 'rejected' %}
+                  <form method="post" action="{% url 'recruiter:job-action' pk=job.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="republish">
+                    <button type="submit" class="btn btn-ghost btn-sm" title="Resubmit for Approval"><i class="bi bi-arrow-repeat"></i></button>
+                  </form>
+                {% endif %}
+                <form method="post" action="{% url 'recruiter:job-action' pk=job.pk %}" class="d-inline" onsubmit="return confirm('Delete this job? This cannot be undone.');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <button type="submit" class="btn btn-ghost btn-sm text-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>

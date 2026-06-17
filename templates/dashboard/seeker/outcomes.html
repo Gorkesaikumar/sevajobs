@@ -1,0 +1,157 @@
+{% extends "dashboard/seeker/_layout.html" %}
+{% load humanize sj_extras %}
+{% block title %}Selected / Rejected Outcomes — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="mb-4">
+  <h4 class="fw-800 mb-1">Application Outcomes</h4>
+  <p class="text-muted-2 fs-sm">View final outcomes, selections, offers, and decision updates for your applications.</p>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="outcomeTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active fw-semibold" id="selected-tab" data-bs-toggle="tab" data-bs-target="#selected" type="button" role="tab">Selected ({{ selected_offers.count }})</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link fw-semibold" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab">Rejected ({{ rejected_applications.count }})</button>
+  </li>
+</ul>
+
+<div class="tab-content" id="outcomeTabsContent">
+  <!-- Selected Tab -->
+  <div class="tab-pane fade show active" id="selected" role="tabpanel">
+    {% if selected_offers %}
+      <div class="row g-3">
+        {% for app in selected_offers %}
+          {% with offer=app.offer_details %}
+          <div class="col-12 animate-fade-up">
+            <div class="sj-card p-4">
+              <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                <div>
+                  <h5 class="fw-bold mb-1">{{ app.job.title }}</h5>
+                  <div class="fs-sm text-muted-2 fw-semibold"><i class="bi bi-buildings me-1"></i>{{ app.job.company.name }}</div>
+                </div>
+                <div>
+                  {% if offer %}
+                    {% if offer.status == 'pending' %}
+                      <span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Offer Pending</span>
+                    {% elif offer.status == 'accepted' %}
+                      <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Accepted</span>
+                    {% elif offer.status == 'declined' %}
+                      <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Declined</span>
+                    {% elif offer.status == 'expired' %}
+                      <span class="badge bg-secondary"><i class="bi bi-exclamation-triangle me-1"></i>Expired</span>
+                    {% elif offer.status == 'joined' %}
+                      <span class="badge bg-info text-dark"><i class="bi bi-briefcase me-1"></i>Joined</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Offer Pending</span>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <div class="row g-3 fs-sm mb-3 pt-3 border-top border-bottom pb-3">
+                <div class="col-md-3 col-6">
+                  <div class="text-muted-2">Selection Date</div>
+                  <div class="fw-semibold">{{ offer.created_at|default:app.selection.selected_at|default:app.updated_at|date:"M j, Y" }}</div>
+                </div>
+                <div class="col-md-3 col-6">
+                  <div class="text-muted-2">Offered Package</div>
+                  <div class="fw-semibold">{% if offer %}₹{{ offer.annual_ctc|intcomma }} / yr{% else %}Pending{% endif %}</div>
+                </div>
+                <div class="col-md-3 col-6">
+                  <div class="text-muted-2">Joining Date</div>
+                  <div class="fw-semibold text-success"><i class="bi bi-calendar-check me-1"></i>{% if offer.joining_date %}{{ offer.joining_date|date:"M j, Y" }}{% else %}TBD{% endif %}</div>
+                </div>
+                <div class="col-md-3 col-6">
+                  <div class="text-muted-2">Offer Acceptance Status</div>
+                  <div class="fw-semibold">{{ offer.get_status_display|default:"Offer Pending" }}</div>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2">
+                {% if offer %}
+                  <a href="{% url 'seeker:offer-detail' pk=app.id %}" class="btn btn-primary btn-sm"><i class="bi bi-eye me-1"></i>View Offer</a>
+                  {% if offer.status == 'pending' %}
+                    <form method="post" action="{% url 'seeker:offer-detail' pk=app.id %}" class="d-inline mb-0" onsubmit="return confirm('Are you sure you want to accept this offer?');">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="accept">
+                      <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i>Accept Offer</button>
+                    </form>
+                    <form method="post" action="{% url 'seeker:offer-detail' pk=app.id %}" class="d-inline mb-0" onsubmit="return confirm('Are you sure you want to decline this offer?');">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="decline">
+                      <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg me-1"></i>Decline Offer</button>
+                    </form>
+                  {% endif %}
+                  {% if offer.status == 'accepted' or offer.status == 'joined' %}
+                    <a href="{% url 'seeker:download-offer-pdf' pk=app.id %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download me-1"></i>Download Offer Letter</a>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted-2 fs-sm"><i class="bi bi-info-circle me-1"></i> Offer details pending from the institution.</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="sj-card p-5 text-center">
+        <div class="fs-1 text-muted-2 mb-3"><i class="bi bi-gift-fill"></i></div>
+        <h5>No Selected Offers Yet</h5>
+        <p class="text-muted-2 fs-sm max-w-md mx-auto mb-0">When an institution selects you for a position, your offer details will appear here.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Rejected Tab -->
+  <div class="tab-pane fade" id="rejected" role="tabpanel">
+    {% if rejected_applications %}
+      <div class="row g-3">
+        {% for app in rejected_applications %}
+          <div class="col-12 animate-fade-up">
+            <div class="sj-card p-4 border-start border-danger border-4">
+              <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                <div>
+                  <h5 class="fw-bold mb-1">{{ app.job.title }}</h5>
+                  <div class="fs-sm text-muted-2 fw-semibold"><i class="bi bi-buildings me-1"></i>{{ app.job.company.name }}</div>
+                </div>
+                <div>
+                  <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Rejected</span>
+                </div>
+              </div>
+
+              <div class="row g-3 fs-sm mb-3 pt-3 border-top border-bottom pb-3">
+                <div class="col-sm-4 col-6">
+                  <div class="text-muted-2">Application Date</div>
+                  <div class="fw-semibold">{{ app.applied_at|date:"M j, Y" }}</div>
+                </div>
+                <div class="col-sm-4 col-6">
+                  <div class="text-muted-2">Rejection Date</div>
+                  <div class="fw-semibold">{{ app.rejection.rejected_at|default:app.updated_at|date:"M j, Y" }}</div>
+                </div>
+                <div class="col-sm-4 col-12">
+                  <div class="text-muted-2">Status</div>
+                  <div class="fw-semibold text-danger">Application Outcome: Rejected</div>
+                </div>
+              </div>
+
+              <div class="p-3 bg-light rounded text-muted-2 fs-sm">
+                <i class="bi bi-info-circle me-1 text-danger"></i>
+                "Thank you for your interest in this opportunity. After careful review, the institution has decided to proceed with other candidates. We encourage you to continue applying for future opportunities."
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="sj-card p-5 text-center">
+        <div class="fs-1 text-muted-2 mb-3"><i class="bi bi-shield-x"></i></div>
+        <h5>No Rejected Applications</h5>
+        <p class="text-muted-2 fs-sm max-w-md mx-auto mb-0">Your rejected applications (if any) will be shown here for transparency.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

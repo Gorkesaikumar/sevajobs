@@ -2,34 +2,62 @@
 {% load sj_extras humanize %}
 {% block title %}Candidate Detail — SevaJobs{% endblock %}
 {% block dashboard_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <div>
     <h4 class="fw-800 mb-1">Candidate Profile</h4>
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb mb-0 fs-sm">
         <li class="breadcrumb-item"><a href="{% url 'recruiter:applications' %}" class="text-muted-2 text-decoration-none">Applications</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ application.applicant.full_name }}</li>
+        <li class="breadcrumb-item active">{{ application.applicant.full_name }}</li>
       </ol>
     </nav>
   </div>
-  <div class="d-flex gap-2">
-    {% if application.status != "shortlisted" and application.status != "selected" and application.status != "rejected" and application.status != "withdrawn" %}
-    <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="d-inline mb-0">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="shortlist">
-      <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i> Approve</button>
-    </form>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleInterviewModal">
-      <i class="bi bi-calendar-event me-1"></i> Schedule Interview
-    </button>
-    <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="d-inline mb-0">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="reject">
-      <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-lg me-1"></i> Reject</button>
-    </form>
+  <div class="d-flex gap-2 flex-wrap">
+    <!-- Stage 1: Shortlist -->
+    {% if application.status in "applied,under_review"|split:"," %}
+      <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="d-inline mb-0">{% csrf_token %}<input type="hidden" name="action" value="shortlist"><button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i> Shortlist</button></form>
     {% else %}
-      <span class="badge {{ application.status|status_class }} align-self-center py-2 px-3 fs-sm">{{ application.get_status_display }}</span>
+      {% if application.status not in "rejected,withdrawn,archived,interview_cancelled"|split:"," %}
+      <button type="button" class="btn" style="background:var(--sj-success-100);color:var(--sj-success-700);border:1px solid var(--sj-success-200);cursor:default;" disabled>
+        <i class="bi bi-check-lg me-1"></i> Shortlisted
+      </button>
+      {% endif %}
     {% endif %}
+
+    <!-- Stage 2: Schedule -->
+    {% if application.interview_at and application.status != "interview_cancelled" %}
+      <button type="button" class="btn" style="background:var(--sj-success-100);color:var(--sj-success-700);border:1px solid var(--sj-success-200);cursor:default;" disabled>
+        <i class="bi bi-calendar-check-fill me-1"></i> {% if application.status in "interview_completed,decision_pending,selected,offer_sent,offer_accepted,joined"|split:"," %}Interview Completed{% else %}Interview Scheduled{% endif %}
+      </button>
+    {% elif application.status in "shortlisted,interview_cancelled"|split:"," %}
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleInterviewModal"><i class="bi bi-calendar-event me-1"></i> Schedule Interview</button>
+    {% elif application.status in "interview_scheduled,interviewing,interview_completed,decision_pending,selected,offer_sent,offer_accepted,joined"|split:"," %}
+      <button type="button" class="btn" style="background:var(--sj-success-100);color:var(--sj-success-700);border:1px solid var(--sj-success-200);cursor:default;" disabled>
+        <i class="bi bi-calendar-check-fill me-1"></i> {% if application.status in "interview_completed,decision_pending,selected,offer_sent,offer_accepted,joined"|split:"," %}Interview Completed{% else %}Interview Scheduled{% endif %}
+      </button>
+    {% endif %}
+
+    <!-- Stage 3: Selected -->
+    {% if application.status in "shortlisted,interview_scheduled,interviewing,interview_completed,decision_pending"|split:"," %}
+      <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#selectCandidateModal">
+        <i class="bi bi-trophy me-1"></i> Mark Selected
+      </button>
+    {% elif application.status in "selected,offer_sent,offer_accepted,joined"|split:"," %}
+      <button type="button" class="btn" style="background:var(--sj-success-100);color:var(--sj-success-700);border:1px solid var(--sj-success-200);cursor:default;" disabled>
+        <i class="bi bi-trophy me-1"></i> Selected
+      </button>
+    {% endif %}
+
+    <!-- Stage 4: Move Back -->
+    {% if application.status == "shortlisted" %}
+      <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="d-inline mb-0">{% csrf_token %}<input type="hidden" name="action" value="move_back_to_review"><button type="submit" class="btn btn-ghost"><i class="bi bi-arrow-counterclockwise me-1"></i> Move Back</button></form>
+    {% endif %}
+
+    <!-- Stage 5: Reject -->
+    {% if application.status not in "rejected,withdrawn,joined,archived"|split:"," %}
+      <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="d-inline mb-0">{% csrf_token %}<input type="hidden" name="action" value="reject"><button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-lg me-1"></i> Reject</button></form>
+    {% endif %}
+    <span class="badge {{ application.status|status_class }} align-self-center py-2 px-3 fs-sm">{{ application.get_status_display }}</span>
   </div>
 </div>
 
@@ -37,41 +65,92 @@
   <div class="col-lg-8">
     <div class="sj-card p-4 mb-4">
       <h5 class="fw-bold mb-3">Applicant Details</h5>
-      <div class="row mb-3">
-        <div class="col-sm-4 text-muted-2">Name</div>
-        <div class="col-sm-8 fw-semibold">{{ application.applicant.full_name }}</div>
+      <div class="row mb-2"><div class="col-sm-4 text-muted-2">Name</div><div class="col-sm-8 fw-semibold">{{ application.applicant.full_name }}</div></div>
+      <div class="row mb-2"><div class="col-sm-4 text-muted-2">Email</div><div class="col-sm-8"><a href="mailto:{{ application.applicant.email }}">{{ application.applicant.email }}</a></div></div>
+      {% if application.applicant.phone %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Phone</div><div class="col-sm-8">{{ application.applicant.phone }}</div></div>{% endif %}
+      {% with profile=application.applicant.job_seeker_profile %}
+        {% if profile %}
+          {% if profile.current_location %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Location</div><div class="col-sm-8">{{ profile.current_location }}</div></div>{% endif %}
+          {% with q=profile.qualifications.first %}{% if q %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Qualification</div><div class="col-sm-8">{{ q.name }}</div></div>{% endif %}{% endwith %}
+          {% if profile.experience_years %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Experience</div><div class="col-sm-8">{{ profile.experience_years }} year{{ profile.experience_years|pluralize }}</div></div>{% endif %}
+        {% endif %}
+      {% endwith %}
+      <div class="row mb-2"><div class="col-sm-4 text-muted-2">Applied For</div><div class="col-sm-8 fw-semibold">{{ application.job.title }}</div></div>
+      <div class="row mb-2"><div class="col-sm-4 text-muted-2">Applied On</div><div class="col-sm-8">{{ application.applied_at|date:"M j, Y, g:i a" }}</div></div>
+      {% if application.shortlisted_at %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Shortlisted On</div><div class="col-sm-8">{{ application.shortlisted_at|date:"M j, Y, g:i a" }}{% if application.shortlisted_by %} by {{ application.shortlisted_by.full_name }}{% endif %}</div></div>{% endif %}
+      {% if application.expected_salary %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Expected Salary</div><div class="col-sm-8">₹{{ application.expected_salary|intcomma }}</div></div>{% endif %}
+    </div>
+
+    {% if application.interview_at %}
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3"><i class="bi bi-calendar-event me-2 text-primary"></i>Interview</h5>
+      <div class="row mb-2"><div class="col-sm-4 text-muted-2">When</div><div class="col-sm-8 fw-semibold">{{ application.interview_at|date:"D, M j Y · g:i a" }}</div></div>
+      {% if application.interview_type %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Type</div><div class="col-sm-8">{{ application.get_interview_type_display }}</div></div>{% endif %}
+      {% if application.interview_mode %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Mode</div><div class="col-sm-8">{{ application.get_interview_mode_display }}</div></div>{% endif %}
+      {% if application.interviewer_name %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Interviewer</div><div class="col-sm-8">{{ application.interviewer_name }}</div></div>{% endif %}
+      {% if application.interview_location %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Location</div><div class="col-sm-8">{{ application.interview_location }}</div></div>{% endif %}
+      {% if application.meeting_link %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Meeting link</div><div class="col-sm-8"><a href="{{ application.meeting_link }}" target="_blank" rel="noopener">{{ application.meeting_link }}</a></div></div>{% endif %}
+      {% if application.interview_remarks %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Remarks</div><div class="col-sm-8" style="white-space:pre-wrap;">{{ application.interview_remarks }}</div></div>{% endif %}
+      <!-- Candidate RSVP response -->
+      <div class="row mb-2 mt-3 pt-3" style="border-top:1px solid var(--sj-line);">
+        <div class="col-sm-4 text-muted-2">Candidate Response</div>
+        <div class="col-sm-8">
+          {% if application.interview_response == 'confirmed' %}
+            <span class="badge" style="background:var(--sj-success-100);color:var(--sj-success-700);"><i class="bi bi-check-circle me-1"></i>Confirmed Attendance</span>
+          {% elif application.interview_response == 'declined' %}
+            <span class="badge" style="background:var(--sj-danger-100);color:var(--sj-danger-700);"><i class="bi bi-x-circle me-1"></i>Declined</span>
+          {% elif application.interview_response == 'reschedule_requested' %}
+            <span class="badge" style="background:var(--sj-warning-100);color:var(--sj-warning-700);"><i class="bi bi-arrow-repeat me-1"></i>Reschedule Requested</span>
+          {% else %}
+            <span class="badge" style="background:var(--sj-bg);color:var(--sj-muted);border:1px solid var(--sj-line);">Awaiting Response</span>
+          {% endif %}
+          {% if application.interview_response_note %}
+            <div class="fs-sm text-muted-2 mt-1 fst-italic">"{{ application.interview_response_note }}"</div>
+          {% endif %}
+        </div>
       </div>
-      <div class="row mb-3">
-        <div class="col-sm-4 text-muted-2">Email</div>
-        <div class="col-sm-8"><a href="mailto:{{ application.applicant.email }}">{{ application.applicant.email }}</a></div>
+      <!-- Recruiter Interview Actions -->
+      {% if application.status not in "interview_completed,decision_pending,selected,offer_sent,offer_accepted,joined,interview_cancelled,rejected,withdrawn"|split:"," %}
+      <div class="d-flex gap-2 mt-3 pt-3 flex-wrap" style="border-top:1px solid var(--sj-line);">
+        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#scheduleInterviewModal">
+          <i class="bi bi-calendar-event me-1"></i> Reschedule
+        </button>
+        <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="d-inline mb-0" onsubmit="return confirm('Are you sure you want to cancel this interview?');">
+          {% csrf_token %}<input type="hidden" name="action" value="cancel_interview">
+          <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle me-1"></i> Cancel Interview</button>
+        </form>
+        <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="d-inline mb-0">
+          {% csrf_token %}<input type="hidden" name="action" value="complete_interview">
+          <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check2-all me-1"></i> Mark Completed</button>
+        </form>
       </div>
-      {% if application.applicant.phone %}
-      <div class="row mb-3">
-        <div class="col-sm-4 text-muted-2">Phone</div>
-        <div class="col-sm-8">{{ application.applicant.phone }}</div>
-      </div>
-      {% endif %}
-      {% if application.applicant.job_seeker_profile and application.applicant.job_seeker_profile.current_location %}
-      <div class="row mb-3">
-        <div class="col-sm-4 text-muted-2">Location</div>
-        <div class="col-sm-8">{{ application.applicant.job_seeker_profile.current_location }}</div>
-      </div>
-      {% endif %}
-      <div class="row mb-3">
-        <div class="col-sm-4 text-muted-2">Applied For</div>
-        <div class="col-sm-8 fw-semibold">{{ application.job.title }}</div>
-      </div>
-      <div class="row mb-3">
-        <div class="col-sm-4 text-muted-2">Applied On</div>
-        <div class="col-sm-8">{{ application.applied_at|date:"M j, Y, g:i a" }}</div>
-      </div>
-      {% if application.expected_salary %}
-      <div class="row mb-3">
-        <div class="col-sm-4 text-muted-2">Expected Salary</div>
-        <div class="col-sm-8">₹{{ application.expected_salary|intcomma }}</div>
+      {% elif application.status in "interview_completed,decision_pending,selected,offer_sent,offer_accepted,joined"|split:"," %}
+      <div class="mt-3 pt-3" style="border-top:1px solid var(--sj-line);">
+        <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i> Interview Completed</span>
       </div>
       {% endif %}
     </div>
+    {% endif %}
+
+    {% if application.offer_details %}
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3"><i class="bi bi-gift me-2 text-success"></i>Offer Details</h5>
+      <div class="row mb-2">
+        <div class="col-sm-4 text-muted-2">Offer Status</div>
+        <div class="col-sm-8">
+          <span class="badge" style="background:var(--sj-primary-50);color:var(--sj-primary-700);border:1px solid var(--sj-primary-200);">{{ application.offer_details.get_status_display }}</span>
+        </div>
+      </div>
+      <div class="row mb-2"><div class="col-sm-4 text-muted-2">Monthly Salary</div><div class="col-sm-8 fw-semibold">₹{{ application.offer_details.monthly_salary|intcomma }}</div></div>
+      <div class="row mb-2"><div class="col-sm-4 text-muted-2">Annual CTC</div><div class="col-sm-8 fw-semibold">₹{{ application.offer_details.annual_ctc|intcomma }}</div></div>
+      {% if application.offer_details.probation_period %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Probation Period</div><div class="col-sm-8">{{ application.offer_details.probation_period }}</div></div>{% endif %}
+      {% if application.offer_details.benefits %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Benefits</div><div class="col-sm-8" style="white-space:pre-wrap;">{{ application.offer_details.benefits }}</div></div>{% endif %}
+      {% if application.offer_details.working_hours %}<div class="row mb-2"><div class="col-sm-4 text-muted-2">Working Hours</div><div class="col-sm-8">{{ application.offer_details.working_hours }}</div></div>{% endif %}
+      <div class="row mb-2"><div class="col-sm-4 text-muted-2">Joining Date</div><div class="col-sm-8">{{ application.offer_details.joining_date|date:"M j, Y" }}</div></div>
+      <div class="row mb-2"><div class="col-sm-4 text-muted-2">Offer Valid Until</div><div class="col-sm-8 text-danger">{{ application.offer_details.valid_until|date:"M j, Y" }}</div></div>
+    </div>
+    {% endif %}
+
 
     {% if application.cover_letter %}
     <div class="sj-card p-4 mb-4">
@@ -80,7 +159,47 @@
     </div>
     {% endif %}
 
+    <!-- Recruiter notes -->
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3"><i class="bi bi-journal-text me-2 text-primary"></i>Recruiter Notes</h5>
+      <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="mb-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_note">
+        <textarea name="body" class="form-control mb-2" rows="2" placeholder="Add a note (e.g. 'Strong subject knowledge')…" required maxlength="5000"></textarea>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add Note</button>
+      </form>
+      {% if notes %}
+        <ul class="list-unstyled mb-0">
+          {% for n in notes %}
+            <li class="border-start border-3 border-primary ps-3 mb-3">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="fw-semibold fs-sm">{{ n.author.full_name|default:"Recruiter" }}</div>
+                <div class="fs-xs text-muted-2">{{ n.created_at|date:"M j, Y g:i a" }}{% if n.updated_at != n.created_at %} · edited {{ n.updated_at|timesince }} ago{% endif %}</div>
+              </div>
+              <div class="fs-sm mt-1" style="white-space:pre-wrap;">{{ n.body }}</div>
+              {% if n.author_id == request.user.id or request.user.is_admin_role %}
+              <div class="mt-1">
+                <button type="button" class="btn btn-link btn-sm p-0 me-2" onclick="document.getElementById('edit-note-{{ n.id }}').classList.toggle('d-none');">Edit</button>
+                <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="d-inline" onsubmit="return confirm('Delete this note?');">
+                  {% csrf_token %}<input type="hidden" name="action" value="delete_note"><input type="hidden" name="note_id" value="{{ n.id }}">
+                  <button type="submit" class="btn btn-link btn-sm p-0 text-danger">Delete</button>
+                </form>
+                <form id="edit-note-{{ n.id }}" method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}" class="mt-2 d-none">
+                  {% csrf_token %}<input type="hidden" name="action" value="edit_note"><input type="hidden" name="note_id" value="{{ n.id }}">
+                  <textarea name="body" class="form-control mb-2" rows="2" required maxlength="5000">{{ n.body }}</textarea>
+                  <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                </form>
+              </div>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted-2 fs-sm mb-0">No notes yet.</p>
+      {% endif %}
+    </div>
   </div>
+
   <div class="col-lg-4">
     <div class="sj-card p-4 mb-4">
       <h5 class="fw-bold mb-3">Resume</h5>
@@ -89,63 +208,216 @@
           <div class="fs-1 text-primary"><i class="bi bi-file-earmark-pdf"></i></div>
           <div class="min-w-0">
             <h6 class="mb-1 text-truncate">{{ application.resume.file_name|default:"Resume" }}</h6>
-            <div class="fs-sm text-muted-2">Uploaded on {{ application.resume.created_at|date:"M j, Y" }}</div>
+            <div class="fs-sm text-muted-2">Uploaded {{ application.resume.created_at|date:"M j, Y" }}</div>
           </div>
         </div>
-        <div class="d-grid gap-2">
-          {% if application.resume.file %}
-          <a href="{{ application.resume.file.url }}" target="_blank" class="btn btn-outline-primary"><i class="bi bi-download me-1"></i> Download Resume</a>
-          {% endif %}
-        </div>
+        {% if application.resume.file %}
+          <a href="{{ application.resume.file.url }}" target="_blank" class="btn btn-outline-primary w-100"><i class="bi bi-download me-1"></i> Download Resume</a>
+        {% endif %}
       {% else %}
         <p class="text-muted-2 mb-0">No resume provided.</p>
+      {% endif %}
+    </div>
+
+    <!-- Activity timeline -->
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-primary"></i>Activity Timeline</h5>
+      {% if timeline %}
+        <ul class="list-unstyled mb-0">
+          {% for h in timeline %}
+            <li class="d-flex gap-2 mb-3">
+              <div class="text-primary"><i class="bi bi-circle-fill" style="font-size:0.5rem;"></i></div>
+              <div class="flex-grow-1">
+                <div class="fs-sm">
+                  {% if h.from_status %}<span class="text-muted-2">{{ h.from_status|title }}</span> → {% endif %}
+                  <span class="fw-semibold">{{ h.to_status|title }}</span>
+                </div>
+                <div class="fs-xs text-muted-2">{{ h.created_at|date:"M j, Y g:i a" }}{% if h.changed_by %} · {{ h.changed_by.full_name }}{% endif %}</div>
+                {% if h.note %}<div class="fs-xs text-muted-2 mt-1" style="white-space:pre-wrap;">{{ h.note }}</div>{% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted-2 fs-sm mb-0">No activity yet.</p>
       {% endif %}
     </div>
   </div>
 </div>
 
+{% endblock %}
+
+{% block modals %}
 <!-- Schedule Interview Modal -->
-<div class="modal fade" id="scheduleInterviewModal" tabindex="-1" aria-labelledby="scheduleInterviewModalLabel" aria-hidden="true">
+<div class="modal fade" id="scheduleInterviewModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}">
         {% csrf_token %}
         <input type="hidden" name="action" value="schedule_interview">
         <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title fw-bold" id="scheduleInterviewModalLabel">Schedule Interview</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title fw-bold">Schedule Interview</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body pt-3">
-          <div class="mb-3">
-            <label class="form-label text-muted-2 fs-sm">Interview Mode</label>
-            <select name="interview_mode" class="form-select" required>
-              <option value="video">Video Call</option>
-              <option value="phone">Phone Call</option>
-              <option value="onsite">On-site</option>
-            </select>
-          </div>
           <div class="row g-3 mb-3">
             <div class="col-md-6">
-              <label class="form-label text-muted-2 fs-sm">Date</label>
+              <label class="form-label fs-sm">Interview Type</label>
+              <select name="interview_type" id="interviewTypeSelect" class="form-select" required>
+                {% for value, label in interview_type_choices %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-sm">Mode <span class="badge ms-1 fs-xs" style="background:var(--sj-primary-50);color:var(--sj-primary-700);">Auto</span></label>
+              <input type="text" id="interviewModeDisplay" class="form-control bg-soft" readonly placeholder="Auto-selected">
+              <input type="hidden" name="interview_mode" id="interviewModeInput">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-sm">Date <span class="text-danger">*</span></label>
               <input type="date" name="interview_date" class="form-control" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label text-muted-2 fs-sm">Time</label>
+              <label class="form-label fs-sm">Time <span class="text-danger">*</span></label>
               <input type="time" name="interview_time" class="form-control" required>
             </div>
+            <div class="col-md-6">
+              <label class="form-label fs-sm">Interviewer Name</label>
+              <input type="text" name="interviewer_name" class="form-control" placeholder="Name of interviewer">
+            </div>
+            <div class="col-md-6" id="meetingLinkField">
+              <label class="form-label fs-sm">Meeting Link</label>
+              <input type="url" name="meeting_link" id="meetingLinkInput" class="form-control" placeholder="https://meet.google.com/...">
+            </div>
+            <div class="col-12 d-none" id="locationField">
+              <label class="form-label fs-sm">Venue / Address <span class="text-danger">*</span></label>
+              <input type="text" name="interview_location" id="locationInput" class="form-control" placeholder="Address or room number">
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label text-muted-2 fs-sm">Location / Meeting Link</label>
-            <input type="text" name="interview_location" class="form-control" placeholder="e.g. Zoom link or Office address" required>
+          <div class="py-2 px-3 rounded fs-sm d-flex gap-2 align-items-start" id="modeInfoBanner" style="background:var(--sj-primary-50);color:var(--sj-primary-700);">
+            <i class="bi bi-info-circle-fill mt-1 flex-shrink-0"></i>
+            <span id="modeInfoText">Online interview — a meeting link will be sent to the candidate.</span>
           </div>
         </div>
         <div class="modal-footer border-0 pt-0">
           <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Schedule</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-calendar-check me-1"></i>Schedule</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
+<!-- Select Candidate & Generate Offer Modal -->
+<div class="modal fade" id="selectCandidateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{% url 'recruiter:candidate-detail' pk=application.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="selected">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">Select Candidate & Generate Offer</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body pt-3">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fs-sm">Monthly Salary (₹) <span class="text-danger">*</span></label>
+              <input type="number" name="monthly_salary" class="form-control" required placeholder="e.g. 35000">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-sm">Annual CTC (₹) <span class="text-danger">*</span></label>
+              <input type="number" name="annual_ctc" class="form-control" required placeholder="e.g. 420000">
+            </div>
+            <div class="col-12">
+              <label class="form-label fs-sm">Probation Period</label>
+              <input type="text" name="probation_period" class="form-control" placeholder="e.g. 6 months">
+            </div>
+            <div class="col-12">
+              <label class="form-label fs-sm">Working Hours</label>
+              <input type="text" name="working_hours" class="form-control" placeholder="e.g. 9:00 AM - 4:30 PM">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-sm">Joining Date <span class="text-danger">*</span></label>
+              <input type="date" name="joining_date" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs-sm">Offer Expiry Date <span class="text-danger">*</span></label>
+              <input type="date" name="valid_until" class="form-control" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label fs-sm">Benefits & Perks</label>
+              <textarea name="benefits" class="form-control" rows="3" placeholder="e.g. Health insurance, free transport, daily lunch"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success"><i class="bi bi-check2-all me-1"></i>Mark Selected & Send Offer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block dashboard_js %}
+<script>
+(function () {
+  'use strict';
+
+  const TYPE_MODE_MAP = {
+    'online':     { mode: 'video',  label: 'Video Call', info: 'Online interview — a meeting link will be shared with the candidate.' },
+    'offline':    { mode: 'onsite', label: 'On-site',    info: 'Offline interview — please provide the venue address below.' },
+    'telephonic': { mode: 'phone',  label: 'Phone Call', info: 'Telephonic interview — the candidate will receive a call.' },
+  };
+
+  function applyInterviewType(val) {
+    const cfg = TYPE_MODE_MAP[val] || TYPE_MODE_MAP['online'];
+    document.getElementById('interviewModeDisplay').value = cfg.label;
+    document.getElementById('interviewModeInput').value   = cfg.mode;
+    document.getElementById('modeInfoText').textContent   = cfg.info;
+
+    const meetingField  = document.getElementById('meetingLinkField');
+    const locationField = document.getElementById('locationField');
+    const locationInput = document.getElementById('locationInput');
+    const meetingInput  = document.getElementById('meetingLinkInput');
+
+    if (val === 'offline') {
+      meetingField.classList.add('d-none');
+      locationField.classList.remove('d-none');
+      if (meetingInput) meetingInput.value = '';
+    } else if (val === 'telephonic') {
+      meetingField.classList.add('d-none');
+      locationField.classList.add('d-none');
+      if (meetingInput) meetingInput.value = '';
+      if (locationInput) locationInput.value = '';
+    } else {
+      locationField.classList.add('d-none');
+      meetingField.classList.remove('d-none');
+      if (locationInput) locationInput.value = '';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const sel = document.getElementById('interviewTypeSelect');
+    if (!sel) return;
+
+    // Initialise on page load
+    applyInterviewType(sel.value);
+    sel.addEventListener('change', function () { applyInterviewType(this.value); });
+
+    // Prevent past dates
+    const dateInput = document.querySelector('input[name="interview_date"]');
+    if (dateInput) dateInput.setAttribute('min', new Date().toISOString().split('T')[0]);
+
+    const joiningInput = document.querySelector('input[name="joining_date"]');
+    if (joiningInput) joiningInput.setAttribute('min', new Date().toISOString().split('T')[0]);
+
+    const validUntilInput = document.querySelector('input[name="valid_until"]');
+    if (validUntilInput) validUntilInput.setAttribute('min', new Date().toISOString().split('T')[0]);
+  });
+})();
+</script>
 {% endblock %}

@@ -18,6 +18,10 @@ class Notification(BaseModel):
     class Type(models.TextChoices):
         APPLICATION_RECEIVED = "application_received", "Application Received"
         STATUS_CHANGED = "status_changed", "Application Status Changed"
+        APPLICATION_SHORTLISTED = "application_shortlisted", "Application Shortlisted"
+        INTERVIEW_SCHEDULED = "interview_scheduled", "Interview Scheduled"
+        APPLICATION_SELECTED = "application_selected", "Application Selected"
+        APPLICATION_REJECTED = "application_rejected", "Application Rejected"
         JOB_POSTED = "job_posted", "Job Posted"
         JOB_APPROVED = "job_approved", "Job Approved"
         JOB_REJECTED = "job_rejected", "Job Rejected"
@@ -44,6 +48,7 @@ class Notification(BaseModel):
     entity_id = models.UUIDField(null=True, blank=True)
     is_read = models.BooleanField(default=False, db_index=True)
     read_at = models.DateTimeField(null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True, help_text="Structured data for rich notifications (e.g. interview details).")
 
     class Meta(BaseModel.Meta):
         verbose_name = "Notification"

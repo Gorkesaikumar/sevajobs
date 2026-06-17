@@ -1,0 +1,147 @@
+{% extends "dashboard/seeker/_layout.html" %}
+{% load humanize sj_extras %}
+{% block title %}Offer Details — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-800 mb-1">Offer Details</h4>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0 fs-sm">
+        <li class="breadcrumb-item"><a href="{% url 'seeker:offers' %}" class="text-muted-2 text-decoration-none">Selected Offers</a></li>
+        <li class="breadcrumb-item active">{{ application.job.title }}</li>
+      </ol>
+    </nav>
+  </div>
+  <div class="d-flex gap-2">
+    {% if offer.status == 'pending' %}
+      <form method="post" action="{% url 'seeker:offer-detail' pk=application.id %}" class="d-inline mb-0" onsubmit="return confirm('Are you sure you want to accept this offer?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="accept">
+        <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i>Accept Offer</button>
+      </form>
+      <form method="post" action="{% url 'seeker:offer-detail' pk=application.id %}" class="d-inline mb-0" onsubmit="return confirm('Are you sure you want to decline this offer?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="decline">
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Decline Offer</button>
+      </form>
+    {% else %}
+      <span class="badge bg-primary align-self-center py-2 px-3 fs-sm me-2">{{ offer.get_status_display }}</span>
+      {% if offer.status == 'accepted' or offer.status == 'joined' %}
+        <a href="{% url 'seeker:download-offer-pdf' pk=application.id %}" class="btn btn-outline-primary"><i class="bi bi-download me-1"></i>Download Offer Letter</a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <!-- Offer details -->
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-gift me-2"></i>Offer Information</h5>
+      <div class="row g-3 fs-sm">
+        <div class="col-sm-6">
+          <div class="text-muted-2">Monthly Salary</div>
+          <div class="fw-bold fs-5 text-success">₹{{ offer.monthly_salary|intcomma }}</div>
+        </div>
+        <div class="col-sm-6">
+          <div class="text-muted-2">Annual CTC</div>
+          <div class="fw-bold fs-5 text-success">₹{{ offer.annual_ctc|intcomma }}</div>
+        </div>
+        <div class="col-sm-6">
+          <div class="text-muted-2">Probation Period</div>
+          <div class="fw-semibold">{{ offer.probation_period|default:"Not specified" }}</div>
+        </div>
+        <div class="col-sm-6">
+          <div class="text-muted-2">Working Hours</div>
+          <div class="fw-semibold">{{ offer.working_hours|default:"Not specified" }}</div>
+        </div>
+        <div class="col-sm-6">
+          <div class="text-muted-2">Joining Date</div>
+          <div class="fw-bold text-primary">{{ offer.joining_date|date:"M j, Y" }}</div>
+        </div>
+        <div class="col-sm-6">
+          <div class="text-muted-2">Offer Valid Until</div>
+          <div class="fw-semibold text-danger">{{ offer.valid_until|date:"M j, Y" }}</div>
+        </div>
+        {% if offer.benefits %}
+        <div class="col-12 border-top pt-3">
+          <div class="text-muted-2 mb-1">Benefits & Perks</div>
+          <div class="bg-soft p-3 rounded" style="white-space: pre-wrap;">{{ offer.benefits }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Job details -->
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-briefcase me-2"></i>Job Information</h5>
+      <div class="row g-3 fs-sm">
+        <div class="col-sm-6">
+          <div class="text-muted-2">Position</div>
+          <div class="fw-semibold">{{ application.job.title }}</div>
+        </div>
+        <div class="col-sm-6">
+          <div class="text-muted-2">Department / Category</div>
+          <div class="fw-semibold">{{ application.job.category|title }}</div>
+        </div>
+        <div class="col-sm-6">
+          <div class="text-muted-2">Employment Type</div>
+          <div class="fw-semibold">{{ application.job.get_job_type_display }}</div>
+        </div>
+        <div class="col-sm-6">
+          <div class="text-muted-2">Location</div>
+          <div class="fw-semibold">{{ application.job.location }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <!-- Institution Details -->
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-buildings me-2"></i>Institution Information</h5>
+      <div class="fs-sm mb-3">
+        <div class="fw-bold text-ink mb-1">{{ application.job.company.name }}</div>
+        <div class="text-muted-2 mb-3"><i class="bi bi-geo-alt me-1"></i>{{ application.job.company.location|default:"India" }}</div>
+      </div>
+      <div class="row g-2 fs-sm border-top pt-3">
+        <div class="col-12">
+          <div class="text-muted-2">Contact Person</div>
+          <div class="fw-semibold">{{ application.job.recruiter.user.full_name|default:"Recruiter" }}</div>
+        </div>
+        <div class="col-12 mt-2">
+          <div class="text-muted-2">Email</div>
+          <div class="fw-semibold"><a href="mailto:{{ application.job.recruiter.user.email }}">{{ application.job.recruiter.user.email }}</a></div>
+        </div>
+        <div class="col-12 mt-2">
+          <div class="text-muted-2">Phone Number</div>
+          <div class="fw-semibold">{{ application.job.recruiter.user.phone|default:"Not specified" }}</div>
+        </div>
+      </div>
+      <div class="mt-4">
+        <a href="{% url 'core:company-detail' slug=application.job.company.slug %}" class="btn btn-outline-primary btn-sm w-100"><i class="bi bi-buildings-fill me-1"></i>View Institution Details</a>
+      </div>
+    </div>
+
+    <!-- Candidate Information -->
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-person me-2"></i>Candidate Information</h5>
+      <div class="row g-2 fs-sm">
+        <div class="col-12">
+          <div class="text-muted-2">Name</div>
+          <div class="fw-semibold">{{ applicant.full_name }}</div>
+        </div>
+        <div class="col-12 mt-2">
+          <div class="text-muted-2">Email</div>
+          <div class="fw-semibold">{{ applicant.email }}</div>
+        </div>
+        <div class="col-12 mt-2">
+          <div class="text-muted-2">Mobile Number</div>
+          <div class="fw-semibold">{{ applicant.phone|default:"Not specified" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load sj_extras %}
+{% block title %}Interviews — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <h4 class="fw-800 mb-0">Interview Management</h4>
+  <div class="d-flex gap-2">
+    <a href="{% url 'recruiter:interviews' %}?filter=all" class="btn {% if current_filter == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %} btn-sm">All</a>
+    <a href="{% url 'recruiter:interviews' %}?filter=upcoming" class="btn {% if current_filter == 'upcoming' %}btn-primary{% else %}btn-outline-secondary{% endif %} btn-sm">Upcoming</a>
+    <a href="{% url 'recruiter:interviews' %}?filter=completed" class="btn {% if current_filter == 'completed' %}btn-primary{% else %}btn-outline-secondary{% endif %} btn-sm">Completed</a>
+    <a href="{% url 'recruiter:interviews' %}?filter=reschedule_requested" class="btn {% if current_filter == 'reschedule_requested' %}btn-warning{% else %}btn-outline-secondary{% endif %} btn-sm">Reschedule Requests</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4"><div class="sj-card p-3 d-flex align-items-center justify-content-between"><div class="text-muted-2">Upcoming</div><div class="fs-3 fw-bold text-primary">{{ interviews_upcoming }}</div></div></div>
+  <div class="col-md-4"><div class="sj-card p-3 d-flex align-items-center justify-content-between"><div class="text-muted-2">Today</div><div class="fs-3 fw-bold text-info">{{ interviews_today }}</div></div></div>
+  <div class="col-md-4"><div class="sj-card p-3 d-flex align-items-center justify-content-between"><div class="text-muted-2">Completed</div><div class="fs-3 fw-bold text-success">{{ interviews_completed }}</div></div></div>
+</div>
+
+{% if interviews %}
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Position</th>
+          <th>When</th>
+          <th>Type / Mode</th>
+          <th>Candidate Response</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in interviews %}
+        <tr>
+          <td>
+            <div class="candidate-inline">
+              <div class="avatar bg-soft-primary text-primary fw-bold">{{ app.applicant.first_name|slice:":1"|upper }}</div>
+              <div>
+                <div class="fw-semibold fs-sm">{{ app.applicant.full_name }}</div>
+                <div class="fs-xs text-muted-2">{{ app.applicant.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="fs-sm">{{ app.job.title }}</td>
+          <td>
+            <div class="fs-sm fw-semibold">{{ app.interview_at|date:"M j, Y" }}</div>
+            <div class="fs-xs text-muted-2">{{ app.interview_at|date:"g:i a" }}</div>
+          </td>
+          <td>
+            <div class="fs-sm">{{ app.get_interview_type_display }}</div>
+            <div class="fs-xs text-muted-2">{{ app.get_interview_mode_display }}</div>
+          </td>
+          <td>
+            {% if app.interview_response == 'confirmed' %}
+              <span class="badge bg-soft-success text-success"><i class="bi bi-check-circle me-1"></i>Confirmed</span>
+            {% elif app.interview_response == 'declined' %}
+              <span class="badge bg-soft-danger text-danger"><i class="bi bi-x-circle me-1"></i>Declined</span>
+            {% elif app.interview_response == 'reschedule_requested' %}
+              <span class="badge bg-soft-warning text-warning"><i class="bi bi-arrow-repeat me-1"></i>Reschedule</span>
+            {% else %}
+              <span class="badge border text-muted-2 fw-normal">Pending</span>
+            {% endif %}
+            {% if app.interview_response_note %}
+              <div class="fs-xs text-muted-2 mt-1 fst-italic" title="{{ app.interview_response_note }}">View note</div>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge {{ app.status|status_class }} fw-normal">{{ app.get_status_display }}</span>
+          </td>
+          <td>
+            <div class="sj-table-actions d-flex gap-1">
+              <a href="{% url 'recruiter:candidate-detail' pk=app.id %}" class="btn btn-soft-primary btn-sm" title="View details"><i class="bi bi-eye"></i> View</a>
+              {% if app.status == 'interview_scheduled' or app.status == 'interviewing' %}
+              <form method="post" action="{% url 'recruiter:candidate-detail' pk=app.id %}" class="d-inline mb-0">
+                {% csrf_token %}<input type="hidden" name="action" value="complete_interview">
+                <button type="submit" class="btn btn-ghost btn-sm text-success" title="Mark Completed"><i class="bi bi-check2-all"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/_pagination.html" with page_obj=interviews %}
+{% else %}
+<div class="sj-empty py-5">
+  <div class="icon"><i class="bi bi-calendar-x"></i></div>
+  <h5>No interviews found</h5>
+  <p class="text-muted-2 fs-sm">You don't have any interviews matching this filter.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -181,22 +181,14 @@
                       errMsg = data.detail;
                   }
                   
-                  if (typeof window.showAlert === 'function') {
-                      window.showAlert(errMsg, 'Error', 'bi-exclamation-octagon text-danger');
-                  } else {
-                      alert(errMsg);
-                  }
+                  window.showAlert(errMsg, 'Error', 'bi-exclamation-octagon text-danger');
                   btn.disabled = false;
                   btn.innerHTML = originalHtml;
                 });
               }
             })
             .catch(() => {
-              if (typeof window.showAlert === 'function') {
-                  window.showAlert('Network error. Please try again.', 'Connection Error', 'bi-wifi-off text-warning');
-              } else {
-                  alert('Network error. Please try again.');
-              }
+              window.showAlert('Network error. Please try again.', 'Connection Error', 'bi-wifi-off text-warning');
               btn.disabled = false;
               btn.innerHTML = originalHtml;
             });

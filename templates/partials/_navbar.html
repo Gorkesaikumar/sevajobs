@@ -83,11 +83,10 @@
         {% if user.is_authenticated %}
           <!-- Notifications -->
           <div class="dropdown d-none d-lg-block">
-            <button class="sj-notif-bell" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+            <button class="sj-notif-bell" id="notif-bell" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications"
+                    data-blinking="{% if unread_notifications_count > 0 %}1{% else %}0{% endif %}">
               <i class="bi bi-bell"></i>
-              {% if unread_notifications_count > 0 %}
-              <span class="sj-notif-badge" id="notif-badge">{{ unread_notifications_count }}</span>
-              {% endif %}
+              <span class="sj-notif-badge" id="notif-badge" {% if unread_notifications_count == 0 %}style="display:none;"{% endif %}>{{ unread_notifications_count|default:0 }}</span>
             </button>
             <div class="dropdown-menu dropdown-menu-end sj-notif-dropdown">
               <div class="notif-header">
@@ -98,7 +97,7 @@
               </div>
               <div id="notif-list">
                 {% for notif in unread_notifications %}
-                <div class="notif-item unread">
+                <div class="notif-item unread" data-notif-id="{{ notif.id }}" role="button" tabindex="0" onclick="markNotifRead('{{ notif.id }}', this)">
                   <div class="sj-logo-sm {% if notif.notification_type == 'job_posted' %}bg-soft-primary{% elif notif.notification_type == 'status_changed' %}bg-soft-success{% elif notif.notification_type == 'profile_viewed' %}bg-soft-info{% else %}bg-soft-secondary{% endif %} flex-shrink-0">
                     <i class="bi {% if notif.notification_type == 'job_posted' %}bi-briefcase{% elif notif.notification_type == 'status_changed' %}bi-check-circle{% elif notif.notification_type == 'profile_viewed' %}bi-person-check{% else %}bi-bell{% endif %}"></i>
                   </div>
@@ -124,31 +123,132 @@
           </div>
           
           <script>
-            function markAllRead(e) {
-                e.preventDefault();
-                e.stopPropagation();
+            (function () {
+              const CSRF = '{{ csrf_token }}';
+              const bell  = document.getElementById('notif-bell');
+              const badge = document.getElementById('notif-badge');
+              const list  = document.getElementById('notif-list');
+
+              function setUnreadCount(n) {
+                if (!badge) return;
+                if (n > 0) {
+                  badge.textContent = n > 99 ? '99+' : String(n);
+                  badge.style.display = '';
+                  if (bell) bell.setAttribute('data-blinking', '1');
+                } else {
+                  badge.style.display = 'none';
+                  if (bell) bell.setAttribute('data-blinking', '0');
+                }
+              }
+
+              function emptyState() {
+                return `<div class="p-4 text-center text-muted">
+                  <i class="bi bi-bell-slash fs-4 d-block mb-2 text-muted-2"></i>
+                  <span class="fs-sm">No new notifications</span>
+                </div>`;
+              }
+
+              window.markAllRead = function (e) {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
                 fetch("{% url 'notifications:mark-all-read' %}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'Content-Type': 'application/json'
-                    }
+                  method: 'POST',
+                  headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' }
                 }).then(res => {
-                    if(res.ok) {
-                        const badge = document.getElementById('notif-badge');
-                        if (badge) badge.remove();
-                        const list = document.getElementById('notif-list');
-                        if (list) {
-                            list.innerHTML = `<div class="p-4 text-center text-muted">
-                              <i class="bi bi-bell-slash fs-4 d-block mb-2 text-muted-2"></i>
-                              <span class="fs-sm">No new notifications</span>
-                            </div>`;
-                        }
-                        const markBtn = e.target;
-                        if (markBtn) markBtn.remove();
-                    }
+                  if (!res.ok) return;
+                  setUnreadCount(0);
+                  if (list) list.innerHTML = emptyState();
+                  if (window.__notifSocket && window.__notifSocket.readyState === 1) {
+                    window.__notifSocket.send(JSON.stringify({ action: 'mark_all_read' }));
+                  }
                 });
-            }
+              };
+
+              window.markNotifRead = function (id, el) {
+                fetch('/api/v1/notifications/' + id + '/read/', {
+                  method: 'POST',
+                  headers: { 'X-CSRFToken': CSRF }
+                }).then(res => {
+                  if (!res.ok) return;
+                  if (el && el.parentNode) el.parentNode.removeChild(el);
+                  const current = parseInt((badge && badge.textContent) || '0', 10) || 0;
+                  setUnreadCount(Math.max(0, current - 1));
+                  if (list && !list.querySelector('.notif-item')) list.innerHTML = emptyState();
+                });
+              };
+
+              function renderIncoming(n) {
+                if (!list) return;
+                // Replace empty state if present
+                if (!list.querySelector('.notif-item')) list.innerHTML = '';
+                const item = document.createElement('div');
+                item.className = 'notif-item unread';
+                item.setAttribute('data-notif-id', n.id);
+                item.setAttribute('role', 'button');
+                item.setAttribute('tabindex', '0');
+                item.onclick = function () { markNotifRead(n.id, item); };
+                item.innerHTML = `
+                  <div class="sj-logo-sm bg-soft-primary flex-shrink-0"><i class="bi bi-bell"></i></div>
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="fs-sm fw-semibold text-ink"></div>
+                    <div class="fs-xs text-muted-2"></div>
+                    <div class="fs-xs text-subtle mt-1">just now</div>
+                  </div>`;
+                item.querySelector('.fw-semibold').textContent = n.title || '';
+                item.querySelector('.text-muted-2').textContent = n.message || '';
+                list.insertBefore(item, list.firstChild);
+                // Cap dropdown at 5 items
+                const items = list.querySelectorAll('.notif-item');
+                for (let i = 5; i < items.length; i++) items[i].remove();
+              }
+
+              {% if request.user.is_authenticated %}
+              // -------- WebSocket with polling fallback --------
+              let socket = null;
+              let pollTimer = null;
+              let backoff = 1000;
+
+              function startPolling() {
+                if (pollTimer) return;
+                pollTimer = setInterval(() => {
+                  fetch("{% url 'notifications:unread-count' %}", { credentials: 'same-origin' })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(d => { if (d && typeof d.unread === 'number') setUnreadCount(d.unread); })
+                    .catch(() => {});
+                }, 30000);
+              }
+              function stopPolling() {
+                if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+              }
+
+              function connect() {
+                try {
+                  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                  socket = new WebSocket(proto + '://' + window.location.host + '/ws/notifications/');
+                  window.__notifSocket = socket;
+                } catch (e) { startPolling(); return; }
+
+                socket.onopen = function () { backoff = 1000; stopPolling(); };
+                socket.onmessage = function (ev) {
+                  let msg = null; try { msg = JSON.parse(ev.data); } catch (e) { return; }
+                  if (msg.type === 'notification.unread_count') {
+                    setUnreadCount(msg.count);
+                  } else if (msg.type === 'notification.new') {
+                    renderIncoming(msg.notification);
+                    if (window.showAlert) {
+                      window.showAlert(msg.notification.message || '', msg.notification.title || 'Notification', 'bi-bell text-primary');
+                    }
+                  }
+                };
+                socket.onclose = function () {
+                  startPolling();
+                  setTimeout(connect, backoff);
+                  backoff = Math.min(backoff * 2, 30000);
+                };
+                socket.onerror = function () { try { socket.close(); } catch (e) {} };
+              }
+              connect();
+              {% endif %}
+            })();
           </script>
 
           <!-- User dropdown -->

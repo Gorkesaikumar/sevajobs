@@ -2,48 +2,151 @@
 {% load sj_extras %}
 {% block title %}Applications — SevaJobs{% endblock %}
 {% block dashboard_content %}
-<h4 class="fw-800 mb-4">All Applications</h4>
-{% if applications %}
-<div class="sj-card overflow-hidden">
-  <div class="table-responsive">
-    <table class="table sj-table mb-0">
-      <thead><tr><th>Candidate</th><th>Job</th><th class="sortable">Applied</th><th>Status</th><th>Actions</th></tr></thead>
-      <tbody>
-        {% for app in applications %}
-        <tr>
-          <td><div class="candidate-inline"><div class="avatar">{{ app.applicant.first_name|slice:":1"|upper }}</div><div><div class="fw-semibold fs-sm">{{ app.applicant.full_name }}</div><div class="fs-xs text-muted-2">{{ app.applicant.email }}</div></div></div></td>
-          <td class="fs-sm">{{ app.job.title }}</td>
-          <td class="fs-sm text-muted-2">{{ app.applied_at|date:"M j, Y" }}</td>
-          <td><span class="status-pill {{ app.status|status_class }}">{{ app.get_status_display }}</span></td>
-          <td>
-            <div class="sj-table-actions d-flex gap-1 align-items-center">
-              <a href="{% url 'recruiter:candidate-detail' pk=app.id %}" class="btn btn-soft-primary btn-sm" title="View details">
-                <i class="bi bi-eye me-1"></i>View
-              </a>
-              {% if app.status != "shortlisted" and app.status != "selected" and app.status != "rejected" and app.status != "withdrawn" %}
-              <form method="post" action="{% url 'recruiter:applications' %}" class="d-inline mb-0">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="shortlist">
-                <input type="hidden" name="app_id" value="{{ app.id }}">
-                <button type="submit" class="btn btn-soft-success btn-sm" title="Shortlist candidate"><i class="bi bi-check-lg"></i></button>
-              </form>
-              <form method="post" action="{% url 'recruiter:applications' %}" class="d-inline mb-0">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="reject">
-                <input type="hidden" name="app_id" value="{{ app.id }}">
-                <button type="submit" class="btn btn-soft-danger btn-sm" title="Reject application"><i class="bi bi-x-lg"></i></button>
-              </form>
-              {% endif %}
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <h4 class="fw-800 mb-0">All Applications</h4>
+  <a href="{% url 'recruiter:kanban' %}" class="btn btn-outline-light-brand btn-sm"><i class="bi bi-kanban me-1"></i> Kanban View</a>
 </div>
+
+<!-- Filters -->
+<form method="get" class="sj-card p-3 mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label fs-xs text-muted-2 mb-1">Search</label>
+      <input type="text" name="q" value="{{ search_q }}" class="form-control form-control-sm" placeholder="Name, email, mobile…">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-xs text-muted-2 mb-1">Status</label>
+      <select name="status" class="form-select form-select-sm">
+        <option value="all">All</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if active_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-xs text-muted-2 mb-1">Job</label>
+      <select name="job" class="form-select form-select-sm">
+        <option value="">All jobs</option>
+        {% for j in company_jobs %}
+          <option value="{{ j.id }}" {% if filter_job == j.id|stringformat:'s' %}selected{% endif %}>{{ j.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-xs text-muted-2 mb-1">Location</label>
+      <input type="text" name="location" value="{{ filter_location }}" class="form-control form-control-sm" placeholder="City">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-xs text-muted-2 mb-1">Qualification</label>
+      <input type="text" name="qualification" value="{{ filter_qualification }}" class="form-control form-control-sm" placeholder="e.g. B.Ed">
+    </div>
+    <div class="col-md-1">
+      <label class="form-label fs-xs text-muted-2 mb-1">Min Exp.</label>
+      <input type="number" min="0" name="experience" value="{{ filter_experience }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-xs text-muted-2 mb-1">Applied From</label>
+      <input type="date" name="date_from" value="{{ filter_date_from }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-xs text-muted-2 mb-1">Applied To</label>
+      <input type="date" name="date_to" value="{{ filter_date_to }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-gradient btn-sm w-100"><i class="bi bi-funnel me-1"></i>Apply</button>
+      <a href="{% url 'recruiter:applications' %}" class="btn btn-ghost btn-sm">Reset</a>
+    </div>
+  </div>
+</form>
+
+{% if applications %}
+<!-- Bulk action bar -->
+<form method="post" action="{% url 'recruiter:applications' %}" id="bulk-form">
+  {% csrf_token %}
+  <div class="d-flex align-items-center justify-content-between mb-2 gap-2 flex-wrap">
+    <div class="fs-sm text-muted-2"><span id="bulk-count">0</span> selected</div>
+    <div class="d-flex gap-1">
+      <button type="submit" name="action" value="bulk_shortlist" class="btn btn-soft-success btn-sm" disabled data-bulk-btn><i class="bi bi-check2-square me-1"></i>Bulk Shortlist</button>
+      <button type="submit" name="action" value="bulk_under_review" class="btn btn-soft-primary btn-sm" disabled data-bulk-btn><i class="bi bi-eye me-1"></i>Move to Under Review</button>
+      <button type="submit" name="action" value="bulk_reject" class="btn btn-soft-danger btn-sm" disabled data-bulk-btn onclick="return confirm('Reject the selected applications?');"><i class="bi bi-x-square me-1"></i>Bulk Reject</button>
+      <button type="submit" name="action" value="bulk_archive" class="btn btn-ghost btn-sm" disabled data-bulk-btn><i class="bi bi-archive me-1"></i>Archive</button>
+    </div>
+  </div>
+
+  <div class="sj-card overflow-hidden">
+    <div class="table-responsive">
+      <table class="table sj-table mb-0">
+        <thead>
+          <tr>
+            <th style="width:36px;"><input type="checkbox" id="bulk-select-all" class="form-check-input"></th>
+            <th>Candidate</th>
+            <th>Job</th>
+            <th class="sortable">Applied</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for app in applications %}
+          <tr>
+            <td><input type="checkbox" name="bulk_ids" value="{{ app.id }}" class="form-check-input bulk-cb"></td>
+            <td>
+              <div class="candidate-inline">
+                <div class="avatar">{{ app.applicant.first_name|slice:":1"|upper }}</div>
+                <div>
+                  <div class="fw-semibold fs-sm">{{ app.applicant.full_name }}</div>
+                  <div class="fs-xs text-muted-2">{{ app.applicant.email }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="fs-sm">{{ app.job.title }}</td>
+            <td class="fs-sm text-muted-2">{{ app.applied_at|date:"M j, Y" }}</td>
+            <td><span class="status-pill {{ app.status|status_class }}">{{ app.get_status_display }}</span></td>
+            <td>
+              <div class="sj-table-actions d-flex gap-1 align-items-center">
+                <a href="{% url 'recruiter:candidate-detail' pk=app.id %}" class="btn btn-soft-primary btn-sm" title="View details"><i class="bi bi-eye"></i></a>
+                {% if app.status != "shortlisted" and app.status != "selected" and app.status != "rejected" and app.status != "withdrawn" and app.status != "joined" and app.status != "archived" %}
+                  <button type="submit" form="single-{{ app.id }}-shortlist" class="btn btn-soft-success btn-sm" title="Shortlist"><i class="bi bi-check-lg"></i></button>
+                  <button type="submit" form="single-{{ app.id }}-reject" class="btn btn-soft-danger btn-sm" title="Reject"><i class="bi bi-x-lg"></i></button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</form>
+
+{# Single-action forms (kept outside bulk form to avoid action collision) #}
+{% for app in applications %}
+  <form id="single-{{ app.id }}-shortlist" method="post" action="{% url 'recruiter:applications' %}" class="d-none">{% csrf_token %}<input type="hidden" name="action" value="shortlist"><input type="hidden" name="app_id" value="{{ app.id }}"></form>
+  <form id="single-{{ app.id }}-reject" method="post" action="{% url 'recruiter:applications' %}" class="d-none">{% csrf_token %}<input type="hidden" name="action" value="reject"><input type="hidden" name="app_id" value="{{ app.id }}"></form>
+{% endfor %}
+
 {% include "partials/_pagination.html" %}
+
+<script>
+(function () {
+  const all = document.getElementById('bulk-select-all');
+  const cbs = document.querySelectorAll('.bulk-cb');
+  const btns = document.querySelectorAll('[data-bulk-btn]');
+  const counter = document.getElementById('bulk-count');
+  function sync() {
+    const sel = Array.from(cbs).filter(c => c.checked).length;
+    counter.textContent = sel;
+    btns.forEach(b => b.disabled = sel === 0);
+  }
+  all && all.addEventListener('change', e => { cbs.forEach(c => c.checked = e.target.checked); sync(); });
+  cbs.forEach(c => c.addEventListener('change', sync));
+})();
+</script>
 {% else %}
-<div class="sj-empty"><div class="icon"><i class="bi bi-inbox"></i></div><h5>No applications</h5><p class="text-muted-2 fs-sm">Applications from candidates will appear here.</p></div>
+<div class="sj-empty">
+  <div class="icon"><i class="bi bi-inbox"></i></div>
+  <h5>No applications</h5>
+  <p class="text-muted-2 fs-sm">Try adjusting your filters, or check back later.</p>
+</div>
 {% endif %}
 {% endblock %}

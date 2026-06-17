@@ -1,0 +1,50 @@
+{% extends "dashboard/seeker/_layout.html" %}
+{% block title %}Notifications — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <h4 class="fw-800 mb-0">Notifications</h4>
+  <button class="btn btn-outline-light-brand btn-sm" onclick="markAllRead(event)"><i class="bi bi-check2-all me-1"></i> Mark all as read</button>
+</div>
+
+<ul class="nav nav-pills mb-3 flex-wrap gap-1">
+  {% for slug, label in filters %}
+    <li class="nav-item">
+      <a class="nav-link {% if active_filter == slug %}active{% endif %}" href="?filter={{ slug }}">{{ label }}</a>
+    </li>
+  {% endfor %}
+</ul>
+
+{% if notifications %}
+<div class="sj-card">
+  <ul class="list-unstyled mb-0">
+    {% for n in notifications %}
+      <li class="d-flex gap-3 p-3 border-bottom" data-notif-id="{{ n.id }}" style="{% if not n.is_read %}background:var(--sj-primary-50);{% endif %}">
+        <div class="sj-logo-sm {% if n.notification_type == 'application_shortlisted' %}bg-soft-primary{% elif n.notification_type == 'interview_scheduled' %}bg-soft-info{% elif n.notification_type == 'application_selected' %}bg-soft-success{% elif n.notification_type == 'application_rejected' %}bg-soft-danger{% else %}bg-soft-secondary{% endif %} flex-shrink-0">
+          <i class="bi {% if n.notification_type == 'application_shortlisted' %}bi-check2-circle{% elif n.notification_type == 'interview_scheduled' %}bi-calendar-event{% elif n.notification_type == 'application_selected' %}bi-trophy{% elif n.notification_type == 'application_rejected' %}bi-x-circle{% else %}bi-bell{% endif %}"></i>
+        </div>
+        <div class="flex-grow-1 min-w-0">
+          <div class="d-flex justify-content-between gap-2">
+            <div class="fw-semibold fs-sm">{{ n.title }}</div>
+            <div class="fs-xs text-muted-2">{{ n.created_at|timesince }} ago</div>
+          </div>
+          <div class="fs-sm text-muted-2 mt-1">{{ n.message }}</div>
+          <div class="d-flex gap-2 mt-2">
+            {% if not n.is_read %}
+              <button class="btn btn-link btn-sm p-0" onclick="markNotifRead('{{ n.id }}', this.closest('li'))">Mark as read</button>
+            {% else %}
+              <span class="fs-xs text-success"><i class="bi bi-check-lg"></i> Read{% if n.read_at %} · {{ n.read_at|date:"M j, g:i a" }}{% endif %}</span>
+            {% endif %}
+          </div>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% else %}
+<div class="sj-empty">
+  <div class="icon"><i class="bi bi-bell-slash"></i></div>
+  <h5>No notifications</h5>
+  <p class="text-muted-2 fs-sm">You'll see new updates here.</p>
+</div>
+{% endif %}
+{% endblock %}

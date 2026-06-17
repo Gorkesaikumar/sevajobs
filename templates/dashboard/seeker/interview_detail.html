@@ -1,0 +1,250 @@
+{% extends "dashboard/seeker/_layout.html" %}
+{% load static humanize %}
+{% block title %}Interview Details — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-800 mb-1">Interview Details</h4>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0 fs-sm">
+        <li class="breadcrumb-item"><a href="{% url 'seeker:interviews' %}" class="text-muted-2 text-decoration-none">My Interviews</a></li>
+        <li class="breadcrumb-item active">{{ application.job.title }}</li>
+      </ol>
+    </nav>
+  </div>
+  <a href="{% url 'seeker:interviews' %}" class="btn btn-outline-light-brand btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="row g-4">
+  <!-- Left: Interview info -->
+  <div class="col-lg-8">
+    <!-- Interview Status Banner -->
+    {% if application.interview_response == 'confirmed' %}
+    <div class="d-flex gap-3 align-items-center p-4 rounded-3 mb-4" style="background:var(--sj-success-100);border:1.5px solid var(--sj-success-700)20;">
+      <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:48px;height:48px;background:var(--sj-success-700);color:#fff;font-size:1.3rem;">
+        <i class="bi bi-check-lg"></i>
+      </div>
+      <div>
+        <div class="fw-bold" style="color:var(--sj-success-700);">Interview Confirmed</div>
+        <div class="fs-sm" style="color:var(--sj-success-700);">You have confirmed your attendance for this interview.</div>
+      </div>
+    </div>
+    {% elif application.interview_response == 'declined' %}
+    <div class="d-flex gap-3 align-items-center p-4 rounded-3 mb-4" style="background:var(--sj-danger-100);border:1.5px solid var(--sj-danger)20;">
+      <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:48px;height:48px;background:var(--sj-danger);color:#fff;font-size:1.3rem;">
+        <i class="bi bi-x-lg"></i>
+      </div>
+      <div>
+        <div class="fw-bold" style="color:var(--sj-danger-700);">Interview Declined</div>
+        <div class="fs-sm" style="color:var(--sj-danger-700);">You declined this interview. The recruiter has been notified.</div>
+      </div>
+    </div>
+    {% elif application.interview_response == 'reschedule_requested' %}
+    <div class="d-flex gap-3 align-items-center p-4 rounded-3 mb-4" style="background:var(--sj-warning-100);border:1.5px solid var(--sj-warning)20;">
+      <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:48px;height:48px;background:var(--sj-warning-700);color:#fff;font-size:1.3rem;">
+        <i class="bi bi-arrow-repeat"></i>
+      </div>
+      <div>
+        <div class="fw-bold" style="color:var(--sj-warning-700);">Reschedule Requested</div>
+        <div class="fs-sm" style="color:var(--sj-warning-700);">You requested a reschedule. Awaiting recruiter response.</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="d-flex gap-3 align-items-center p-4 rounded-3 mb-4" style="background:var(--sj-primary-50);border:1.5px solid var(--sj-primary-200);">
+      <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width:48px;height:48px;background:var(--sj-gradient);color:#fff;font-size:1.3rem;">
+        <i class="bi bi-calendar-event"></i>
+      </div>
+      <div>
+        <div class="fw-bold text-primary">Interview Scheduled</div>
+        <div class="fs-sm text-muted-2">Please confirm your attendance below.</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Interview Information -->
+    <div class="sj-card p-4 mb-4">
+      <h5 class="fw-bold mb-4"><i class="bi bi-camera-video me-2 text-primary"></i>Interview Information</h5>
+      <div class="row g-4">
+        <div class="col-sm-6">
+          <div class="p-3 rounded-3 text-center h-100" style="background:var(--sj-bg);border:1px solid var(--sj-line);">
+            <div class="mb-2"><i class="bi bi-calendar3 text-primary" style="font-size:1.5rem;"></i></div>
+            <div class="text-muted-2 fs-sm mb-1">Date</div>
+            <div class="fw-bold">{{ application.interview_at|date:"l, d F Y" }}</div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="p-3 rounded-3 text-center h-100" style="background:var(--sj-bg);border:1px solid var(--sj-line);">
+            <div class="mb-2"><i class="bi bi-clock text-primary" style="font-size:1.5rem;"></i></div>
+            <div class="text-muted-2 fs-sm mb-1">Time</div>
+            <div class="fw-bold">{{ application.interview_at|time:"g:i A" }}</div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="p-3 rounded-3 text-center h-100" style="background:var(--sj-bg);border:1px solid var(--sj-line);">
+            <div class="mb-2">
+              {% if application.interview_type == 'online' %}
+                <i class="bi bi-camera-video-fill text-primary" style="font-size:1.5rem;"></i>
+              {% elif application.interview_type == 'offline' %}
+                <i class="bi bi-geo-alt-fill text-primary" style="font-size:1.5rem;"></i>
+              {% else %}
+                <i class="bi bi-telephone-fill text-primary" style="font-size:1.5rem;"></i>
+              {% endif %}
+            </div>
+            <div class="text-muted-2 fs-sm mb-1">Type</div>
+            <div class="fw-bold">{{ application.get_interview_type_display }}</div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="p-3 rounded-3 text-center h-100" style="background:var(--sj-bg);border:1px solid var(--sj-line);">
+            <div class="mb-2"><i class="bi bi-display text-primary" style="font-size:1.5rem;"></i></div>
+            <div class="text-muted-2 fs-sm mb-1">Mode</div>
+            <div class="fw-bold">{{ application.get_interview_mode_display }}</div>
+          </div>
+        </div>
+      </div>
+
+      {% if application.interviewer_name or application.meeting_link or application.interview_location %}
+      <hr class="my-4">
+      <div class="row g-3">
+        {% if application.interviewer_name %}
+        <div class="col-sm-6">
+          <div class="text-muted-2 fs-sm mb-1">Interviewer</div>
+          <div class="fw-semibold"><i class="bi bi-person-badge me-1 text-primary"></i>{{ application.interviewer_name }}</div>
+        </div>
+        {% endif %}
+        {% if application.meeting_link %}
+        <div class="col-sm-6">
+          <div class="text-muted-2 fs-sm mb-1">Meeting Link</div>
+          <a href="{{ application.meeting_link }}" target="_blank" rel="noopener" class="fw-semibold text-primary text-decoration-none">
+            <i class="bi bi-link-45deg me-1"></i>Join Meeting <i class="bi bi-box-arrow-up-right ms-1 fs-xs"></i>
+          </a>
+        </div>
+        {% endif %}
+        {% if application.interview_location %}
+        <div class="col-12">
+          <div class="text-muted-2 fs-sm mb-1">Location / Venue</div>
+          <div class="fw-semibold">
+            <i class="bi bi-geo-alt me-1 text-primary"></i>{{ application.interview_location }}
+            <a href="https://maps.google.com?q={{ application.interview_location|urlencode }}" target="_blank" rel="noopener" class="btn btn-sm btn-soft-primary ms-2">
+              <i class="bi bi-map me-1"></i>View Map
+            </a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if application.interview_remarks %}
+      <hr class="my-4">
+      <div class="text-muted-2 fs-sm mb-1">Recruiter Notes</div>
+      <div class="p-3 rounded-3 fs-sm" style="background:var(--sj-bg);border:1px solid var(--sj-line);">{{ application.interview_remarks }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Candidate Actions -->
+    {% if application.interview_response == 'pending' %}
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold mb-3">Your Response</h6>
+      <p class="text-muted-2 fs-sm mb-4">Please confirm, decline, or request a reschedule for this interview.</p>
+      <div class="d-flex gap-3 flex-wrap">
+        <form method="post" action="{% url 'seeker:interview-respond' pk=application.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="confirmed">
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-circle me-1"></i>Confirm Attendance
+          </button>
+        </form>
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#declineDetailModal">
+          <i class="bi bi-x-circle me-1"></i>Decline
+        </button>
+        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#rescheduleDetailModal">
+          <i class="bi bi-arrow-repeat me-1"></i>Request Reschedule
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if application.interview_response == 'confirmed' and application.interview_type == 'online' and application.meeting_link %}
+    <div class="sj-card p-4 mb-4 border" style="border-color:var(--sj-success-700)!important;">
+      <h6 class="fw-bold mb-2 text-success"><i class="bi bi-camera-video-fill me-1"></i>Join Your Interview</h6>
+      <p class="text-muted-2 fs-sm mb-3">Your interview is confirmed. Click below to join when ready.</p>
+      <a href="{{ application.meeting_link }}" target="_blank" rel="noopener" class="btn btn-success">
+        <i class="bi bi-camera-video-fill me-1"></i>Join Meeting Now
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Job & Company -->
+  <div class="col-lg-4">
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold mb-3">Job Information</h6>
+      <div class="mb-2 fw-semibold">{{ application.job.title }}</div>
+      <div class="text-muted-2 fs-sm mb-3">{{ application.job.company.name }}</div>
+      {% if application.job.location %}<div class="fs-sm mb-2"><i class="bi bi-geo-alt text-primary me-1"></i>{{ application.job.location }}</div>{% endif %}
+      {% if application.job.job_type %}<div class="fs-sm mb-2"><i class="bi bi-briefcase text-primary me-1"></i>{{ application.job.get_job_type_display }}</div>{% endif %}
+    </div>
+
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold mb-3">Application Info</h6>
+      <div class="row mb-2"><div class="col-5 text-muted-2 fs-sm">Applied</div><div class="col-7 fs-sm">{{ application.applied_at|date:"M j, Y" }}</div></div>
+      <div class="row mb-2"><div class="col-5 text-muted-2 fs-sm">Status</div><div class="col-7 fs-sm fw-semibold">{{ application.get_status_display }}</div></div>
+      <div class="row mb-2"><div class="col-5 text-muted-2 fs-sm">Response</div><div class="col-7 fs-sm fw-semibold">{{ application.get_interview_response_display }}</div></div>
+      {% if application.interview_response_note %}
+      <hr>
+      <div class="text-muted-2 fs-sm mb-1">Your Note</div>
+      <div class="fs-sm fst-italic text-muted-2">{{ application.interview_response_note }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Decline Modal -->
+<div class="modal fade" id="declineDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold">Decline Interview</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="fs-sm text-muted-2 mb-3">Are you sure you want to decline this interview? The recruiter will be notified.</p>
+        <form method="post" action="{% url 'seeker:interview-respond' pk=application.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="declined">
+          <textarea name="note" rows="3" class="form-control mb-3" placeholder="Reason for declining (optional)…"></textarea>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-danger">Confirm Decline</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reschedule Modal -->
+<div class="modal fade" id="rescheduleDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold">Request Reschedule</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="fs-sm text-muted-2 mb-3">Your request will be sent to the recruiter. Add a note explaining your preferred time.</p>
+        <form method="post" action="{% url 'seeker:interview-respond' pk=application.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reschedule_requested">
+          <textarea name="note" rows="3" class="form-control mb-3" placeholder="e.g., 'I'm unavailable on Monday. Can we move to Wednesday afternoon?'"></textarea>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-warning">Send Reschedule Request</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -2,97 +2,58 @@
 {% load static sj_extras %}
 {% block title %}Applicant Kanban Board — SevaJobs{% endblock %}
 {% block dashboard_content %}
-<div class="d-flex align-items-center justify-content-between mb-4">
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
   <div>
     <h4 class="fw-800 mb-1">ATS Kanban Board</h4>
-    <p class="text-muted-2 fs-sm mb-0">Drag and drop applicants to update their status.</p>
+    <p class="text-muted-2 fs-sm mb-0">Drag and drop applicants to update their status. Interview moves open a scheduler.</p>
   </div>
-  <a href="{% url 'recruiter:applications' %}" class="btn btn-outline-light-brand btn-sm">
-    <i class="bi bi-list-task me-1"></i> List View
-  </a>
-</div>
-
-<div class="kanban-board d-flex gap-4 overflow-auto pb-4" style="min-height: calc(100vh - 200px);">
-  
-  <!-- Under Review Column -->
-  <div class="kanban-column d-flex flex-column" data-status="under_review" style="width: 320px; flex-shrink: 0; background: var(--sj-bg); border-radius: 12px; padding: 1rem;">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-      <h6 class="fw-700 mb-0 d-flex align-items-center gap-2">
-        <span class="badge bg-warning rounded-pill px-2 py-1 text-dark" style="font-size:0.7rem;">{{ under_review|length }}</span>
-        Under Review
-      </h6>
-    </div>
-    <div class="kanban-cards flex-grow-1" id="col-under-review" style="min-height: 100px;">
-      {% for app in under_review %}
-        {% include "dashboard/recruiter/partials/_kanban_card.html" with app=app %}
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- Shortlisted Column -->
-  <div class="kanban-column d-flex flex-column" data-status="shortlisted" style="width: 320px; flex-shrink: 0; background: var(--sj-bg); border-radius: 12px; padding: 1rem;">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-      <h6 class="fw-700 mb-0 d-flex align-items-center gap-2">
-        <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size:0.7rem;">{{ shortlisted|length }}</span>
-        Shortlisted
-      </h6>
-    </div>
-    <div class="kanban-cards flex-grow-1" id="col-shortlisted" style="min-height: 100px;">
-      {% for app in shortlisted %}
-        {% include "dashboard/recruiter/partials/_kanban_card.html" with app=app %}
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- Interview Scheduled Column -->
-  <div class="kanban-column d-flex flex-column" data-status="interview_scheduled" style="width: 320px; flex-shrink: 0; background: var(--sj-bg); border-radius: 12px; padding: 1rem;">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-      <h6 class="fw-700 mb-0 d-flex align-items-center gap-2">
-        <span class="badge bg-info rounded-pill px-2 py-1 text-dark" style="font-size:0.7rem;">{{ interview_scheduled|length }}</span>
-        Interviewing
-      </h6>
-    </div>
-    <div class="kanban-cards flex-grow-1" id="col-interview" style="min-height: 100px;">
-      {% for app in interview_scheduled %}
-        {% include "dashboard/recruiter/partials/_kanban_card.html" with app=app %}
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- Selected Column -->
-  <div class="kanban-column d-flex flex-column" data-status="selected" style="width: 320px; flex-shrink: 0; background: var(--sj-bg); border-radius: 12px; padding: 1rem;">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-      <h6 class="fw-700 mb-0 d-flex align-items-center gap-2">
-        <span class="badge bg-success rounded-pill px-2 py-1" style="font-size:0.7rem;">{{ selected|length }}</span>
-        Selected
-      </h6>
-    </div>
-    <div class="kanban-cards flex-grow-1" id="col-selected" style="min-height: 100px;">
-      {% for app in selected %}
-        {% include "dashboard/recruiter/partials/_kanban_card.html" with app=app %}
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- Rejected Column -->
-  <div class="kanban-column d-flex flex-column" data-status="rejected" style="width: 320px; flex-shrink: 0; background: var(--sj-bg); border-radius: 12px; padding: 1rem; opacity: 0.8;">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-      <h6 class="fw-700 mb-0 d-flex align-items-center gap-2 text-muted-2">
-        <span class="badge bg-secondary rounded-pill px-2 py-1" style="font-size:0.7rem;">{{ rejected|length }}</span>
-        Rejected
-      </h6>
-    </div>
-    <div class="kanban-cards flex-grow-1" id="col-rejected" style="min-height: 100px;">
-      {% for app in rejected %}
-        {% include "dashboard/recruiter/partials/_kanban_card.html" with app=app %}
-      {% endfor %}
-    </div>
+  <div class="d-flex gap-2 align-items-center">
+    <form method="get" class="d-inline">
+      <select name="job" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All jobs</option>
+        {% for j in company_jobs %}
+          <option value="{{ j.id }}" {% if active_job_filter == j.id|stringformat:'s' %}selected{% endif %}>{{ j.title }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <a href="{% url 'recruiter:applications' %}" class="btn btn-outline-light-brand btn-sm">
+      <i class="bi bi-list-task me-1"></i> List View
+    </a>
   </div>
 </div>
 
-<!-- CSRF Token for JS -->
+{% if metrics %}
+<div class="row g-2 mb-4">
+  <div class="col-6 col-md"><div class="sj-card p-3"><div class="fs-xs text-muted-2">Total</div><div class="fw-800 fs-4">{{ metrics.total }}</div></div></div>
+  <div class="col-6 col-md"><div class="sj-card p-3"><div class="fs-xs text-muted-2">Under Review</div><div class="fw-800 fs-4">{{ metrics.under_review }}</div></div></div>
+  <div class="col-6 col-md"><div class="sj-card p-3"><div class="fs-xs text-muted-2">Shortlisted</div><div class="fw-800 fs-4 text-primary">{{ metrics.shortlisted }}</div><div class="fs-xs text-muted-2">{{ metrics.conversion_shortlisted_pct }}%</div></div></div>
+  <div class="col-6 col-md"><div class="sj-card p-3"><div class="fs-xs text-muted-2">Interviewing</div><div class="fw-800 fs-4 text-info">{{ metrics.interviewing }}</div></div></div>
+  <div class="col-6 col-md"><div class="sj-card p-3"><div class="fs-xs text-muted-2">Selected+</div><div class="fw-800 fs-4 text-success">{{ metrics.selected }}</div><div class="fs-xs text-muted-2">{{ metrics.conversion_selected_pct }}%</div></div></div>
+  <div class="col-6 col-md"><div class="sj-card p-3"><div class="fs-xs text-muted-2">Rejected</div><div class="fw-800 fs-4 text-danger">{{ metrics.rejected }}</div></div></div>
+</div>
+{% endif %}
+
+<div class="kanban-board d-flex gap-3 overflow-auto pb-4" style="min-height: calc(100vh - 280px);">
+  {% for col in columns %}
+  <div class="kanban-column d-flex flex-column"
+       data-status="{{ col.status }}"
+       style="width: 300px; flex-shrink: 0; background: var(--sj-bg); border-radius: 12px; padding: 1rem;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h6 class="fw-700 mb-0 d-flex align-items-center gap-2">
+        <span class="badge {{ col.badge_css }} rounded-pill px-2 py-1" style="font-size:0.7rem;">{{ col.items|length }}</span>
+        {{ col.label }}
+      </h6>
+    </div>
+    <div class="kanban-cards flex-grow-1" data-col="{{ col.status }}" style="min-height: 100px;">
+      {% for app in col.items %}
+        {% include "dashboard/recruiter/partials/_kanban_card.html" with app=app %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
 <input type="hidden" id="csrf-token" value="{{ csrf_token }}">
-
 {% endblock %}
 
 {% block extra_js %}
@@ -108,11 +69,13 @@
         animation: 150,
         ghostClass: 'kanban-ghost',
         onEnd: function (evt) {
-          const itemEl = evt.item;  // dragged HTMLElement
+          const itemEl = evt.item;
           const newStatus = evt.to.closest('.kanban-column').dataset.status;
+          const oldStatus = evt.from.closest('.kanban-column').dataset.status;
           const appId = itemEl.dataset.id;
-          
-          // Send AJAX request to update status
+
+          if (newStatus === oldStatus) return;
+
           fetch('{% url "recruiter:kanban" %}', {
             method: 'POST',
             headers: {
@@ -121,19 +84,22 @@
             },
             body: `app_id=${appId}&action=update_status&new_status=${newStatus}`
           })
-          .then(response => response.json())
+          .then(r => r.json())
           .then(data => {
-            if(data.success) {
-              window.showAlert("Success", "Applicant status updated to " + data.status_display);
+            if (data.success) {
+              window.showAlert("Success", "Moved to " + data.status_display, "bi-check-circle text-success");
+            } else if (data.requires_modal === "schedule_interview") {
+              window.showAlert("Schedule interview", data.error || "Open candidate to schedule.", "bi-calendar-event text-primary");
+              evt.from.appendChild(itemEl);
+              if (data.redirect) window.location.href = data.redirect;
             } else {
-              window.showAlert("Error", data.error || "Failed to update status");
-              // Revert if error
+              window.showAlert("Error", data.error || "Failed to update status", "bi-exclamation-octagon text-danger");
               evt.from.appendChild(itemEl);
             }
           })
           .catch(err => {
             console.error(err);
-            window.showAlert("Error", "Network error updating status.");
+            window.showAlert("Error", "Network error updating status.", "bi-wifi-off text-warning");
             evt.from.appendChild(itemEl);
           });
         },
@@ -142,20 +108,9 @@
   });
 </script>
 <style>
-.kanban-ghost {
-  opacity: 0.4;
-  background-color: var(--sj-bg-subtle);
-}
-.kanban-card {
-  cursor: grab;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.kanban-card:active {
-  cursor: grabbing;
-}
-.kanban-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
+.kanban-ghost { opacity: 0.4; background-color: var(--sj-bg-subtle); }
+.kanban-card { cursor: grab; transition: transform 0.2s, box-shadow 0.2s; }
+.kanban-card:active { cursor: grabbing; }
+.kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 </style>
 {% endblock %}

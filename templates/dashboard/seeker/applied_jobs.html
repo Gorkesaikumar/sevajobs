@@ -43,7 +43,7 @@
           <td><span class="status-pill {{ app.status|status_class }}">{{ app.get_status_display }}</span></td>
           <td>
             {% if app.status == 'applied' %}
-              <button class="btn btn-soft-danger btn-sm" data-ajax-action="#" data-confirm="Withdraw this application?"><i class="bi bi-x me-1"></i>Withdraw</button>
+              <button class="btn btn-soft-danger btn-sm" data-ajax-action="{% url 'applications:withdraw' pk=app.id %}" data-confirm="Withdraw this application?"><i class="bi bi-x me-1"></i>Withdraw</button>
             {% else %}
               <a href="{% url 'core:job-detail' slug=app.job.slug %}" class="btn btn-ghost btn-sm"><i class="bi bi-eye me-1"></i>View</a>
             {% endif %}

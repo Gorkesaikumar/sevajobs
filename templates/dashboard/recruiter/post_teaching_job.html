@@ -25,6 +25,66 @@
         <label class="form-label">Category *</label>
         <input type="text" class="form-control" name="category" placeholder="e.g., High School Education" required>
       </div>
+
+      <!-- TEACHING ROLES -->
+      <div id="dynamic-teaching" class="col-12 dynamic-section" style="display: none;">
+        <h6 class="fw-bold mt-2 text-primary">Teaching Specifics</h6>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Subject</label><input type="text" class="form-control" name="subject" placeholder="e.g. Mathematics"></div>
+          <div class="col-md-6"><label class="form-label">Grade/Class</label><input type="text" class="form-control" name="grade_class" placeholder="e.g. 10th - 12th"></div>
+          <div class="col-md-6">
+            <label class="form-label">Curriculum</label>
+            <select class="form-select" name="curriculum">
+              <option value="">Select...</option>
+              <option value="CBSE">CBSE</option>
+              <option value="ICSE">ICSE</option>
+              <option value="IB">IB</option>
+              <option value="State Board">State Board</option>
+            </select>
+          </div>
+          <div class="col-md-6"><label class="form-label">Teaching Experience</label><input type="text" class="form-control" name="teaching_experience" placeholder="e.g. 3 years"></div>
+          <div class="col-md-6"><label class="form-label">Educational Qualification</label><input type="text" class="form-control" name="educational_qualification" placeholder="e.g. M.Sc, B.Ed"></div>
+          <div class="col-md-6"><label class="form-label">Language Requirements</label><input type="text" class="form-control" name="language_requirements" placeholder="e.g. English, Hindi"></div>
+          <div class="col-12 d-flex align-items-center mt-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="bed_requirement" name="bed_requirement"><label class="form-check-label" for="bed_requirement">B.Ed Required</label></div></div>
+        </div>
+      </div>
+
+      <!-- ADMINISTRATIVE ROLES -->
+      <div id="dynamic-admin" class="col-12 dynamic-section" style="display: none;">
+        <h6 class="fw-bold mt-2 text-primary">Administrative Specifics</h6>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Leadership Experience</label><input type="text" class="form-control" name="leadership_experience"></div>
+          <div class="col-md-6"><label class="form-label">School Management Exp.</label><input type="text" class="form-control" name="school_management_experience"></div>
+          <div class="col-md-6"><label class="form-label">Team Size Managed</label><input type="number" class="form-control" name="team_size_managed"></div>
+          <div class="col-md-6"><label class="form-label">Administrative Qualification</label><input type="text" class="form-control" name="administrative_qualification"></div>
+          <div class="col-12"><label class="form-label">Academic Planning Experience</label><textarea class="form-control" name="academic_planning_experience" rows="2"></textarea></div>
+        </div>
+      </div>
+
+      <!-- LECTURER / PROFESSOR ROLES -->
+      <div id="dynamic-college" class="col-12 dynamic-section" style="display: none;">
+        <h6 class="fw-bold mt-2 text-primary">Higher Education Specifics</h6>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Department</label><input type="text" class="form-control" name="department"></div>
+          <div class="col-md-6"><label class="form-label">Subject Specialization</label><input type="text" class="form-control" name="subject_specialization"></div>
+          <div class="col-md-6"><label class="form-label">Research Experience</label><input type="text" class="form-control" name="research_experience"></div>
+          <div class="col-md-6"><label class="form-label">Higher Education Exp.</label><input type="text" class="form-control" name="higher_education_experience"></div>
+          <div class="col-12"><label class="form-label">Publications</label><textarea class="form-control" name="publications" rows="2"></textarea></div>
+          <div class="col-12 d-flex align-items-center mt-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="ugc_net_set_qualification" name="ugc_net_set_qualification"><label class="form-check-label" for="ugc_net_set_qualification">UGC/NET/SET Qualified</label></div></div>
+        </div>
+      </div>
+
+      <!-- TECHNICAL ROLES -->
+      <div id="dynamic-technical" class="col-12 dynamic-section" style="display: none;">
+        <h6 class="fw-bold mt-2 text-primary">Technical Specifics</h6>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Technical Skills</label><input type="text" class="form-control" name="technical_skills"></div>
+          <div class="col-md-6"><label class="form-label">Software Knowledge</label><input type="text" class="form-control" name="software_knowledge"></div>
+          <div class="col-md-6"><label class="form-label">Networking Experience</label><input type="text" class="form-control" name="networking_experience"></div>
+          <div class="col-md-6"><label class="form-label">Certifications</label><input type="text" class="form-control" name="certifications"></div>
+          <div class="col-12"><label class="form-label">ERP Experience</label><input type="text" class="form-control" name="erp_experience"></div>
+        </div>
+      </div>
       <div class="col-12">
         <label class="form-label">Job Description *</label>
         <textarea class="form-control" name="description" rows="5" placeholder="Describe the institution, the grade level, and overall expectations…" required></textarea>
@@ -82,4 +142,59 @@
   </div>
 </form>
 {% endblock %}
-{% block dashboard_js %}<script src="{% static 'js/forms.js' %}" defer></script>{% endblock %}
+{% block dashboard_js %}
+<script src="{% static 'js/forms.js' %}" defer></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const role = urlParams.get('role');
+    
+    if (role) {
+      const titleInput = document.querySelector('input[name="title"]');
+      if (titleInput) {
+        titleInput.value = role;
+      }
+
+      // Define role mappings
+      const roleConfig = {
+        'teaching': [
+          'Pre Primary Teacher', 'Primary Teacher', 'PRT', 'TGT', 'PGT', 'PET',
+          'Special Educator', 'Subject Teacher', 'Mathematics Teacher',
+          'Science Teacher', 'English Teacher', 'Computer Teacher'
+        ],
+        'admin': [
+          'Principal', 'Vice Principal', 'Headmaster', 'Coordinator',
+          'Academic Coordinator', 'Placement Officer', 'Librarian',
+          'Accountant', 'Front Office Executive'
+        ],
+        'college': [
+          'Assistant Professor', 'Associate Professor', 'Professor',
+          'HOD', 'Dean', 'Lecturer'
+        ],
+        'technical': [
+          'Lab Assistant', 'System Administrator', 'IT Support',
+          'ERP Administrator'
+        ]
+      };
+
+      // Determine active section based on role
+      let activeSection = null;
+      for (const [section, roles] of Object.entries(roleConfig)) {
+        if (roles.includes(role)) {
+          activeSection = section;
+          break;
+        }
+      }
+
+      // Default to teaching if role not strictly matched
+      if (!activeSection) activeSection = 'teaching';
+
+      // Show the active section
+      const sectionEl = document.getElementById('dynamic-' + activeSection);
+      if (sectionEl) {
+        sectionEl.style.display = 'block';
+      }
+    }
+  });
+</script>
+{% endblock %}

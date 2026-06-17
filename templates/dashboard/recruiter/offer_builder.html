@@ -1,0 +1,128 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load sj_extras humanize %}
+{% block title %}Draft Offer Letter — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<div class="mb-4">
+  <h4 class="fw-800 mb-1">Create Custom Offer Letter</h4>
+  <p class="text-muted-2 fs-sm">Build and customize a professional offer letter for <strong>{{ application.applicant.full_name }}</strong>.</p>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="sj-card p-4">
+      <form method="post" action="{% url 'recruiter:offer-builder' pk=application.id %}">
+        {% csrf_token %}
+        
+        <h5 class="fw-bold mb-3 border-bottom pb-2 text-primary">Institution Details</h5>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fs-sm">School/College Name <span class="text-danger">*</span></label>
+            <input type="text" name="institution_name" class="form-control" value="{{ offer.institution_name|default:company.name }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-sm">Contact Information <span class="text-danger">*</span></label>
+            <input type="text" name="institution_contact" class="form-control" value="{{ offer.institution_contact|default:company.phone }}" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-sm">Address <span class="text-danger">*</span></label>
+            <textarea name="institution_address" class="form-control" rows="2" required>{{ offer.institution_address|default:company.address }}</textarea>
+          </div>
+        </div>
+
+        <h5 class="fw-bold mb-3 border-bottom pb-2 text-primary">Candidate Details</h5>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fs-sm">Candidate Name</label>
+            <input type="text" class="form-control bg-light" value="{{ application.applicant.full_name }}" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-sm">Applied Position</label>
+            <input type="text" class="form-control bg-light" value="{{ application.job.title }}" readonly>
+          </div>
+        </div>
+
+        <h5 class="fw-bold mb-3 border-bottom pb-2 text-primary">Offer Details</h5>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fs-sm">Monthly Salary (₹) <span class="text-danger">*</span></label>
+            <input type="number" name="monthly_salary" id="mSalary" class="form-control" value="{{ offer.monthly_salary|default:0 }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-sm">Annual CTC (₹) <span class="text-danger">*</span></label>
+            <input type="number" name="annual_ctc" id="aCTC" class="form-control" value="{{ offer.annual_ctc|default:0 }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-sm">Salary Package Summary / Label</label>
+            <input type="text" name="salary_package" class="form-control" value="{{ offer.salary_package|default:'' }}" placeholder="e.g. INR 4.2 Lakhs per annum">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-sm">Probation Period</label>
+            <input type="text" name="probation_period" class="form-control" value="{{ offer.probation_period|default:'6 months' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-sm">Working Hours</label>
+            <input type="text" name="working_hours" class="form-control" value="{{ offer.working_hours|default:'9:00 AM - 4:30 PM' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-sm">Joining Date <span class="text-danger">*</span></label>
+            <input type="date" name="joining_date" class="form-control" value="{{ offer.joining_date|date:'Y-m-d' }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fs-sm">Offer Valid Until / Expiry <span class="text-danger">*</span></label>
+            <input type="date" name="valid_until" class="form-control" value="{{ offer.valid_until|date:'Y-m-d' }}" required>
+          </div>
+        </div>
+
+        <h5 class="fw-bold mb-3 border-bottom pb-2 text-primary">Perks, Terms & Conditions</h5>
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <label class="form-label fs-sm">Benefits & Perks</label>
+            <textarea name="benefits" class="form-control" rows="3" placeholder="e.g. Free transport, medical benefits...">{{ offer.benefits }}</textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-sm">Additional Terms & Conditions</label>
+            <textarea name="additional_terms" class="form-control" rows="3" placeholder="e.g. Subject to validation of original certifications...">{{ offer.additional_terms }}</textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label fs-sm">Recruiter Notes (Internal/External)</label>
+            <textarea name="notes" class="form-control" rows="2" placeholder="Internal remarks...">{{ offer.notes }}</textarea>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Save Draft Offer</button>
+          <a href="{% url 'recruiter:selected-candidates' %}" class="btn btn-ghost">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <div class="col-lg-4">
+    <div class="sj-card p-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-file-earmark-medical me-2 text-primary"></i>Offer Building Tips</h6>
+      <p class="fs-sm text-muted-2">Make sure that Institution Details and Salary packages match the approved job posting expectations.</p>
+      <hr>
+      <div class="fs-xs text-muted-2">
+        <strong>Status Flow:</strong><br>
+        1. <strong>Draft:</strong> Offer details are created and editable.<br>
+        2. <strong>Sent:</strong> Offer is visible to the Job Seeker.<br>
+        3. <strong>Accepted:</strong> Seeker has approved and accepted.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const mSalary = document.getElementById('mSalary');
+  const aCTC = document.getElementById('aCTC');
+  
+  mSalary.addEventListener('input', function() {
+    const val = parseInt(this.value) || 0;
+    if (val > 0 && (!aCTC.value || aCTC.value == '0')) {
+      aCTC.value = val * 12;
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Offer Letter</title>
+  <style>
+    @page {
+      size: letter;
+      margin: 1in;
+    }
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      color: #333333;
+      line-height: 1.5;
+      font-size: 11pt;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid #4f46e5;
+      padding-bottom: 1rem;
+    }
+    .logo-text {
+      font-size: 24pt;
+      font-weight: bold;
+      color: #4f46e5;
+    }
+    .company-name {
+      font-size: 14pt;
+      font-weight: bold;
+      margin-top: 0.5rem;
+    }
+    .date-row {
+      text-align: right;
+      margin-bottom: 1.5rem;
+    }
+    .recipient {
+      margin-bottom: 2rem;
+    }
+    .subject {
+      font-weight: bold;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      text-decoration: underline;
+    }
+    .table-details {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+    }
+    .table-details th, .table-details td {
+      border: 1px solid #e5e7eb;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .table-details th {
+      background-color: #f9fafb;
+      font-weight: bold;
+    }
+    .footer {
+      margin-top: 3rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo-text">OFFER OF EMPLOYMENT</div>
+    <div class="company-name">{{ offer.institution_name|default:company.name }}</div>
+    {% if offer.institution_address %}
+      <div style="font-size: 9pt; color: #666666;">{{ offer.institution_address }}</div>
+    {% endif %}
+    {% if offer.institution_contact %}
+      <div style="font-size: 9pt; color: #666666;">Contact: {{ offer.institution_contact }}</div>
+    {% endif %}
+  </div>
+
+  <div class="date-row">
+    Date: {{ date|date:"F d, Y" }}
+  </div>
+
+  <div class="recipient">
+    To,<br>
+    <strong>{{ applicant.full_name }}</strong><br>
+    Email: {{ applicant.email }}<br>
+    Mobile: {{ applicant.phone|default:"N/A" }}
+  </div>
+
+  <div class="subject">
+    Subject: Offer of Employment for the position of {{ application.job.title }}
+  </div>
+
+  <p>Dear {{ applicant.first_name }},</p>
+
+  <p>We are pleased to offer you employment at <strong>{{ offer.institution_name|default:company.name }}</strong>. Following your successful interviews and evaluations, we are delighted to invite you to join our team in the capacity of <strong>{{ application.job.title }}</strong>.</p>
+
+  <p>The details and terms of your offer are summarized below:</p>
+
+  <table class="table-details">
+    <tr>
+      <th>Position Title</th>
+      <td>{{ application.job.title }}</td>
+    </tr>
+    {% if offer.salary_package %}
+    <tr>
+      <th>Salary Package Details</th>
+      <td>{{ offer.salary_package }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+      <th>Monthly Gross Salary</th>
+      <td>₹{{ offer.monthly_salary|intcomma }}</td>
+    </tr>
+    <tr>
+      <th>Annual CTC Package</th>
+      <td>₹{{ offer.annual_ctc|intcomma }}</td>
+    </tr>
+    <tr>
+      <th>Probation Period</th>
+      <td>{{ offer.probation_period|default:"N/A" }}</td>
+    </tr>
+    <tr>
+      <th>Working Hours</th>
+      <td>{{ offer.working_hours|default:"N/A" }}</td>
+    </tr>
+    <tr>
+      <th>Expected Joining Date</th>
+      <td><strong>{{ offer.joining_date|date:"F d, Y" }}</strong></td>
+    </tr>
+  </table>
+
+  {% if offer.benefits %}
+  <p><strong>Benefits & Perks:</strong><br>
+  {{ offer.benefits }}</p>
+  {% endif %}
+
+  {% if offer.additional_terms %}
+  <p><strong>Additional Terms & Conditions:</strong><br>
+  {{ offer.additional_terms }}</p>
+  {% endif %}
+
+  {% if offer.notes %}
+  <p><strong>Notes:</strong><br>
+  {{ offer.notes }}</p>
+  {% endif %}
+
+  <p>This offer is valid until <strong>{{ offer.valid_until|date:"F d, Y" }}</strong>. Please confirm your acceptance of this offer by signing and returning a copy of this letter, or accepting it online via the SevaJobs portal before this date.</p>
+
+  <p>We look forward to a mutually beneficial and rewarding association.</p>
+
+  <div class="footer">
+    Sincerely,<br><br>
+    <strong>Authorized Signatory</strong><br>
+    {{ offer.institution_name|default:company.name }}
+  </div>
+
+</body>
+</html>

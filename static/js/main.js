@@ -166,7 +166,7 @@
               }
             }
           })
-          .catch(() => {});
+          .catch(() => { });
       });
     });
   }
@@ -176,21 +176,44 @@
 
 })();
 
-  /* ------- Global Alert Modal Wrapper ---------------------------------- */
-  window.showAlert = function(message, title = 'Notice', iconClass = 'bi-info-circle text-primary') {
-    const modalEl = document.getElementById('genericAlertModal');
-    if (!modalEl) {
-      alert(message); // Fallback if modal not present
-      return;
-    }
-    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    const titleEl = document.getElementById('genericAlertTitle');
-    const msgEl = document.getElementById('genericAlertMessage');
-    const iconEl = document.getElementById('genericAlertIcon');
-    
-    if (titleEl) titleEl.textContent = title;
-    if (msgEl) msgEl.textContent = message;
-    if (iconEl) iconEl.className = 'bi ' + iconClass;
-    
-    bsModal.show();
-  };
+/* ------- Global Alert Modal Wrapper ---------------------------------- */
+window.showAlert = function (message, title = 'Notice', iconClass = 'bi-info-circle text-primary') {
+  let modalEl = document.getElementById('genericAlertModal');
+  if (!modalEl) {
+    const modalHtml = `
+      <div class="modal fade" id="genericAlertModal" tabindex="-1" aria-labelledby="genericAlertTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+              <h5 class="modal-title d-flex align-items-center gap-2" id="genericAlertTitle">
+                <i id="genericAlertIcon" class="bi bi-info-circle text-primary fs-4"></i> 
+                <span>Notice</span>
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3" id="genericAlertMessage"></div>
+            <div class="modal-footer border-top-0 pt-0">
+              <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    modalEl = document.getElementById('genericAlertModal');
+  }
+  const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  const titleEl = modalEl.querySelector('#genericAlertTitle span');
+  const msgEl = document.getElementById('genericAlertMessage');
+  const iconEl = document.getElementById('genericAlertIcon');
+
+  if (titleEl) titleEl.textContent = title;
+  if (msgEl) msgEl.textContent = message;
+  if (iconEl) iconEl.className = 'bi ' + iconClass;
+
+  bsModal.show();
+};
+
+// Override global alert
+window.alert = function (message) {
+  window.showAlert(message);
+};

@@ -1,4 +1,5 @@
 {% extends "dashboard/_layout.html" %}
+{% load static %}
 
 {% block sidebar_nav %}
 <a class="nav-link {% if sidebar_section == 'dashboard' %}active{% endif %}" href="{% url 'seeker:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
@@ -6,9 +7,174 @@
 <a class="nav-link {% if sidebar_section == 'resumes' %}active{% endif %}" href="{% url 'seeker:resumes' %}"><i class="bi bi-file-earmark-text"></i> Resumes</a>
 <div class="sidebar-section">Jobs</div>
 <a class="nav-link {% if sidebar_section == 'applied' %}active{% endif %}" href="{% url 'seeker:applied-jobs' %}"><i class="bi bi-send-check"></i> Applied Jobs</a>
+<a class="nav-link {% if sidebar_section == 'interviews' %}active{% endif %}" href="{% url 'seeker:interviews' %}"><i class="bi bi-camera-video"></i> My Interviews</a>
+<a class="nav-link {% if sidebar_section == 'offers' %}active{% endif %}" href="{% url 'seeker:offers' %}"><i class="bi bi-briefcase-fill"></i> Selected / Rejected</a>
 <a class="nav-link {% if sidebar_section == 'saved' %}active{% endif %}" href="{% url 'seeker:saved-jobs' %}"><i class="bi bi-bookmark"></i> Saved Jobs</a>
 <a class="nav-link {% if sidebar_section == 'alerts' %}active{% endif %}" href="{% url 'seeker:job-alerts' %}"><i class="bi bi-bell"></i> Job Alerts</a>
+<a class="nav-link {% if sidebar_section == 'notifications' %}active{% endif %}" href="{% url 'seeker:notifications' %}"><i class="bi bi-bell-fill"></i> Notifications</a>
 <div class="sidebar-section">Account</div>
 <a class="nav-link {% if sidebar_section == 'settings' %}active{% endif %}" href="{% url 'seeker:settings' %}"><i class="bi bi-gear"></i> Settings</a>
 <a class="nav-link text-danger" href="{% url 'accounts:logout' %}"><i class="bi bi-box-arrow-right"></i> Log out</a>
 {% endblock %}
+
+{% block extra_js %}
+{% block dashboard_js %}{% endblock %}
+
+{# ── Interview popup notification ─────────────────────────────────────────── #}
+{% with interview_notifs=unread_notifications %}
+{% if interview_notifs %}
+<style>
+#sj-interview-popup {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 360px;
+  max-width: calc(100vw - 2rem);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18), 0 4px 12px rgba(79,70,229,.12);
+  z-index: 9999;
+  overflow: hidden;
+  transform: translateY(120%);
+  transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+  border: 1.5px solid var(--sj-line);
+}
+#sj-interview-popup.visible { transform: translateY(0); }
+#sj-interview-popup .popup-header {
+  background: var(--sj-gradient);
+  padding: 1rem 1.25rem .75rem;
+  display: flex; align-items: center; gap: .75rem;
+}
+#sj-interview-popup .popup-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; color: #fff; flex-shrink: 0;
+}
+#sj-interview-popup .popup-title { color: #fff; font-weight: 700; font-size: .95rem; margin: 0; }
+#sj-interview-popup .popup-subtitle { color: rgba(255,255,255,.8); font-size: .75rem; margin: .15rem 0 0; }
+#sj-interview-popup .popup-body { padding: 1rem 1.25rem; }
+#sj-interview-popup .popup-row { display: flex; gap: .5rem; margin-bottom: .5rem; font-size: .82rem; }
+#sj-interview-popup .popup-row .label { color: var(--sj-muted); min-width: 60px; font-weight: 500; }
+#sj-interview-popup .popup-row .val { color: var(--sj-ink); font-weight: 600; }
+#sj-interview-popup .popup-footer { padding: .75rem 1.25rem 1rem; display: flex; gap: .5rem; }
+#sj-interview-popup .btn-close-popup {
+  position: absolute; top: .75rem; right: .75rem;
+  background: rgba(255,255,255,.2); border: 0; border-radius: 50%;
+  width: 26px; height: 26px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: #fff; font-size: .85rem;
+}
+#sj-interview-popup .btn-close-popup:hover { background: rgba(255,255,255,.35); }
+</style>
+
+<div id="sj-interview-popup" role="alert" aria-live="polite">
+  <div class="popup-header">
+    <div class="popup-icon"><i class="bi bi-calendar-event-fill"></i></div>
+    <div>
+      <p class="popup-title">Interview Scheduled!</p>
+      <p class="popup-subtitle" id="sjPopupCompany"></p>
+    </div>
+    <button class="btn-close-popup" id="sjPopupClose" aria-label="Close">✕</button>
+  </div>
+  <div class="popup-body">
+    <div class="popup-row"><span class="label">Position</span><span class="val" id="sjPopupJob">—</span></div>
+    <div class="popup-row"><span class="label">Date</span><span class="val" id="sjPopupDate">—</span></div>
+    <div class="popup-row"><span class="label">Time</span><span class="val" id="sjPopupTime">—</span></div>
+    <div class="popup-row"><span class="label">Mode</span><span class="val" id="sjPopupMode">—</span></div>
+    <div class="popup-row d-none" id="sjPopupLinkRow"><span class="label">Link</span><a class="val text-primary" id="sjPopupLink" href="#" target="_blank">Join Meeting</a></div>
+    <div class="popup-row d-none" id="sjPopupLocRow"><span class="label">Venue</span><span class="val" id="sjPopupLoc">—</span></div>
+  </div>
+  <div class="popup-footer">
+    <a id="sjPopupViewBtn" href="{% url 'seeker:interviews' %}" class="btn btn-primary btn-sm flex-fill text-center">
+      <i class="bi bi-eye me-1"></i>View Details
+    </a>
+    <form id="sjPopupConfirmForm" method="post" style="flex:1;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="confirmed">
+      <button type="submit" class="btn btn-outline-success btn-sm w-100">
+        <i class="bi bi-check-lg me-1"></i>Confirm
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  const SESSION_KEY = 'sj_interview_popup_seen';
+
+  // Build interview notifications from Django context
+  const notifications = [
+    {% for n in interview_notifs %}{% if n.notification_type == 'interview_scheduled' %}
+    {
+      id: "{{ n.id }}",
+      type: "{{ n.notification_type }}",
+      title: "{{ n.title|escapejs }}",
+      meta: {{ n.metadata|default:"{}" }},
+      entity_id: "{{ n.entity_id|default:'' }}",
+    },
+    {% endif %}{% endfor %}
+  ].filter(Boolean);
+
+
+  if (!notifications.length) return;
+
+  // Only show once per page session (not every navigation)
+  if (sessionStorage.getItem(SESSION_KEY)) return;
+
+  const popup     = document.getElementById('sj-interview-popup');
+  const closeBtn  = document.getElementById('sjPopupClose');
+  const notif     = notifications[0];
+  const meta      = notif.meta || {};
+
+  function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el && val) el.textContent = val;
+  }
+
+  // Populate popup
+  setText('sjPopupCompany', meta.company_name || '');
+  setText('sjPopupJob',     meta.job_title    || notif.title);
+  setText('sjPopupDate',    meta.interview_date_display || meta.interview_date || '');
+  setText('sjPopupTime',    meta.interview_time_display || meta.interview_time || '');
+  setText('sjPopupMode',    meta.interview_mode_display || meta.interview_mode || '');
+
+  if (meta.meeting_link) {
+    document.getElementById('sjPopupLinkRow').classList.remove('d-none');
+    const linkEl = document.getElementById('sjPopupLink');
+    linkEl.href = meta.meeting_link;
+    linkEl.textContent = meta.meeting_link.length > 30 ? meta.meeting_link.slice(0, 30) + '...' : meta.meeting_link;
+  }
+  if (meta.interview_location) {
+    document.getElementById('sjPopupLocRow').classList.remove('d-none');
+    setText('sjPopupLoc', meta.interview_location);
+  }
+
+  // Wire confirm form
+  if (meta.application_id) {
+    const form = document.getElementById('sjPopupConfirmForm');
+    form.action = '/seeker/interviews/' + meta.application_id + '/respond/';
+    const viewBtn = document.getElementById('sjPopupViewBtn');
+    viewBtn.href = '/seeker/interviews/' + meta.application_id + '/';
+  }
+
+  // Show popup after short delay
+  setTimeout(() => popup.classList.add('visible'), 800);
+
+  function dismiss() {
+    popup.classList.remove('visible');
+    sessionStorage.setItem(SESSION_KEY, '1');
+  }
+
+  closeBtn.addEventListener('click', dismiss);
+
+  // Mark notification read via AJAX (best-effort)
+  fetch('/api/v1/notifications/' + notif.id + '/read/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' },
+  }).catch(() => {});
+})();
+</script>
+{% endif %}
+{% endwith %}
+{% endblock %}
+

@@ -1,0 +1,483 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load sj_extras humanize %}
+{% block title %}Selected Candidates — SevaJobs{% endblock %}
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-800 mb-0">Selected Candidates</h4>
+    <p class="text-muted-2 fs-sm mb-0">Manage candidates who have cleared all interview rounds and process their offer letters.</p>
+  </div>
+</div>
+
+{% if applications %}
+<!-- Candidate Cards List -->
+<div class="d-flex flex-column gap-4 mb-4">
+  {% for app in applications %}
+  {% with profile=app.applicant.job_seeker_profile %}
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden recruiter-candidate-card border-top border-primary border-3">
+    <!-- Top Summary Section -->
+    <div class="card-header bg-white border-bottom-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar-circle fw-bold d-flex align-items-center justify-content-center rounded-circle fs-5 shadow-sm" 
+             style="width: 56px; height: 56px; background: var(--sj-primary-50); color: var(--sj-primary); border: 2px solid var(--sj-primary-200);">
+          {{ app.applicant.first_name|slice:":1"|upper }}
+        </div>
+        <div>
+          <h5 class="fw-bold mb-0 text-dark">{{ app.applicant.full_name }}</h5>
+          <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+            <span class="text-muted-2 fs-sm fw-500">{{ app.job.title }}</span>
+            <span class="text-muted-2 fs-xs">•</span>
+            <span class="text-muted-2 fs-xs">Selected: {{ app.selection.selected_at|default:app.updated_at|date:"M j, Y" }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        {% if app.offer_details %}
+          {% if app.offer_details.status == 'draft' %}
+            <span class="badge bg-secondary px-3 py-2 fs-xs rounded-pill">Draft</span>
+          {% elif app.offer_details.status == 'sent' %}
+            <span class="badge bg-warning text-dark px-3 py-2 fs-xs rounded-pill">Offer Sent</span>
+          {% elif app.offer_details.status == 'viewed' %}
+            <span class="badge bg-info text-dark px-3 py-2 fs-xs rounded-pill">Viewed</span>
+          {% elif app.offer_details.status == 'accepted' %}
+            <span class="badge bg-success px-3 py-2 fs-xs rounded-pill">Offer Accepted</span>
+          {% elif app.offer_details.status == 'declined' %}
+            <span class="badge bg-danger px-3 py-2 fs-xs rounded-pill">Offer Declined</span>
+          {% elif app.offer_details.status == 'expired' %}
+            <span class="badge bg-dark px-3 py-2 fs-xs rounded-pill">Expired</span>
+          {% elif app.offer_details.status == 'joined' %}
+            <span class="badge bg-primary px-3 py-2 fs-xs rounded-pill">Joined</span>
+          {% endif %}
+        {% else %}
+          <span class="badge bg-light text-muted border px-3 py-2 fs-xs rounded-pill">Selected</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Main Content Body -->
+    <div class="card-body p-4">
+      <div class="row g-4">
+        <!-- Left Column: Professional Information Grid -->
+        <div class="col-lg-6">
+          <div class="p-3 bg-soft rounded-3 border h-100">
+            <h6 class="fw-bold mb-3 text-primary border-bottom pb-2">
+              <i class="bi bi-person-fill me-1"></i> Candidate Information
+            </h6>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Name</span>
+                <span class="fw-semibold text-dark fs-sm">{{ app.applicant.full_name }}</span>
+              </div>
+              <div class="col-sm-6">
+                <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Position</span>
+                <span class="fw-semibold text-dark fs-sm">{{ app.job.title }}</span>
+              </div>
+              <div class="col-sm-6">
+                <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Mobile</span>
+                <span class="fw-semibold text-dark fs-sm">{{ app.applicant.phone|default:"—" }}</span>
+              </div>
+              <div class="col-sm-6">
+                <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Email</span>
+                <span class="fw-semibold text-dark fs-sm"><a href="mailto:{{ app.applicant.email }}">{{ app.applicant.email }}</a></span>
+              </div>
+              <div class="col-sm-6">
+                <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Qualification</span>
+                <span class="fw-semibold text-dark fs-sm">{% with q=profile.qualifications.first %}{{ q.name|default:"—" }}{% endwith %}</span>
+              </div>
+              <div class="col-sm-6">
+                <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Experience</span>
+                <span class="fw-semibold text-dark fs-sm">{% if profile and profile.experience_years %}{{ profile.experience_years }} yr{{ profile.experience_years|pluralize }}{% else %}—{% endif %}</span>
+              </div>
+              <div class="col-12">
+                <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Location</span>
+                <span class="fw-semibold text-dark fs-sm">{{ profile.city|default:"" }}{% if profile.city and profile.state %}, {% endif %}{{ profile.state|default:"—" }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Job & Offer Details + Actions -->
+        <div class="col-lg-6">
+          <div class="p-3 bg-soft rounded-3 border h-100 d-flex flex-column justify-content-between">
+            <div>
+              <h6 class="fw-bold mb-3 text-primary border-bottom pb-2">
+                <i class="bi bi-briefcase-fill me-1"></i> Job & Offer Details
+              </h6>
+              <div class="row g-3 mb-3">
+                <div class="col-sm-6">
+                  <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Institution Name</span>
+                  <span class="fw-semibold text-dark fs-sm">{{ app.offer_details.institution_name|default:app.job.company.name }}</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Position</span>
+                  <span class="fw-semibold text-dark fs-sm">{{ app.job.title }}</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Department</span>
+                  <span class="fw-semibold text-dark fs-sm">{{ app.job.category|title }}</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Location</span>
+                  <span class="fw-semibold text-dark fs-sm">{{ app.job.location }}</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Joining Date</span>
+                  <span class="fw-semibold text-dark fs-sm">{% if app.offer_details.joining_date %}{{ app.offer_details.joining_date|date:"M j, Y" }}{% else %}—{% endif %}</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Offer Status</span>
+                  <span class="fw-semibold text-dark fs-sm">{% if app.offer_details %}{{ app.offer_details.get_status_display }}{% else %}No Offer Drafted{% endif %}</span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Salary Package</span>
+                  <span class="fw-bold text-success fs-sm">
+                    {% if app.offer_details %}
+                      {% if app.offer_details.annual_ctc %}
+                        ₹{{ app.offer_details.annual_ctc|intcomma }} / yr
+                      {% elif app.offer_details.monthly_salary %}
+                        ₹{{ app.offer_details.monthly_salary|intcomma }} / mo
+                      {% else %}
+                        —
+                      {% endif %}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </span>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted-2 fs-xs d-block mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Employment Type</span>
+                  <span class="fw-semibold text-dark fs-sm">{{ app.job.get_job_type_display }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons Section -->
+            <div class="border-top pt-3 mt-3">
+              <div class="d-flex flex-wrap gap-2 justify-content-end">
+                <!-- View Profile -->
+                <a href="{% url 'recruiter:candidate-detail' pk=app.id %}" class="btn btn-soft-primary btn-sm flex-fill flex-md-grow-0" title="View Profile">
+                  <i class="bi bi-eye"></i> View Profile
+                </a>
+                
+                <!-- Offer Builder Edit/Generate -->
+                {% if not app.offer_details or app.offer_details.status == 'draft' %}
+                  <a href="{% url 'recruiter:offer-builder' pk=app.id %}" class="btn btn-outline-primary btn-sm flex-fill flex-md-grow-0" title="{% if app.offer_details %}Edit Offer{% else %}Generate Offer{% endif %}">
+                    <i class="bi bi-file-earmark-plus"></i> {% if app.offer_details %}Edit Offer{% else %}Generate Offer{% endif %}
+                  </a>
+                {% endif %}
+
+                <!-- Send Offer -->
+                {% if app.offer_details and app.offer_details.status == 'draft' %}
+                  <form method="post" action="{% url 'recruiter:send-offer' pk=app.id %}" class="d-inline mb-0 flex-fill flex-md-grow-0" onsubmit="return confirm('Send this offer to the candidate?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-soft-success btn-sm w-100" title="Send Offer"><i class="bi bi-send"></i> Send Offer</button>
+                  </form>
+                {% endif %}
+
+                <!-- Mark Joined -->
+                {% if app.offer_details and app.offer_details.status == 'accepted' %}
+                  <button type="button" class="btn btn-success btn-sm flex-fill flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#markJoinedModal-{{ app.id }}" title="Mark Joined">
+                    <i class="bi bi-check-circle"></i> Mark Joined
+                  </button>
+                {% endif %}
+
+                <!-- WhatsApp Candidate -->
+                <button type="button" class="btn btn-outline-success btn-sm d-flex align-items-center justify-content-center gap-1 flex-fill flex-md-grow-0"
+                        {% if app.applicant.phone %}
+                          data-bs-toggle="modal" data-bs-target="#whatsappComposerModal-{{ app.id }}"
+                        {% else %}
+                          onclick="window.showAlert('This candidate does not have a valid mobile number associated with their account.', 'Validation Error', 'bi-exclamation-triangle text-danger')"
+                        {% endif %}
+                        title="WhatsApp Candidate">
+                  <i class="bi bi-whatsapp"></i> WhatsApp Candidate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+
+
+
+{% include "partials/_pagination.html" %}
+{% else %}
+<div class="sj-empty">
+  <div class="icon"><i class="bi bi-person-check-fill"></i></div>
+  <h5>No selected candidates yet</h5>
+  <p class="text-muted-2 fs-sm">Candidates you select from the pipeline will show here to generate offer letters.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block modals %}
+{% if applications %}
+<!-- Root-Level Modals Section (Outside Card/Layout elements to avoid stacking context issues) -->
+{% for app in applications %}
+{% with profile=app.applicant.job_seeker_profile %}
+
+  <!-- Mark Joined Modal -->
+  {% if app.offer_details and app.offer_details.status == 'accepted' %}
+  <div class="modal fade" id="markJoinedModal-{{ app.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-start border-0 shadow">
+        <form method="post" action="{% url 'recruiter:mark-joined' pk=app.id %}">
+          {% csrf_token %}
+          <div class="modal-header border-bottom-0 pb-0">
+            <h5 class="modal-title fw-bold">Candidate Onboarding & Joining</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body pt-3">
+            <div class="mb-3">
+              <label class="form-label fs-sm">Employee ID / Code <span class="text-danger">*</span></label>
+              <input type="text" name="employee_id" class="form-control" required placeholder="e.g. EMP-2026-004">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fs-sm">Official Joining Date <span class="text-danger">*</span></label>
+              <input type="date" name="joining_date" class="form-control" value="{{ app.offer_details.joining_date|date:'Y-m-d' }}" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fs-sm">Remarks / Onboarding Notes</label>
+              <textarea name="remarks" class="form-control" rows="3" placeholder="e.g. All documents verified. Assigned to secondary classes."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-top-0 pt-0">
+            <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Mark Candidate Joined</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- WhatsApp Message Composer Modal -->
+  {% if app.applicant.phone %}
+  <div class="modal fade whatsapp-composer-modal" id="whatsappComposerModal-{{ app.id }}" tabindex="-1" aria-hidden="true"
+       data-app-id="{{ app.id }}"
+       data-candidate-name="{{ app.applicant.full_name }}"
+       data-candidate-phone="{{ app.applicant.phone }}"
+       data-job-title="{{ app.job.title }}"
+       data-institution-name="{{ app.job.company.name }}"
+       data-job-location="{{ app.job.location }}"
+       data-joining-date="{{ app.offer_details.joining_date|date:'d-M-Y'|default:'Not specified' }}"
+       data-recruiter-name="{{ request.user.full_name }}"
+       {% if app.offer_details %}
+       data-has-offer="true"
+       data-offer-monthly="₹{{ app.offer_details.monthly_salary|intcomma }}"
+       data-offer-annual="₹{{ app.offer_details.annual_ctc|intcomma }}"
+       data-offer-benefits="{{ app.offer_details.benefits|default:'None' }}"
+       data-offer-expiry="{{ app.offer_details.valid_until|date:'d-M-Y' }}"
+       data-offer-jobtype="{{ app.job.get_job_type_display }}"
+       {% else %}
+       data-has-offer="false"
+       {% endif %}>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content text-start border-0 shadow">
+        <div class="modal-header border-bottom-0 pb-0">
+          <h5 class="modal-title d-flex align-items-center gap-2">
+            <i class="bi bi-whatsapp text-success fs-4"></i>
+            <span>WhatsApp Message Composer</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-3">
+          
+          <!-- Quick Info Cards Grid -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-3 h-100 border">
+                <h6 class="fw-bold mb-2 text-primary border-bottom pb-1" style="font-size: 0.85rem;"><i class="bi bi-person me-1"></i> Candidate Details</h6>
+                <table class="table table-sm table-borderless mb-0 fs-xs">
+                  <tr><td class="text-muted p-0 py-1" style="width:40%">Name:</td><td class="fw-semibold text-dark p-0 py-1">{{ app.applicant.full_name }}</td></tr>
+                  <tr><td class="text-muted p-0 py-1">Mobile:</td><td class="fw-semibold text-dark p-0 py-1">+91 {{ app.applicant.phone }}</td></tr>
+                  <tr><td class="text-muted p-0 py-1">Position:</td><td class="fw-semibold text-dark p-0 py-1">{{ app.job.title }}</td></tr>
+                </table>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-3 h-100 border">
+                <h6 class="fw-bold mb-2 text-primary border-bottom pb-1" style="font-size: 0.85rem;"><i class="bi bi-briefcase me-1"></i> Job & Offer Details</h6>
+                <table class="table table-sm table-borderless mb-0 fs-xs">
+                  <tr><td class="text-muted p-0 py-1" style="width:40%">Institution:</td><td class="fw-semibold text-dark p-0 py-1">{{ app.job.company.name }}</td></tr>
+                  <tr><td class="text-muted p-0 py-1">Location:</td><td class="fw-semibold text-dark p-0 py-1">{{ app.job.location }}</td></tr>
+                  {% if app.offer_details %}
+                    <tr><td class="text-muted p-0 py-1">Joining Date:</td><td class="fw-semibold text-primary p-0 py-1">{{ app.offer_details.joining_date|date:"M j, Y" }}</td></tr>
+                    <tr><td class="text-muted p-0 py-1">Offer Status:</td><td class="p-0 py-1"><span class="badge bg-soft-success text-success">{{ app.offer_details.get_status_display }}</span></td></tr>
+                  {% else %}
+                    <tr><td class="text-muted p-0 py-1">Vacancy Details:</td><td class="fw-semibold text-dark p-0 py-1">{{ app.job.vacancies }} Vacanc{{ app.job.vacancies|pluralize:"y,ies" }}</td></tr>
+                  {% endif %}
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Text Area for Custom Message -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label fs-sm mb-0">Message Body</label>
+              {% if app.offer_details %}
+                <button type="button" class="btn btn-soft-primary btn-sm py-1 px-2 fs-xs insert-offer-details-btn"><i class="bi bi-file-earmark-plus me-1"></i>Insert Offer Details</button>
+              {% endif %}
+            </div>
+            <textarea class="form-control whatsapp-msg-textarea font-monospace fs-xs" rows="12" style="line-height:1.5; resize: vertical;"></textarea>
+          </div>
+
+        </div>
+        <div class="modal-footer border-top-0 pt-0">
+          <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success px-4 send-whatsapp-btn"><i class="bi bi-whatsapp me-1"></i>Send via WhatsApp</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+{% endwith %}
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block dashboard_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+
+  // Utility function to log WhatsApp activities
+  function logWhatsAppActivity(appId, messageType, messageText) {
+    return fetch(`/dashboard/recruiter/selected/${appId}/whatsapp/log/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': CSRF_TOKEN,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        message_type: messageType,
+        message_text: messageText
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) {
+        console.error("Logging failed:", data.error);
+      }
+    })
+    .catch(err => console.error("Logging error:", err));
+  }
+
+  // Handle modal interactions
+  document.querySelectorAll('.whatsapp-composer-modal').forEach(modal => {
+    const appId = modal.dataset.appId;
+    const candidateName = modal.dataset.candidateName;
+    const jobTitle = modal.dataset.jobTitle;
+    const institutionName = modal.dataset.institutionName;
+    const jobLocation = modal.dataset.jobLocation;
+    const joiningDate = modal.dataset.joiningDate;
+    const recruiterName = modal.dataset.recruiterName;
+    const textarea = modal.querySelector('.whatsapp-msg-textarea');
+    const insertBtn = modal.querySelector('.insert-offer-details-btn');
+
+    // Default template structure
+    const defaultTemplate = `Congratulations ${candidateName}!
+
+You have been selected for the position of ${jobTitle} at ${institutionName}.
+
+We are pleased to inform you that you have successfully cleared our recruitment process.
+
+Please review your offer letter and complete offer details in your SevaJobs dashboard.
+
+Offer Summary:
+
+• Position: ${jobTitle}
+• Institution: ${institutionName}
+• Location: ${jobLocation}
+• Joining Date: ${joiningDate}
+
+If you have any questions, please contact us.
+
+Best Regards,
+
+${recruiterName}
+${institutionName}`;
+
+    // On modal show, log the composer opened event and populate default text
+    modal.addEventListener('show.bs.modal', function() {
+      // Populating the default template
+      textarea.value = defaultTemplate;
+      textarea.dataset.defaultText = defaultTemplate;
+      textarea.dataset.isEdited = "false";
+      if (insertBtn) {
+        insertBtn.disabled = false;
+      }
+
+      // Log composer opened
+      logWhatsAppActivity(appId, 'composer_opened', '');
+    });
+
+    // Track editing
+    textarea.addEventListener('input', function() {
+      if (textarea.value !== textarea.dataset.defaultText) {
+        textarea.dataset.isEdited = "true";
+      }
+    });
+
+    // Handle "Insert Offer Details" button
+    if (insertBtn) {
+      insertBtn.addEventListener('click', function() {
+        const monthlySalary = modal.dataset.offerMonthly;
+        const annualCTC = modal.dataset.offerAnnual;
+        const benefits = modal.dataset.offerBenefits;
+        const expiryDate = modal.dataset.offerExpiry;
+        const employmentType = modal.dataset.offerJobtype;
+
+        const offerDetailsSnippet = `\n\n--- Offer Details ---
+• Monthly Salary: ${monthlySalary}
+• Annual Package: ${annualCTC}
+• Benefits: ${benefits}
+• Joining Date: ${joiningDate}
+• Offer Expiry Date: ${expiryDate}
+• Employment Type: ${employmentType}`;
+
+        textarea.value += offerDetailsSnippet;
+        textarea.dataset.isEdited = "true";
+        insertBtn.disabled = true; // Avoid inserting multiple times
+      });
+    }
+
+    // Handle Send Button click
+    const sendBtn = modal.querySelector('.send-whatsapp-btn');
+    sendBtn.addEventListener('click', function() {
+      const isEdited = textarea.dataset.isEdited === "true";
+      const finalMsg = textarea.value;
+      const phone = modal.dataset.candidatePhone;
+
+      // 1. Build WhatsApp URL and open synchronously (prevents popup blocker)
+      const cleanPhone = phone.replace(/\D/g, '');
+      // Prefix with 91 if it's 10 digits
+      const fullPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+      const whatsappUrl = `https://wa.me/${fullPhone}?text=${encodeURIComponent(finalMsg)}`;
+      
+      window.open(whatsappUrl, '_blank');
+
+      // 2. Hide modal immediately to prevent backdrop from getting stuck
+      const bsModal = bootstrap.Modal.getInstance(modal);
+      if (bsModal) bsModal.hide();
+
+      // 3. Fire-and-forget logging asynchronously in the background
+      if (isEdited) {
+        logWhatsAppActivity(appId, 'message_edited', finalMsg);
+      }
+      logWhatsAppActivity(appId, 'redirect_triggered', finalMsg);
+      logWhatsAppActivity(appId, 'offer_sent', finalMsg);
+    });
+
+  });
+});
+</script>
+{% endblock %}

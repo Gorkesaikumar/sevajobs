@@ -176,6 +176,7 @@ class Job(BaseModel):
     responsibilities = models.TextField(blank=True)
     requirements = models.TextField(blank=True)
     benefits = models.TextField(blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
 
     location = models.CharField(max_length=200)
     is_remote = models.BooleanField(default=False, db_index=True)
