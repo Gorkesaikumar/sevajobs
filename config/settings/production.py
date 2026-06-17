@@ -33,10 +33,8 @@ if USE_S3:
     AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
     AWS_DEFAULT_ACL = None
     AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
-    STORAGES = {
-        "default": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"},
-        "staticfiles": {"BACKEND": "storages.backends.s3boto3.S3StaticStorage"},
-    }
+    STORAGES["default"]["BACKEND"] = "storages.backends.s3boto3.S3Boto3Storage"
+    STORAGES["staticfiles"]["BACKEND"] = "storages.backends.s3boto3.S3StaticStorage"
 
 # ---------------------------------------------------------------------------
 # Sentry error tracking
