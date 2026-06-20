@@ -54,12 +54,15 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     """
 
     class Role(models.TextChoices):
-        JOB_SEEKER = "job_seeker", "Job Seeker"
-        RECRUITER = "recruiter", "Recruiter"
+        SUPER_ADMIN = "super_admin", "Super Admin"
         ADMIN = "admin", "Admin"
+        STAFF = "staff", "Staff"
+        RECRUITER = "recruiter", "Recruiter"
+        JOB_SEEKER = "job_seeker", "Job Seeker"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, db_index=True)
+    username = models.CharField(max_length=150, unique=True, null=True, blank=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.JOB_SEEKER, db_index=True)
@@ -89,7 +92,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
         ordering = ["-date_joined"]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(role__in=["job_seeker", "recruiter", "admin"]),
+                condition=models.Q(role__in=["super_admin", "admin", "staff", "recruiter", "job_seeker"]),
                 name="user_role_valid",
             ),
         ]
@@ -112,6 +115,14 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     @property
     def is_admin_role(self) -> bool:
         return self.role == self.Role.ADMIN
+
+    @property
+    def is_staff_role(self) -> bool:
+        return self.role == self.Role.STAFF
+
+    @property
+    def is_super_admin(self) -> bool:
+        return self.role == self.Role.SUPER_ADMIN
 
 
 # ===========================================================================
@@ -408,6 +419,7 @@ class AuditLog(BaseModel):
     email_attempted = models.CharField(max_length=150, blank=True)  # Useful for failed logins where user doesn't exist
     role = models.CharField(max_length=20, blank=True)
     action = models.CharField(max_length=20, choices=Action.choices, db_index=True)
+    module = models.CharField(max_length=100, blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.SUCCESS)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
@@ -421,3 +433,48 @@ class AuditLog(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.action} - {self.email_attempted or (self.user.email if self.user else 'Unknown')} - {self.status}"
+
+
+# ===========================================================================
+# Table #14 — StaffProfile
+# ===========================================================================
+class StaffProfile(BaseModel):
+    """
+    Profile for staff members (table #14).
+    """
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="staff_profile",
+    )
+    employee_id = models.CharField(max_length=50, unique=True, db_index=True)
+    full_name = models.CharField(max_length=255)
+    email = models.EmailField(unique=True, db_index=True)
+    phone_number = models.CharField(max_length=16, unique=True, db_index=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[("Active", "Active"), ("Inactive", "Inactive")],
+        default="Active",
+        db_index=True
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_staff_profiles"
+    )
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Staff Profile"
+        verbose_name_plural = "Staff Profiles"
+        permissions = [
+            ("can_create_staff", "Can create staff"),
+            ("can_edit_staff", "Can edit staff"),
+            ("can_disable_staff", "Can disable staff"),
+            ("can_reset_staff_password", "Can reset staff password"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.full_name} ({self.employee_id})"

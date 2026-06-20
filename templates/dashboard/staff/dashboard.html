@@ -1,0 +1,109 @@
+{% extends "dashboard/staff/_layout.html" %}
+{% load static humanize %}
+{% block title %}Staff Dashboard — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="sj-dashboard-header mb-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <h1 class="mb-0">Welcome back, {{ request.user.first_name|default:"Staff" }}!</h1>
+      <p class="subtitle mb-0">SevaJobs Staff Member Dashboard</p>
+    </div>
+    <div class="d-flex gap-2 flex-shrink-0">
+      <a href="{% url 'staff:add-job' %}" class="btn btn-gradient">
+        <i class="bi bi-plus-circle me-1"></i> Post a Job
+      </a>
+      <a href="{% url 'staff:applications' %}" class="btn btn-outline-light-brand">
+        <i class="bi bi-inbox me-1"></i> Applications
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="sj-kpi-grid mb-4 stagger-children">
+  <div class="sj-kpi animate-fade-up">
+    <div class="kpi-icon ico-gradient-primary"><i class="bi bi-briefcase"></i></div>
+    <div>
+      <div class="kpi-value" data-counter="{{ total_jobs }}">{{ total_jobs }}</div>
+      <div class="kpi-label">Total Jobs Posted</div>
+    </div>
+  </div>
+  <div class="sj-kpi animate-fade-up">
+    <div class="kpi-icon ico-gradient-green"><i class="bi bi-patch-check"></i></div>
+    <div>
+      <div class="kpi-value" data-counter="{{ active_jobs }}">{{ active_jobs }}</div>
+      <div class="kpi-label">Active Jobs</div>
+    </div>
+  </div>
+  <div class="sj-kpi animate-fade-up">
+    <div class="kpi-icon ico-gradient-warm"><i class="bi bi-x-circle"></i></div>
+    <div>
+      <div class="kpi-value" data-counter="{{ closed_jobs }}">{{ closed_jobs }}</div>
+      <div class="kpi-label">Closed Jobs</div>
+    </div>
+  </div>
+  <div class="sj-kpi animate-fade-up">
+    <div class="kpi-icon ico-gradient-cool"><i class="bi bi-inbox"></i></div>
+    <div>
+      <div class="kpi-value" data-counter="{{ total_applications }}">{{ total_applications }}</div>
+      <div class="kpi-label">Total Applications</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="sj-activity-feed">
+      <div class="feed-header d-flex align-items-center justify-content-between">
+        <span>Recent Applications</span>
+        <a href="{% url 'staff:applications' %}" class="fs-sm fw-semibold text-primary">View all</a>
+      </div>
+      {% if recent_applications %}
+        {% for app in recent_applications %}
+        <div class="sj-activity-item">
+          <div class="candidate-inline flex-shrink-0">
+            <div class="avatar bg-soft-primary text-primary" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:bold;">
+              {{ app.applicant.first_name|slice:":1"|upper }}
+            </div>
+          </div>
+          <div class="flex-grow-1 min-w-0 ms-2">
+            <div class="fs-sm fw-semibold text-ink text-truncate">{{ app.applicant.full_name }}</div>
+            <div class="fs-xs text-muted-2">Applied for {{ app.staff_job.designation }}</div>
+          </div>
+          <div class="text-end flex-shrink-0">
+            <span class="status-pill status-{{ app.status }}">{{ app.get_status_display }}</span>
+            <div class="fs-xs text-subtle mt-1">{{ app.applied_at|timesince }} ago</div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="sj-empty py-4">
+          <div class="icon"><i class="bi bi-inbox"></i></div>
+          <h6>No applications yet</h6>
+          <p class="fs-sm text-muted-2">Post a job to start receiving applications.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="sj-quick-actions mb-4 flex-column">
+      <div class="feed-header px-4 pt-3 pb-1 fw-bold fs-sm text-uppercase text-muted-2">Quick Actions</div>
+      <a href="{% url 'staff:add-job' %}" class="sj-quick-action flex-row py-3">
+        <div class="action-icon bg-soft-primary"><i class="bi bi-plus-circle text-primary"></i></div>
+        <span class="action-label text-ink">Post New Job</span>
+        <i class="bi bi-chevron-right ms-auto text-muted-2"></i>
+      </a>
+      <a href="{% url 'staff:my-jobs' %}" class="sj-quick-action flex-row py-3">
+        <div class="action-icon bg-soft-info"><i class="bi bi-pencil text-info"></i></div>
+        <span class="action-label text-ink">Manage Jobs</span>
+        <i class="bi bi-chevron-right ms-auto text-muted-2"></i>
+      </a>
+      <a href="{% url 'staff:applications' %}" class="sj-quick-action flex-row py-3">
+        <div class="action-icon bg-soft-success"><i class="bi bi-inbox text-success"></i></div>
+        <span class="action-label text-ink">Review Applications</span>
+        <i class="bi bi-chevron-right ms-auto text-muted-2"></i>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

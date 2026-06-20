@@ -1,0 +1,33 @@
+{% extends "dashboard/_layout.html" %}
+{% block sidebar_nav %}
+<a class="nav-link {% if sidebar_section == 'dashboard' %}active{% endif %}" href="{% url 'staff:dashboard' %}">
+  <i class="bi bi-speedometer2"></i> Dashboard
+</a>
+
+<div class="sidebar-section">Jobs</div>
+<a class="nav-link {% if sidebar_section == 'add-job' %}active{% endif %}" href="{% url 'staff:add-job' %}">
+  <i class="bi bi-plus-circle"></i> Add Job
+</a>
+<a class="nav-link {% if sidebar_section == 'jobs' and not request.GET.status %}active{% endif %}" href="{% url 'staff:my-jobs' %}">
+  <i class="bi bi-briefcase"></i> My Jobs
+</a>
+<a class="nav-link {% if sidebar_section == 'jobs' and request.GET.status == 'active' %}active{% endif %}" href="{% url 'staff:my-jobs' %}?status=active">
+  <i class="bi bi-patch-check"></i> Active Jobs
+</a>
+<a class="nav-link {% if sidebar_section == 'jobs' and request.GET.status == 'closed' %}active{% endif %}" href="{% url 'staff:my-jobs' %}?status=closed">
+  <i class="bi bi-x-circle"></i> Closed Jobs
+</a>
+
+<div class="sidebar-section">Hiring</div>
+<a class="nav-link {% if sidebar_section == 'applications' %}active{% endif %}" href="{% url 'staff:applications' %}">
+  <i class="bi bi-inbox"></i> Applications
+</a>
+
+<div class="sidebar-section">Account</div>
+<a class="nav-link {% if sidebar_section == 'profile' %}active{% endif %}" href="{% url 'staff:profile' %}">
+  <i class="bi bi-person"></i> My Profile
+</a>
+<a class="nav-link text-danger" href="{% url 'staff:staff-logout' %}">
+  <i class="bi bi-box-arrow-right"></i> Logout
+</a>
+{% endblock %}

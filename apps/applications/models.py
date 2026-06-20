@@ -46,7 +46,8 @@ class JobApplication(BaseModel):
         OFFLINE = "offline", "Offline"
         TELEPHONIC = "telephonic", "Telephonic"
 
-    job = models.ForeignKey("jobs.Job", on_delete=models.CASCADE, related_name="applications")
+    job = models.ForeignKey("jobs.Job", on_delete=models.CASCADE, null=True, blank=True, related_name="applications")
+    staff_job = models.ForeignKey("jobs.StaffJob", on_delete=models.CASCADE, null=True, blank=True, related_name="applications")
     applicant = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -106,15 +107,45 @@ class JobApplication(BaseModel):
         verbose_name = "Job Application"
         verbose_name_plural = "Job Applications"
         constraints = [
-            models.UniqueConstraint(fields=["job", "applicant"], name="unique_application_per_job"),
+            models.UniqueConstraint(
+                fields=["job", "applicant"],
+                condition=models.Q(job__isnull=False),
+                name="unique_application_per_job"
+            ),
+            models.UniqueConstraint(
+                fields=["staff_job", "applicant"],
+                condition=models.Q(staff_job__isnull=False),
+                name="unique_application_per_staff_job"
+            ),
         ]
         indexes = [
             models.Index(fields=["status", "applied_at"]),
             models.Index(fields=["job", "status"]),
+            models.Index(fields=["staff_job", "status"]),
         ]
 
     def __str__(self) -> str:
-        return f"{self.applicant.email} → {self.job.title}"
+        return f"{self.applicant.email} → {self.job_title}"
+
+    @property
+    def related_job(self):
+        return self.job or self.staff_job
+
+    @property
+    def job_title(self) -> str:
+        if self.job:
+            return self.job.title
+        elif self.staff_job:
+            return self.staff_job.designation
+        return ""
+
+    @property
+    def company_name(self) -> str:
+        if self.job:
+            return self.job.company.name
+        elif self.staff_job:
+            return self.staff_job.organization_name
+        return ""
 
 
 class ApplicationStatusHistory(BaseModel):

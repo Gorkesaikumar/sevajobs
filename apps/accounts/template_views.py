@@ -90,6 +90,56 @@ class SeekerLoginView(RoleScopedLoginView):
     role_scope = 'job_seeker'
 
 
+class StaffLoginView(View):
+    template_name = "pages/staff_login.html"
+
+    def get(self, request):
+        from django.contrib.auth import logout
+        if request.user.is_authenticated and request.session.get('current_role_scope') == 'staff':
+            logout(request)
+        from apps.accounts.forms import StaffLoginForm
+        form = StaffLoginForm()
+        return render(request, self.template_name, {"form": form})
+
+    @method_decorator(csrf_protect)
+    def post(self, request):
+        from apps.accounts.forms import StaffLoginForm
+        from apps.accounts.models import AuditLog
+        from apps.accounts.middleware import get_client_ip
+        
+        form = StaffLoginForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            if user.role != User.Role.STAFF:
+                messages.error(request, "Only staff users can log in here.")
+                return render(request, self.template_name, {"form": form})
+            
+            # Check if staff profile is active
+            if hasattr(user, 'staff_profile') and user.staff_profile.status == 'Inactive':
+                messages.error(request, "Your staff account is currently deactivated.")
+                return render(request, self.template_name, {"form": form})
+
+            login(request, user)
+            request.session['current_role_scope'] = 'staff'
+            
+            # Log login to AuditLog
+            AuditLog.objects.create(
+                action=AuditLog.Action.LOGIN,
+                user=user,
+                role=user.role,
+                module="Staff Authentication",
+                ip_address=get_client_ip(request) if request else None,
+                user_agent=request.META.get('HTTP_USER_AGENT', '') if request else '',
+            )
+            
+            messages.success(request, f"Welcome back, {user.first_name or 'there'}!")
+            next_url = request.GET.get("next") or request.POST.get("next")
+            return redirect(next_url or "/staff/dashboard/")
+        else:
+            messages.error(request, "Invalid email or password. Please try again.")
+            return render(request, self.template_name, {"form": form})
+
+
 from apps.core.models import PlatformSettings
 
 class RegisterView(View):
@@ -157,9 +207,33 @@ class RegisterView(View):
 
 class LogoutView(View):
     def get(self, request):
-        logout(request)
+        path = request.path_info.lower()
+        
+        # Flush session completely
+        if request.user.is_authenticated:
+            logout(request)
+        if hasattr(request, 'session'):
+            request.session.flush()
+
         messages.info(request, "You have been logged out.")
-        return redirect("/")
+        
+        # Determine redirect path based on which role-specific logout page was accessed
+        if 'staff' in path:
+            response = redirect("staff-login")
+        elif 'admin' in path:
+            response = redirect("admin-login")
+        elif 'recruiter' in path:
+            response = redirect("recruiter-login")
+        elif 'jobseeker' in path:
+            response = redirect("jobseeker-login")
+        else:
+            response = redirect("/")
+
+        # Explicitly delete all role-specific session cookies to ensure full isolation on logout
+        for cookie_name in ['sessionid_seeker', 'sessionid_recruiter', 'sessionid_admin', 'sessionid_staff', 'sessionid']:
+            response.delete_cookie(cookie_name)
+            
+        return response
 
     def post(self, request):
         return self.get(request)

@@ -69,6 +69,8 @@ class RoleBasedCookieInterceptorMiddleware:
             expected_cookie = 'sessionid_recruiter'
         elif path.startswith('/dashboard/seeker') or path.startswith('/jobseeker/login') or path.startswith('/jobseeker/logout'):
             expected_cookie = 'sessionid_seeker'
+        elif path.startswith('/staff/dashboard') or path.startswith('/staff/login') or path.startswith('/staff/logout'):
+            expected_cookie = 'sessionid_staff'
         else:
             # On public pages, check if any role-specific session cookie exists.
             # This ensures the navbar and 'apply' buttons recognize the logged-in user.
@@ -78,6 +80,8 @@ class RoleBasedCookieInterceptorMiddleware:
                 expected_cookie = 'sessionid_recruiter'
             elif 'sessionid_admin' in request.COOKIES:
                 expected_cookie = 'sessionid_admin'
+            elif 'sessionid_staff' in request.COOKIES:
+                expected_cookie = 'sessionid_staff'
             else:
                 expected_cookie = settings.SESSION_COOKIE_NAME
 
@@ -103,6 +107,8 @@ class RoleBasedCookieInterceptorMiddleware:
                 expected_cookie = 'sessionid_recruiter'
             elif scope == 'admin':
                 expected_cookie = 'sessionid_admin'
+            elif scope == 'staff':
+                expected_cookie = 'sessionid_staff'
 
         # Swap OUT: If Django's SessionMiddleware set or deleted the default cookie, 
         # apply those exact changes to our expected role-specific cookie.
@@ -113,4 +119,85 @@ class RoleBasedCookieInterceptorMiddleware:
                 response.cookies[expected_cookie] = morsel.value
                 response.cookies[expected_cookie].update(morsel)
 
+        return response
+
+
+from django.shortcuts import redirect
+from django.core.exceptions import PermissionDenied
+
+class RoleAccessMiddleware:
+    """
+    Middleware to validate role for every protected route.
+    Prevents cross-role access and unauthorized dashboard switching.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        path = request.path_info.lower()
+
+        # Only run check on authenticated protected routes
+        if request.user.is_authenticated:
+            role = request.user.role
+            
+            # 1. Admin & Super Admin Pages
+            if path.startswith('/dashboard/admin/'):
+                if role not in ['super_admin', 'admin']:
+                    if role == 'staff':
+                        return redirect('/staff/dashboard/')
+                    elif role == 'recruiter':
+                        return redirect('/dashboard/recruiter/')
+                    elif role == 'job_seeker':
+                        return redirect('/dashboard/seeker/')
+                    else:
+                        raise PermissionDenied("Access Denied")
+            
+            # 2. Staff Pages
+            elif path.startswith('/staff/'):
+                if not (path.startswith('/staff/login') or path.startswith('/staff/logout')):
+                    if role != 'staff':
+                        if role in ['super_admin', 'admin']:
+                            raise PermissionDenied("Access Denied")
+                        elif role == 'recruiter':
+                            return redirect('/dashboard/recruiter/')
+                        elif role == 'job_seeker':
+                            return redirect('/dashboard/seeker/')
+                        else:
+                            raise PermissionDenied("Access Denied")
+            
+            # 3. Recruiter Pages
+            elif path.startswith('/dashboard/recruiter/'):
+                if role != 'recruiter':
+                    if role in ['super_admin', 'admin']:
+                        return redirect('/dashboard/admin/')
+                    elif role == 'staff':
+                        return redirect('/staff/dashboard/')
+                    elif role == 'job_seeker':
+                        return redirect('/dashboard/seeker/')
+                    else:
+                        raise PermissionDenied("Access Denied")
+            
+            # 4. Job Seeker Pages
+            elif path.startswith('/dashboard/seeker/'):
+                if role != 'job_seeker':
+                    if role in ['super_admin', 'admin']:
+                        return redirect('/dashboard/admin/')
+                    elif role == 'staff':
+                        return redirect('/staff/dashboard/')
+                    elif role == 'recruiter':
+                        return redirect('/dashboard/recruiter/')
+                    else:
+                        raise PermissionDenied("Access Denied")
+        else:
+            # For anonymous users trying to access protected paths, redirect to login
+            if path.startswith('/dashboard/admin/'):
+                return redirect('admin-login')
+            elif path.startswith('/staff/') and not (path.startswith('/staff/login') or path.startswith('/staff/logout')):
+                return redirect('staff-login')
+            elif path.startswith('/dashboard/recruiter/'):
+                return redirect('recruiter-login')
+            elif path.startswith('/dashboard/seeker/'):
+                return redirect('jobseeker-login')
+
+        response = self.get_response(request)
         return response

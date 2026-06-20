@@ -159,7 +159,7 @@
               <div class="ico ico-xl bg-soft-secondary mx-auto mb-3 text-muted"><i class="bi bi-building-slash"></i></div>
               <h5 class="fw-800">No Active Openings Currently</h5>
               <p class="text-muted-2 mx-auto" style="max-width: 400px;">This institution doesn't have any active openings matching your criteria right now. Follow this institution and check back later for new opportunities.</p>
-              <button type="button" class="btn btn-outline-primary mt-2 px-4" onclick="document.getElementById('genericAlertMessage').innerText='Following institutions will be available soon!'; new bootstrap.Modal(document.getElementById('genericAlertModal')).show();">
+              <button type="button" class="btn btn-outline-primary mt-2 px-4" onclick="document.getElementById('genericAlertMessage').innerText='Following institutions will be available soon!'; bootstrap.Modal.getOrCreateInstance(document.getElementById('genericAlertModal')).show();">
                 <i class="bi bi-plus-lg me-1"></i> Follow Institution
               </button>
             </div>

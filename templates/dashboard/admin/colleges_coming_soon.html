@@ -1,0 +1,22 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% block title %}Colleges Module — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="sj-card py-5 text-center my-5 animate-fade-up">
+  <div class="mb-4">
+    <span class="ico-gradient-primary" style="font-size: 3.5rem; width: 90px; height: 90px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;">
+      <i class="bi bi-mortarboard"></i>
+    </span>
+  </div>
+  <h2 class="fw-800 text-ink mb-2">Colleges Module</h2>
+  <h4 class="text-gradient fw-bold mb-3">Coming Soon</h4>
+  <p class="text-muted-2 mx-auto" style="max-width: 450px;">
+    The College Management and Job Posting module is currently under development and will be released in Phase 2.
+  </p>
+  <div class="mt-4">
+    <a href="{% url 'admin-panel:dashboard' %}" class="btn btn-primary btn-sm px-4">
+      <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

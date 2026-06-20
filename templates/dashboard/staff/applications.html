@@ -1,0 +1,110 @@
+{% extends "dashboard/staff/_layout.html" %}
+{% load static %}
+{% block title %}Applications — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h4 class="fw-800 mb-0">Applications Received</h4>
+  <span class="badge bg-light text-dark border fw-bold">Total: {{ page_obj.paginator.count }}</span>
+</div>
+
+<!-- Search & Filter Form -->
+<form class="sj-card p-3 mb-4" method="get" action="{% url 'staff:applications' %}">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Search Candidate</label>
+      <input type="text" class="form-control form-control-sm" name="q" 
+             placeholder="Search by name or email..." value="{{ request.GET.q|default:'' }}">
+    </div>
+    
+    <div class="col-md-4">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Status</label>
+      <select name="status" class="form-select form-select-sm">
+        <option value="">All Statuses</option>
+        <option value="applied" {% if request.GET.status == 'applied' %}selected{% endif %}>Applied</option>
+        <option value="under_review" {% if request.GET.status == 'under_review' %}selected{% endif %}>Under Review</option>
+        <option value="shortlisted" {% if request.GET.status == 'shortlisted' %}selected{% endif %}>Shortlisted</option>
+        <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+      </select>
+    </div>
+
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm w-100">
+        <i class="bi bi-search"></i> Search
+      </button>
+      {% if request.GET.q or request.GET.status %}
+        <a href="{% url 'staff:applications' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+{% if applications %}
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Job Designation</th>
+          <th>Phone</th>
+          <th>Applied Date</th>
+          <th>Resume</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td>
+            <div class="candidate-inline d-flex align-items-center gap-2">
+              <div class="avatar bg-soft-primary text-primary" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:bold;">
+                {{ app.applicant.first_name|slice:":1"|upper }}
+              </div>
+              <div>
+                <div class="fw-semibold text-ink">{{ app.applicant.full_name }}</div>
+                <div class="fs-xs text-muted-2">{{ app.applicant.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="fw-semibold text-ink">{{ app.staff_job.designation }}</div>
+            <div class="fs-xs text-muted-2">{{ app.staff_job.organization_name }}</div>
+          </td>
+          <td>
+            {{ app.applicant.phone|default:"Not Provided" }}
+          </td>
+          <td class="fs-sm text-muted-2">
+            {{ app.applied_at|date:"M j, Y" }}
+          </td>
+          <td>
+            {% if app.resume and app.resume.file %}
+              <a href="{{ app.resume.file.url }}" target="_blank" class="btn btn-outline-primary btn-sm text-nowrap" download>
+                <i class="bi bi-download me-1"></i> Download
+              </a>
+            {% else %}
+              <span class="text-muted-2 fs-xs">No resume</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="status-pill status-{{ app.status }}">
+              {{ app.get_status_display }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/_pagination.html" %}
+
+{% else %}
+<div class="sj-empty py-5">
+  <div class="icon"><i class="bi bi-inbox fs-1"></i></div>
+  <h5 class="mt-3">No applications found</h5>
+  <p class="text-muted-2 fs-sm">You haven't received any applications matching the selected criteria.</p>
+</div>
+{% endif %}
+{% endblock %}

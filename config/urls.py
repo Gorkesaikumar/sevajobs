@@ -33,6 +33,8 @@ urlpatterns = [
     path("recruiter/logout/", template_views.LogoutView.as_view(), name="recruiter-logout"),
     path("jobseeker/login/", template_views.SeekerLoginView.as_view(), name="jobseeker-login"),
     path("jobseeker/logout/", template_views.LogoutView.as_view(), name="jobseeker-logout"),
+    path("staff/login/", template_views.StaffLoginView.as_view(), name="staff-login"),
+    path("staff/logout/", template_views.LogoutView.as_view(), name="staff-logout"),
 
     # Admin
     path("django-admin/", admin.site.urls),
@@ -41,6 +43,9 @@ urlpatterns = [
     # Registered first: its routes are UUID-constrained so they own list/detail
     # for each resource while the curated action endpoints below still resolve.
     path("api/v1/", include(("apps.api.v1.routers", "api-v1"), namespace="api-v1")),
+
+    # Staff & Admin Staff API endpoints
+    path("api/", include("apps.api.v1.staff_urls")),
 
     # API v1 — curated, action-oriented endpoints
     path("api/v1/auth/", include("apps.accounts.urls.auth_urls")),
@@ -65,6 +70,7 @@ urlpatterns = [
     path("dashboard/seeker/", include("apps.dashboard.seeker_urls")),
     path("dashboard/recruiter/", include("apps.dashboard.recruiter_urls")),
     path("dashboard/admin/", include("apps.dashboard.admin_urls")),
+    path("staff/", include("apps.dashboard.staff_urls")),
 ]
 
 if settings.DEBUG:

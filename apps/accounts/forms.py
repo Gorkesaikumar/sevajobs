@@ -22,6 +22,11 @@ phone_validator = RegexValidator(
     message="Enter a valid mobile number consisting only of digits (10 to 15 digits).",
 )
 
+staff_phone_validator = RegexValidator(
+    regex=r"^\d{10}$",
+    message="Enter a valid 10-digit mobile number.",
+)
+
 
 class _CrispyForm(forms.Form):
     """Base form wiring crispy-forms with a default submit button."""
@@ -183,3 +188,84 @@ class ChangePasswordForm(_CrispyForm):
             raise forms.ValidationError("The two password fields do not match.")
         password_validation.validate_password(p2, self.user)
         return p2
+
+
+class StaffLoginForm(AuthenticationForm):
+    """Staff-specific login form — email + password only, no username."""
+    username = forms.EmailField(
+        label="Email Address",
+        widget=forms.EmailInput(attrs={"autofocus": True, "placeholder": "Enter your staff email"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "post"
+        self.helper.add_input(Submit("submit", "Log in", css_class="btn btn-primary w-100"))
+
+
+class StaffCreationForm(forms.Form):
+    """Admin-only form to create new Staff accounts. Authentication is email-based only — no username."""
+    full_name = forms.CharField(label="Full Name", max_length=255)
+    email = forms.EmailField(label="Email Address")
+    phone_number = forms.CharField(label="Phone Number", validators=[staff_phone_validator])
+    password = forms.CharField(label="Password", widget=forms.PasswordInput, strip=False)
+    confirm_password = forms.CharField(label="Confirm Password", widget=forms.PasswordInput, strip=False)
+    # Status is NOT a creation field — new accounts default to Active.
+    # Status management lives on the My Staff list page.
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "post"
+        self.helper.add_input(Submit("submit", "Add Staff Member", css_class="btn btn-primary w-100"))
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].lower().strip()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("A user with this email already exists.")
+        return email
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data["phone_number"].strip()
+        formatted_phone = f"+91{phone}"
+        if User.objects.filter(phone=formatted_phone).exists():
+            raise forms.ValidationError("A user with this phone number already exists.")
+        return formatted_phone
+
+    def clean_confirm_password(self):
+        p1 = self.cleaned_data.get("password")
+        p2 = self.cleaned_data.get("confirm_password")
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError("Passwords do not match.")
+        if p1:
+            password_validation.validate_password(p1)
+        return p2
+
+
+class StaffEditForm(forms.Form):
+    """Admin-only form to edit existing Staff accounts. No username field — email is the identifier."""
+    full_name = forms.CharField(label="Full Name", max_length=255)
+    email = forms.EmailField(label="Email Address")
+    phone_number = forms.CharField(label="Phone Number", validators=[staff_phone_validator])
+    status = forms.ChoiceField(label="Status", choices=[("Active", "Active"), ("Inactive", "Inactive")])
+
+    def __init__(self, staff_profile, *args, **kwargs):
+        self.staff_profile = staff_profile
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "post"
+        self.helper.add_input(Submit("submit", "Save Changes", css_class="btn btn-primary w-100"))
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].lower().strip()
+        if User.objects.filter(email__iexact=email).exclude(id=self.staff_profile.user.id).exists():
+            raise forms.ValidationError("A user with this email already exists.")
+        return email
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data["phone_number"].strip()
+        formatted_phone = f"+91{phone}"
+        if User.objects.filter(phone=formatted_phone).exclude(id=self.staff_profile.user.id).exists():
+            raise forms.ValidationError("A user with this phone number already exists.")
+        return formatted_phone

@@ -1,0 +1,98 @@
+{% extends "dashboard/staff/_layout.html" %}
+{% load humanize %}
+{% block title %}My Jobs — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h4 class="fw-800 mb-0">My Jobs</h4>
+  <a href="{% url 'staff:add-job' %}" class="btn btn-gradient btn-sm">
+    <i class="bi bi-plus-circle me-1"></i> Post Job
+  </a>
+</div>
+
+<!-- Search & Filter Form -->
+<form class="d-flex gap-2 mb-3" method="get" action="{% url 'staff:my-jobs' %}">
+  <input type="text" class="form-control form-control-sm" name="q" placeholder="Search designation, organization, location..." value="{{ request.GET.q|default:'' }}">
+  
+  {% if request.GET.status %}
+    <input type="hidden" name="status" value="{{ request.GET.status }}">
+  {% endif %}
+  
+  <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Search</button>
+  {% if request.GET.q %}
+    <a href="{% url 'staff:my-jobs' %}{% if request.GET.status %}?status={{ request.GET.status }}{% endif %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+  {% endif %}
+</form>
+
+{% if jobs %}
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>Job ID</th>
+          <th>Designation</th>
+          <th>Organization</th>
+          <th>Qualification</th>
+          <th>Vacancies</th>
+          <th>Salary</th>
+          <th>Location</th>
+          <th>Status</th>
+          <th>Created Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in jobs %}
+        <tr>
+          <td><span class="badge bg-light text-dark fw-bold border">{{ job.job_id }}</span></td>
+          <td><div class="fw-semibold text-ink">{{ job.designation }}</div></td>
+          <td>{{ job.organization_name }}</td>
+          <td>{{ job.qualification }}</td>
+          <td class="text-center fw-semibold">{{ job.vacancies }}</td>
+          <td>₹{{ job.offered_salary|intcomma }}</td>
+          <td>{{ job.job_location }}</td>
+          <td>
+            {% if job.status == 'active' %}
+              <span class="status-pill status-active">Active</span>
+            {% else %}
+              <span class="status-pill status-inactive">Closed</span>
+            {% endif %}
+          </td>
+          <td class="fs-sm text-muted-2">{{ job.created_at|date:"M j, Y" }}</td>
+          <td>
+            <div class="sj-table-actions d-flex gap-1">
+              <a href="{% url 'core:staff-job-detail' pk=job.id %}" class="btn btn-ghost btn-sm" title="View"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'staff:edit-job' pk=job.id %}" class="btn btn-ghost btn-sm" title="Edit"><i class="bi bi-pencil"></i></a>
+              
+              {% if job.status == 'active' %}
+                <form method="post" action="{% url 'staff:toggle-job' pk=job.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to close this job posting?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="close">
+                  <button type="submit" class="btn btn-ghost btn-sm text-warning" title="Close Job"><i class="bi bi-x-circle"></i></button>
+                </form>
+              {% else %}
+                <form method="post" action="{% url 'staff:toggle-job' pk=job.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to reopen this job posting?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="reopen">
+                  <button type="submit" class="btn btn-ghost btn-sm text-success" title="Reopen Job"><i class="bi bi-arrow-repeat"></i></button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/_pagination.html" %}
+{% else %}
+<div class="sj-empty">
+  <div class="icon"><i class="bi bi-briefcase"></i></div>
+  <h5>No jobs found</h5>
+  <p class="text-muted-2 fs-sm">Create your first job listing to start receiving applications.</p>
+  <a href="{% url 'staff:add-job' %}" class="btn btn-gradient btn-sm">Post a Job</a>
+</div>
+{% endif %}
+{% endblock %}

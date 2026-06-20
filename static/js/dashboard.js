@@ -130,7 +130,7 @@
     const confirmModalEl = document.getElementById('genericConfirmModal');
     let confirmModal;
     if (confirmModalEl && typeof bootstrap !== 'undefined') {
-      confirmModal = new bootstrap.Modal(confirmModalEl);
+      confirmModal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
     }
 
     document.querySelectorAll('[data-ajax-action]').forEach(btn => {

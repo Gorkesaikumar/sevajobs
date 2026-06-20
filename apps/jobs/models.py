@@ -244,6 +244,10 @@ class Job(BaseModel):
     def __str__(self) -> str:
         return self.title
 
+    @property
+    def is_staff_job(self) -> bool:
+        return False
+
     # ----- derived state ---------------------------------------------------
     @property
     def is_expired(self) -> bool:
@@ -389,3 +393,59 @@ class JobApprovalHistory(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.job_id} · {self.action}"
+
+
+# ===========================================================================
+# Table #15 — StaffJob
+# ===========================================================================
+class StaffJob(BaseModel):
+    """
+    A job posting created directly by a staff member (table #15).
+    """
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        CLOSED = "closed", "Closed"
+
+    job_id = models.CharField(max_length=50, unique=True, db_index=True)
+    designation = models.CharField(max_length=255, db_index=True)
+    organization_name = models.CharField(max_length=255, db_index=True)
+    qualification = models.CharField(max_length=255)
+    vacancies = models.PositiveIntegerField(default=1)
+    offered_salary = models.PositiveIntegerField(db_index=True)
+    job_location = models.CharField(max_length=255, db_index=True)
+    phone_number = models.CharField(max_length=16)
+    email = models.EmailField()
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+        db_index=True
+    )
+    created_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="staff_jobs"
+    )
+    published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Staff Job"
+        verbose_name_plural = "Staff Jobs"
+        permissions = [
+            ("can_create_job", "Can create job"),
+            ("can_edit_job", "Can edit job"),
+            ("can_close_job", "Can close job"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.designation} at {self.organization_name} ({self.job_id})"
+
+    @property
+    def is_staff_job(self) -> bool:
+        return True
+        
+    @property
+    def is_published(self) -> bool:
+        return self.is_active and self.status == self.Status.ACTIVE

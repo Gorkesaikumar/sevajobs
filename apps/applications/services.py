@@ -64,37 +64,64 @@ class ApplicationService:
     # ----- candidate: apply -----------------------------------------------
     @transaction.atomic
     def submit(
-        self, *, job, applicant, resume, cover_letter: str = "", expected_salary=None
+        self, *, job=None, staff_job=None, applicant, resume, cover_letter: str = "", expected_salary=None
     ) -> JobApplication:
-        if JobApplication.objects.filter(job=job, applicant=applicant).exists():
-            raise ValidationError({"detail": "You have already applied for this job."})
-        if job.status != Job.Status.ACTIVE:
-            raise ValidationError({"detail": "This job is no longer accepting applications."})
+        if not job and not staff_job:
+            raise ValidationError({"detail": "Either job or staff_job must be provided."})
+
+        if job:
+            if JobApplication.objects.filter(job=job, applicant=applicant).exists():
+                raise ValidationError({"detail": "You have already applied for this job."})
+            if job.status != Job.Status.ACTIVE:
+                raise ValidationError({"detail": "This job is no longer accepting applications."})
+        elif staff_job:
+            from apps.jobs.models import StaffJob
+            if JobApplication.objects.filter(staff_job=staff_job, applicant=applicant).exists():
+                raise ValidationError({"detail": "You have already applied for this job."})
+            if staff_job.status != StaffJob.Status.ACTIVE:
+                raise ValidationError({"detail": "This job is no longer accepting applications."})
+
         if resume.job_seeker_id != applicant.id:
             raise PermissionDenied("You can only apply with your own resume.")
 
         application = JobApplication.objects.create(
             job=job,
+            staff_job=staff_job,
             applicant=applicant,
             resume=resume,
             cover_letter=cover_letter,
             expected_salary=expected_salary,
         )
         self._record_history(application, "", S.APPLIED, applicant)
-        Job.objects.filter(id=job.id).update(applications_count=F("applications_count") + 1)
 
-        # Notify the recruiter who owns the job.
-        recruiter_user = getattr(job.recruiter, "user", None)
-        if recruiter_user:
-            self._notifications.notify(
-                recipient=recruiter_user,
-                actor=applicant,
-                notification_type=Notification.Type.APPLICATION_RECEIVED,
-                title="New application received",
-                message=f"{applicant.full_name} applied for {job.title}.",
-                entity_type="JobApplication",
-                entity_id=application.id,
-            )
+        if job:
+            Job.objects.filter(id=job.id).update(applications_count=F("applications_count") + 1)
+            # Notify the recruiter who owns the job.
+            recruiter_user = getattr(job.recruiter, "user", None)
+            if recruiter_user:
+                self._notifications.notify(
+                    recipient=recruiter_user,
+                    actor=applicant,
+                    notification_type=Notification.Type.APPLICATION_RECEIVED,
+                    title="New application received",
+                    message=f"{applicant.full_name} applied for {job.title}.",
+                    entity_type="JobApplication",
+                    entity_id=application.id,
+                )
+        elif staff_job:
+            # Notify the staff member who owns the job.
+            staff_user = staff_job.created_by
+            if staff_user:
+                self._notifications.notify(
+                    recipient=staff_user,
+                    actor=applicant,
+                    notification_type=Notification.Type.APPLICATION_RECEIVED,
+                    title="New application received",
+                    message=f"{applicant.full_name} applied for {staff_job.designation}.",
+                    entity_type="JobApplication",
+                    entity_id=application.id,
+                )
+
         logger.info("Application %s submitted by %s", application.id, applicant.email)
         return application
 
@@ -180,36 +207,37 @@ class ApplicationService:
                 application.offer_details.save(update_fields=["status"])
             
             # Notify recruiter
-            recruiter_user = getattr(application.job.recruiter, "user", None)
+            recruiter_user = getattr(application.job.recruiter, "user", None) if application.job else None
             if recruiter_user:
                 self._notifications.notify(
                     recipient=recruiter_user,
                     actor=application.applicant,
                     notification_type="offer_accepted",
                     title="Offer Accepted",
-                    message=f"{application.applicant.full_name} has accepted the offer for {application.job.title}.",
+                    message=f"{application.applicant.full_name} has accepted the offer for {application.job_title}.",
                     entity_type="JobApplication",
                     entity_id=application.id,
                 )
 
             # Auto-closure logic based on filled vacancies
             job = application.job
-            accepted_count = JobApplication.objects.filter(
-                job=job,
-                status__in=[JobApplication.Status.OFFER_ACCEPTED, JobApplication.Status.JOINED]
-            ).count()
-            if accepted_count >= job.vacancies:
-                job.status = "closed"
-                job.save(update_fields=["status"])
+            if job:
+                accepted_count = JobApplication.objects.filter(
+                    job=job,
+                    status__in=[JobApplication.Status.OFFER_ACCEPTED, JobApplication.Status.JOINED]
+                ).count()
+                if accepted_count >= job.vacancies:
+                    job.status = "closed"
+                    job.save(update_fields=["status"])
 
-                # Notify recruiter that position is filled
-                if recruiter_user:
-                    self._notifications.notify(
-                        recipient=recruiter_user,
-                        title="Position Filled",
-                        message=f"All {job.vacancies} vacancies for '{job.title}' have been successfully accepted. The job is now closed.",
-                        notification_type="system"
-                    )
+                    # Notify recruiter that position is filled
+                    if recruiter_user:
+                        self._notifications.notify(
+                            recipient=recruiter_user,
+                            title="Position Filled",
+                            message=f"All {job.vacancies} vacancies for '{job.title}' have been successfully accepted. The job is now closed.",
+                            notification_type="system"
+                        )
 
         if new_status == S.REJECTED:
             if hasattr(application, "offer_details"):
@@ -224,14 +252,14 @@ class ApplicationService:
 
             if old_status in [S.SELECTED, S.OFFER_SENT, S.OFFER_ACCEPTED]:
                 # Notify recruiter
-                recruiter_user = getattr(application.job.recruiter, "user", None)
+                recruiter_user = getattr(application.job.recruiter, "user", None) if application.job else None
                 if recruiter_user:
                     self._notifications.notify(
                         recipient=recruiter_user,
                         actor=application.applicant,
                         notification_type="offer_declined",
                         title="Offer Declined",
-                        message=f"{application.applicant.full_name} has declined the offer for {application.job.title}.",
+                        message=f"{application.applicant.full_name} has declined the offer for {application.job_title}.",
                         entity_type="JobApplication",
                         entity_id=application.id,
                     )
@@ -242,14 +270,14 @@ class ApplicationService:
                 application.offer_details.save(update_fields=["status"])
 
             # Notify recruiter
-            recruiter_user = getattr(application.job.recruiter, "user", None)
+            recruiter_user = getattr(application.job.recruiter, "user", None) if application.job else None
             if recruiter_user:
                 self._notifications.notify(
                     recipient=recruiter_user,
                     actor=application.applicant,
                     notification_type="joining_confirmed",
                     title="Candidate Joined",
-                    message=f"{application.applicant.full_name} has joined as {application.job.title}.",
+                    message=f"{application.applicant.full_name} has joined as {application.job_title}.",
                     entity_type="JobApplication",
                     entity_id=application.id,
                 )
@@ -332,9 +360,8 @@ class ApplicationService:
         """In-app + email notification to the candidate on a status change."""
         candidate = application.applicant
         label = application.get_status_display()
-        job_title = application.job.title
-        company_name = getattr(application.job, "company", None)
-        company_name = company_name.name if company_name else "the employer"
+        job_title = application.job_title
+        company_name = application.company_name or "the employer"
 
         ntype = _STATUS_TO_NOTIFICATION.get(new_status, Notification.Type.STATUS_CHANGED)
 
@@ -433,8 +460,7 @@ class ApplicationService:
 
     @staticmethod
     def _status_message(application, new_status: str, job_title: str) -> str:
-        company_name = getattr(application.job, "company", None)
-        company_name = company_name.name if company_name else "the institution"
+        company_name = application.company_name or "the institution"
 
         if new_status == S.INTERVIEW_SCHEDULED and application.interview_at:
             when = application.interview_at.strftime("%d %b %Y, %H:%M")

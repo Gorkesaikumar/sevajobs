@@ -1,0 +1,85 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static %}
+{% block title %}Edit Staff — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex align-items-center mb-4">
+  <a href="{% url 'admin-panel:staff-list' %}" class="btn btn-sm btn-outline-secondary rounded-circle me-3">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <div>
+    <h4 class="fw-800 mb-0">Edit Staff Member</h4>
+    <p class="text-muted-2 fs-sm mb-0">Update details for employee: <strong>{{ profile.employee_id }}</strong></p>
+  </div>
+</div>
+
+<div class="sj-card p-4" style="max-width: 800px;">
+  <form method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger mb-4">
+        {% for error in form.non_field_errors %}
+          <div>{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="row g-3">
+      <!-- Full Name -->
+      <div class="col-md-6">
+        <label for="id_full_name" class="form-label fw-semibold">Full Name *</label>
+        <input type="text" class="form-control {% if form.full_name.errors %}is-invalid{% endif %}"
+               id="id_full_name" name="full_name" placeholder="e.g. Rahul Sharma"
+               value="{{ form.full_name.value|default:'' }}" required>
+        {% if form.full_name.errors %}
+          <div class="invalid-feedback">{% for error in form.full_name.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- Email -->
+      <div class="col-md-6">
+        <label for="id_email" class="form-label fw-semibold">Email Address *</label>
+        <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+               id="id_email" name="email" placeholder="e.g. rahul@example.com"
+               value="{{ form.email.value|default:'' }}" required>
+        <div class="form-text fs-xs">Login identifier — must be unique.</div>
+        {% if form.email.errors %}
+          <div class="invalid-feedback">{% for error in form.email.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- Phone Number -->
+      <div class="col-md-6">
+        <label for="id_phone_number" class="form-label fw-semibold">Phone Number *</label>
+        <input type="tel" class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}"
+               id="id_phone_number" name="phone_number" placeholder="e.g. 9876543210"
+               value="{{ form.phone_number.value|default:'' }}" required>
+        <div class="form-text fs-xs">Must be 10-15 digits.</div>
+        {% if form.phone_number.errors %}
+          <div class="invalid-feedback">{% for error in form.phone_number.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- Status -->
+      <div class="col-md-6">
+        <label for="id_status" class="form-label fw-semibold">Status</label>
+        <select class="form-select {% if form.status.errors %}is-invalid{% endif %}" id="id_status" name="status">
+          <option value="Active" {% if form.status.value == 'Active' %}selected{% endif %}>Active</option>
+          <option value="Inactive" {% if form.status.value == 'Inactive' %}selected{% endif %}>Inactive</option>
+        </select>
+        {% if form.status.errors %}
+          <div class="invalid-feedback">{% for error in form.status.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mt-4 pt-2 d-flex gap-2">
+      <button type="submit" class="btn btn-gradient px-4">
+        <i class="bi bi-save me-1"></i> Save Changes
+      </button>
+      <a href="{% url 'admin-panel:staff-list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

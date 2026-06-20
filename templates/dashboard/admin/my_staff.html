@@ -1,0 +1,298 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}My Staff — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-800 mb-0">My Staff</h4>
+    <p class="text-muted-2 fs-sm mb-0">Manage staff members and credentials</p>
+  </div>
+  <a href="{% url 'admin-panel:staff-create' %}" class="btn btn-gradient btn-sm">
+    <i class="bi bi-plus-circle me-1"></i> Add Staff
+  </a>
+</div>
+
+<!-- Search & Filter Form -->
+<form class="sj-card p-3 mb-4" method="get" action="{% url 'admin-panel:staff-list' %}">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Search</label>
+      <input type="text" class="form-control form-control-sm" name="q"
+             placeholder="Search by name, email or phone..." value="{{ request.GET.q|default:'' }}">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Status</label>
+      <select name="status" class="form-select form-select-sm">
+        <option value="">All Statuses</option>
+        <option value="Active" {% if request.GET.status == 'Active' %}selected{% endif %}>Active</option>
+        <option value="Inactive" {% if request.GET.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm w-100">
+        <i class="bi bi-search"></i> Search
+      </button>
+      {% if request.GET.q or request.GET.status %}
+        <a href="{% url 'admin-panel:staff-list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+{% if staff_profiles %}
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>Employee ID</th>
+          <th>Full Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Status</th>
+          <th class="text-center">Jobs Posted</th>
+          <th>Last Login</th>
+          <th>Login Portal</th>
+          <th>Share Credentials</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for profile in staff_profiles %}
+        <tr>
+          <td><span class="badge bg-light text-dark fw-bold border">{{ profile.employee_id }}</span></td>
+          <td><div class="fw-semibold text-ink">{{ profile.full_name }}</div></td>
+          <td>{{ profile.email }}</td>
+          <td>{{ profile.phone_number|slice:":3" }} {{ profile.phone_number|slice:"3:" }}</td>
+          <td>
+            {% if profile.status == 'Active' %}
+              <span class="status-pill status-active">Active</span>
+            {% else %}
+              <span class="status-pill status-inactive">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="text-center fw-semibold">{{ profile.jobs_posted_count }}</td>
+          <td class="fs-sm text-muted-2">
+            {% if profile.user.last_login %}
+              {{ profile.user.last_login|date:"M j, Y H:i" }}
+            {% else %}
+              Never logged in
+            {% endif %}
+          </td>
+          <!-- Login Portal -->
+          <td>
+            <a href="/staff/login/" target="_blank"
+               class="btn btn-sm btn-outline-primary fw-semibold"
+               title="Open Staff Login Portal in new tab">
+              <i class="bi bi-box-arrow-up-right me-1"></i>Staff Login
+            </a>
+          </td>
+          <!-- Share Credentials -->
+          <td>
+            <form method="post" action="{% url 'admin-panel:staff-reset-password' pk=profile.id %}" class="d-inline sj-confirm-form"
+                  data-message="Generate a new temporary password and open the WhatsApp sharing screen?">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-success fw-bold">
+                <i class="bi bi-whatsapp me-1"></i> WhatsApp
+              </button>
+            </form>
+          </td>
+          <td>
+            <div class="sj-table-actions d-flex gap-1">
+              <!-- View Detail Drawer Trigger -->
+              <button type="button" class="btn btn-ghost btn-sm" title="View Details"
+                      data-bs-toggle="offcanvas" data-bs-target="#viewModal-{{ profile.id }}">
+                <i class="bi bi-eye"></i>
+              </button>
+
+              <!-- Edit -->
+              <a href="{% url 'admin-panel:staff-edit' pk=profile.id %}" class="btn btn-ghost btn-sm" title="Edit Staff">
+                <i class="bi bi-pencil"></i>
+              </a>
+
+              <!-- Toggle Active/Inactive Status -->
+              {% if profile.status == 'Active' %}
+                <form method="post" action="{% url 'admin-panel:staff-toggle' pk=profile.id %}" class="d-inline sj-confirm-form"
+                      data-message="Are you sure you want to deactivate this staff account?">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="deactivate">
+                  <button type="submit" class="btn btn-ghost btn-sm text-warning" title="Deactivate">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </form>
+              {% else %}
+                <form method="post" action="{% url 'admin-panel:staff-toggle' pk=profile.id %}" class="d-inline sj-confirm-form"
+                      data-message="Are you sure you want to activate this staff account?">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="activate">
+                  <button type="submit" class="btn btn-ghost btn-sm text-success" title="Activate">
+                    <i class="bi bi-check-circle"></i>
+                  </button>
+                </form>
+              {% endif %}
+
+              <!-- Reset Password -->
+              <form method="post" action="{% url 'admin-panel:staff-reset-password' pk=profile.id %}" class="d-inline sj-confirm-form"
+                    data-message="Generate a new temporary password for this account?">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-ghost btn-sm text-danger" title="Reset Password">
+                  <i class="bi bi-key"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/_pagination.html" %}
+
+{% else %}
+<div class="sj-empty py-5">
+  <div class="icon"><i class="bi bi-person-badge fs-1"></i></div>
+  <h5 class="mt-3">No staff members found</h5>
+  <p class="text-muted-2 fs-sm">Create staff accounts to delegate job posting management.</p>
+  <a href="{% url 'admin-panel:staff-create' %}" class="btn btn-gradient btn-sm mt-2">Add Staff Member</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block modals %}
+{% if staff_profiles %}
+  {% for profile in staff_profiles %}
+  <!-- View Drawer -->
+  <div class="offcanvas offcanvas-end" id="viewModal-{{ profile.id }}" tabindex="-1" aria-labelledby="viewModalLabel-{{ profile.id }}">
+    <div class="offcanvas-header border-bottom">
+      <h5 class="offcanvas-title fw-bold" id="viewModalLabel-{{ profile.id }}">Staff Details</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="d-flex align-items-center mb-4">
+        <div class="avatar bg-soft-primary text-primary me-3 fs-3" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+          {{ profile.full_name|slice:":1"|upper }}
+        </div>
+        <div>
+          <h5 class="fw-bold mb-0">{{ profile.full_name }}</h5>
+          <small class="text-muted">Employee ID: {{ profile.employee_id }}</small>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="text-muted fs-xs fw-bold text-uppercase mb-1">Email Address</div>
+          <div class="text-ink fs-sm fw-medium">{{ profile.email }}</div>
+        </div>
+
+        <div class="col-12">
+          <div class="text-muted fs-xs fw-bold text-uppercase mb-1">Phone Number</div>
+          <div class="text-ink fs-sm fw-medium">{{ profile.phone_number|slice:":3" }} {{ profile.phone_number|slice:"3:" }}</div>
+        </div>
+
+        <div class="col-12">
+          <div class="text-muted fs-xs fw-bold text-uppercase mb-1">Status</div>
+          <div>
+            {% if profile.status == 'Active' %}
+              <span class="badge bg-success-subtle text-success">Active</span>
+            {% else %}
+              <span class="badge bg-danger-subtle text-danger">Inactive</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="text-muted fs-xs fw-bold text-uppercase mb-1">Jobs Posted</div>
+          <div class="text-ink fs-sm fw-medium">{{ profile.jobs_posted_count }}</div>
+        </div>
+
+        <div class="col-12">
+          <div class="text-muted fs-xs fw-bold text-uppercase mb-1">Last Login</div>
+          <div class="text-ink fs-sm fw-medium">
+            {% if profile.user.last_login %}
+              {{ profile.user.last_login|date:"M j, Y H:i" }}
+            {% else %}
+              Never logged in
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="text-muted fs-xs fw-bold text-uppercase mb-1">Created Date</div>
+          <div class="text-ink fs-sm fw-medium">{{ profile.created_at|date:"M d, Y" }}</div>
+        </div>
+
+        <div class="col-12">
+          <div class="text-muted fs-xs fw-bold text-uppercase mb-1">Login Portal</div>
+          <div>
+            <a href="/staff/login/" target="_blank" class="text-primary text-decoration-none fs-sm fw-medium">
+              <i class="bi bi-box-arrow-up-right me-1"></i>/staff/login/
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="p-3 border-top d-flex gap-2 justify-content-end bg-light">
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="offcanvas">Close</button>
+      <a href="{% url 'admin-panel:staff-edit' pk=profile.id %}" class="btn btn-gradient btn-sm">Edit Profile</a>
+      <a href="/staff/login/" target="_blank" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-box-arrow-up-right me-1"></i> Staff Login
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const confirmModalEl = document.getElementById('genericConfirmModal');
+  if (!confirmModalEl) return;
+  
+  const confirmModal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
+  const confirmMessageEl = document.getElementById('genericConfirmMessage');
+  
+  let activeForm = null;
+  
+  // Attach event handler to form submissions
+  document.querySelectorAll('.sj-confirm-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      activeForm = this;
+      const message = this.getAttribute('data-message') || 'Are you sure you want to proceed?';
+      if (confirmMessageEl) {
+        confirmMessageEl.textContent = message;
+      }
+      confirmModal.show();
+    });
+  });
+  
+  // When confirmation button is clicked, submit active form (using delegation)
+  document.addEventListener('click', function(e) {
+    const targetBtn = e.target.closest('#genericConfirmBtn');
+    if (targetBtn) {
+      if (activeForm) {
+        confirmModal.hide();
+        activeForm.submit();
+      }
+    }
+  });
+
+  // Explicitly close modal on Cancel/dismiss button click
+  confirmModalEl.addEventListener('click', function(e) {
+    const dismissBtn = e.target.closest('[data-bs-dismiss="modal"]');
+    if (dismissBtn) {
+      confirmModal.hide();
+    }
+  });
+
+  // Reset activeForm when modal is hidden
+  confirmModalEl.addEventListener('hidden.bs.modal', function() {
+    activeForm = null;
+  });
+});
+</script>
+{% endblock %}

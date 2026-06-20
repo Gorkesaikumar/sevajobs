@@ -1,0 +1,204 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static %}
+{% block title %}
+  {% if is_reset %}Password Reset{% else %}Add Staff{% endif %} — SevaJobs
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex align-items-center mb-4">
+  <a href="{% url 'admin-panel:staff-list' %}" class="btn btn-sm btn-outline-secondary rounded-circle me-3">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <div>
+    {% if is_reset %}
+      <h4 class="fw-800 mb-0">Password Reset</h4>
+      <p class="text-muted-2 fs-sm mb-0">Share the new credentials with the staff member</p>
+    {% else %}
+      <h4 class="fw-800 mb-0">Add Staff Member</h4>
+      <p class="text-muted-2 fs-sm mb-0">Create a new staff account — account will be set to <strong>Active</strong> automatically.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if created_profile %}
+{# ========= SUCCESS SCREEN ========= #}
+<div class="sj-card p-5 text-center" style="max-width: 580px; margin: 0 auto;">
+  <div class="mb-3">
+    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success-subtle text-success"
+          style="width:72px;height:72px;font-size:2rem;">
+      <i class="bi bi-check-circle-fill"></i>
+    </span>
+  </div>
+  <h4 class="fw-bold text-success mb-1">
+    {% if is_reset %}Password Reset Successfully!{% else %}Staff Created Successfully!{% endif %}
+  </h4>
+  <p class="text-muted-2 fs-sm mb-4">
+    {% if not is_reset %}The staff account is now <span class="badge bg-success-subtle text-success">Active</span>.{% endif %}
+    Share these credentials via WhatsApp.
+  </p>
+
+  <div class="border rounded-3 p-3 mb-4 text-start bg-light-subtle">
+    <div class="row g-2">
+      <div class="col-5 text-muted fs-xs fw-bold text-uppercase">Full Name</div>
+      <div class="col-7 text-ink fs-sm fw-semibold">{{ created_profile.full_name }}</div>
+
+      <div class="col-5 text-muted fs-xs fw-bold text-uppercase">Email</div>
+      <div class="col-7 text-ink fs-sm" id="staffEmail">{{ created_profile.email }}</div>
+
+      <div class="col-5 text-muted fs-xs fw-bold text-uppercase">Password</div>
+      <div class="col-7 fs-sm font-monospace text-danger fw-bold" id="staffPassword">{{ temporary_password }}</div>
+
+      <div class="col-5 text-muted fs-xs fw-bold text-uppercase">Staff Login URL</div>
+      <div class="col-7 fs-sm">
+        <span class="font-monospace text-primary" id="staffLoginUrl">{{ request.scheme }}://{{ request.get_host }}/staff/login/</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-column gap-2">
+    <button type="button" class="btn btn-outline-success w-100 fw-bold" onclick="sendWhatsApp()">
+      <i class="bi bi-whatsapp me-1"></i> Send via WhatsApp
+    </button>
+    <button type="button" class="btn btn-outline-primary w-100" id="copyCredsBtn" onclick="copyCredentials()">
+      <i class="bi bi-clipboard me-1"></i> Copy Credentials
+    </button>
+    <a href="/staff/login/" target="_blank" class="btn btn-gradient w-100">
+      <i class="bi bi-box-arrow-up-right me-1"></i> Open Staff Login
+    </a>
+    <a href="{% url 'admin-panel:staff-list' %}" class="btn btn-outline-secondary w-100">
+      <i class="bi bi-people me-1"></i> Back to My Staff
+    </a>
+  </div>
+</div>
+
+<script>
+function getMessageText() {
+  const name = "{{ created_profile.full_name|escapejs }}";
+  const email = document.getElementById('staffEmail').innerText;
+  const password = document.getElementById('staffPassword').innerText;
+  const loginUrl = document.getElementById('staffLoginUrl').innerText;
+
+  let msg = `Hello ${name},\n\n`;
+  {% if is_reset %}
+    msg += `Your SevaJobs Staff Account password has been reset successfully.\n\n`;
+  {% else %}
+    msg += `Your SevaJobs Staff Account has been created successfully.\n\n`;
+  {% endif %}
+  msg += `Login Details:\nEmail: ${email}\nPassword: ${password}\n\n`;
+  msg += `Staff Login Link:\n${loginUrl}\n\n`;
+  msg += `Please login and change your password after your first login.\n\n`;
+  msg += `Regards,\nSevaJobs Administration`;
+
+  return msg;
+}
+
+function copyCredentials() {
+  const text = getMessageText();
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyCredsBtn');
+    btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Copied!';
+    btn.classList.replace('btn-outline-primary', 'btn-success');
+    setTimeout(() => {
+      btn.innerHTML = '<i class="bi bi-clipboard me-1"></i> Copy Credentials';
+      btn.classList.replace('btn-success', 'btn-outline-primary');
+    }, 2500);
+  });
+}
+
+function sendWhatsApp() {
+  const phone = "{{ created_profile.phone_number }}";
+  // Remove non-numeric characters from phone for WhatsApp link
+  const cleanPhone = phone.replace(/\D/g,'');
+  const text = encodeURIComponent(getMessageText());
+  const waUrl = `https://wa.me/${cleanPhone}?text=${text}`;
+  window.open(waUrl, '_blank');
+}
+</script>
+
+{% else %}
+{# ========= CREATION FORM ========= #}
+<div class="sj-card p-4" style="max-width: 700px;">
+
+  <div class="alert alert-info d-flex align-items-center gap-2 mb-4 py-2 px-3 rounded-3 fs-sm" role="alert">
+    <i class="bi bi-info-circle-fill text-info flex-shrink-0"></i>
+    <span>New staff accounts are automatically set to <strong>Active</strong>. You can activate or deactivate accounts anytime from the <strong>My Staff</strong> list.</span>
+  </div>
+
+  <form method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger mb-4">
+        {% for error in form.non_field_errors %}
+          <div>{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="row g-3">
+      <!-- Full Name -->
+      <div class="col-md-6">
+        <label for="id_full_name" class="form-label fw-semibold">Full Name *</label>
+        <input type="text" class="form-control {% if form.full_name.errors %}is-invalid{% endif %}"
+               id="id_full_name" name="full_name" placeholder="e.g. Rahul Sharma"
+               value="{{ form.full_name.value|default:'' }}" required>
+        {% if form.full_name.errors %}
+          <div class="invalid-feedback">{% for error in form.full_name.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- Email -->
+      <div class="col-md-6">
+        <label for="id_email" class="form-label fw-semibold">Email Address *</label>
+        <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+               id="id_email" name="email" placeholder="e.g. rahul@example.com"
+               value="{{ form.email.value|default:'' }}" required>
+        <div class="form-text fs-xs">Used for login. Must be unique.</div>
+        {% if form.email.errors %}
+          <div class="invalid-feedback">{% for error in form.email.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- Phone Number -->
+      <div class="col-12">
+        <label for="id_phone_number" class="form-label fw-semibold">Phone Number *</label>
+        <input type="tel" class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}"
+               id="id_phone_number" name="phone_number" placeholder="Enter 10-digit mobile number"
+               value="{{ form.phone_number.value|default:'' }}" required>
+        <div class="form-text fs-xs">Enter exactly 10 digits. WhatsApp messages will be sent to this number.</div>
+        {% if form.phone_number.errors %}
+          <div class="invalid-feedback">{% for error in form.phone_number.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- Password -->
+      <div class="col-md-6">
+        <label for="id_password" class="form-label fw-semibold">Password *</label>
+        <input type="password" class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+               id="id_password" name="password" placeholder="Minimum 8 characters" required>
+        {% if form.password.errors %}
+          <div class="invalid-feedback">{% for error in form.password.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="col-md-6">
+        <label for="id_confirm_password" class="form-label fw-semibold">Confirm Password *</label>
+        <input type="password" class="form-control {% if form.confirm_password.errors %}is-invalid{% endif %}"
+               id="id_confirm_password" name="confirm_password" placeholder="Repeat password" required>
+        {% if form.confirm_password.errors %}
+          <div class="invalid-feedback">{% for error in form.confirm_password.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mt-4 pt-2 d-flex gap-2">
+      <button type="submit" class="btn btn-gradient px-4">
+        <i class="bi bi-person-plus me-1"></i> Create Staff Account
+      </button>
+      <a href="{% url 'admin-panel:staff-list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

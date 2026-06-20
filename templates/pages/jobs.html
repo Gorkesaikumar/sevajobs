@@ -65,7 +65,11 @@
           <div class="row g-3 stagger-children">
             {% for job in jobs %}
               <div class="col-md-6 animate-fade-up">
-                {% include "partials/_job_card.html" with job=job %}
+                {% if job.is_staff_job %}
+                  {% include "partials/_staff_job_card.html" with job=job %}
+                {% else %}
+                  {% include "partials/_job_card.html" with job=job %}
+                {% endif %}
               </div>
             {% endfor %}
           </div>

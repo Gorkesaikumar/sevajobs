@@ -519,7 +519,11 @@
     <div class="row g-3 stagger-children">
       {% for job in featured_jobs %}
       <div class="col-md-6 col-xl-4 animate-fade-up">
-        {% include "partials/_job_card.html" with job=job %}
+        {% if job.is_staff_job %}
+          {% include "partials/_staff_job_card.html" with job=job %}
+        {% else %}
+          {% include "partials/_job_card.html" with job=job %}
+        {% endif %}
       </div>
       {% endfor %}
     </div>

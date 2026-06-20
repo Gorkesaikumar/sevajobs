@@ -296,10 +296,14 @@
                 <li><a class="dropdown-item" href="{% url 'admin-panel:dashboard' %}"><i class="bi bi-speedometer2"></i> Admin Panel</a></li>
                 <li><a class="dropdown-item" href="{% url 'admin-panel:users' %}"><i class="bi bi-people"></i> Users</a></li>
                 <li><a class="dropdown-item" href="{% url 'admin-panel:job-approvals' %}"><i class="bi bi-check2-square"></i> Job Approvals</a></li>
+              {% elif user.is_staff_role %}
+                <li><a class="dropdown-item" href="{% url 'staff:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                <li><a class="dropdown-item" href="{% url 'staff:my-jobs' %}"><i class="bi bi-briefcase"></i> My Jobs</a></li>
+                <li><a class="dropdown-item" href="{% url 'staff:profile' %}"><i class="bi bi-person"></i> My Profile</a></li>
               {% endif %}
               <li><hr class="dropdown-divider mx-2"></li>
               <li>
-                <a class="dropdown-item" href="{% if user.is_recruiter %}{% url 'recruiter:settings' %}{% elif user.is_admin_role %}{% url 'admin-panel:settings' %}{% else %}{% url 'seeker:settings' %}{% endif %}">
+                <a class="dropdown-item" href="{% if user.is_recruiter %}{% url 'recruiter:settings' %}{% elif user.is_admin_role %}{% url 'admin-panel:settings' %}{% elif user.is_staff_role %}{% url 'staff:profile' %}{% else %}{% url 'seeker:settings' %}{% endif %}">
                   <i class="bi bi-gear"></i> Settings
                 </a>
               <li>

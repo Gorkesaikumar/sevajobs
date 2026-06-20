@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny
 from django.db import connection
 from django.core.paginator import Paginator
 
-from apps.jobs.models import Job, JobCategory
+from apps.jobs.models import Job, JobCategory, StaffJob
 from apps.recruiters.models import Company
 from apps.core.models import Advertisement
 
@@ -18,7 +18,8 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["featured_jobs"] = (
+        # Merged active featured jobs from recruiter & staff jobs
+        featured_recruiter = list(
             Job.objects.filter(
                 status=Job.Status.ACTIVE,
                 approval_status=Job.ApprovalStatus.APPROVED,
@@ -27,8 +28,23 @@ class HomeView(TemplateView):
             .select_related("company", "category")
             .order_by("-published_at")[:6]
         )
+        active_staff = list(
+            StaffJob.objects.filter(
+                status=StaffJob.Status.ACTIVE,
+                is_active=True,
+            )
+            .order_by("-published_at")[:6]
+        )
+        combined_featured = featured_recruiter + active_staff
+        combined_featured.sort(key=lambda j: j.published_at or j.created_at, reverse=True)
+        ctx["featured_jobs"] = combined_featured[:6]
+
         ctx["categories"] = JobCategory.objects.filter(is_active=True, parent__isnull=True)[:8]
-        ctx["total_jobs"] = Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).count()
+        
+        total_recruiter = Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).count()
+        total_staff = StaffJob.objects.filter(status=StaffJob.Status.ACTIVE, is_active=True).count()
+        ctx["total_jobs"] = total_recruiter + total_staff
+        
         ctx["total_companies"] = Company.objects.filter(is_verified=True).count()
         ctx["featured_companies"] = Company.objects.filter(is_verified=True).order_by("-created_at")[:6]
         
@@ -105,54 +121,88 @@ class JobSearchView(TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        qs = Job.objects.filter(
+        
+        # Recruiter Jobs queryset
+        rqs = Job.objects.filter(
             status=Job.Status.ACTIVE,
             approval_status=Job.ApprovalStatus.APPROVED,
         ).select_related("company", "category")
 
-        # Search
-        q = self.request.GET.get("q", "")
+        # Staff Jobs queryset
+        sqs = StaffJob.objects.filter(
+            status=StaffJob.Status.ACTIVE,
+            is_active=True
+        )
+
+        # Search Query q
+        q = self.request.GET.get("q", "").strip()
         if q:
-            qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q))
+            rqs = rqs.filter(Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q))
+            sqs = sqs.filter(Q(designation__icontains=q) | Q(organization_name__icontains=q) | Q(job_location__icontains=q))
             ctx["search_query"] = q
 
-        # Filters
+        # Location filter
+        location = self.request.GET.get("location", "").strip()
+        if location:
+            rqs = rqs.filter(location__icontains=location)
+            sqs = sqs.filter(job_location__icontains=location)
+
+        # Salary Min filter
+        salary_min = self.request.GET.get("salary_min", "").strip()
+        if salary_min:
+            rqs = rqs.filter(salary_min__gte=salary_min)
+            sqs = sqs.filter(offered_salary__gte=salary_min)
+
+        # Salary Max filter
+        salary_max = self.request.GET.get("salary_max", "").strip()
+        if salary_max:
+            rqs = rqs.filter(salary_max__lte=salary_max)
+            sqs = sqs.filter(offered_salary__lte=salary_max)
+
+        # Recruiter-only filters (exclude staff jobs if set)
         job_types = self.request.GET.getlist("job_type")
+        has_recruiter_filters = False
         if job_types:
-            qs = qs.filter(job_type__in=job_types)
+            rqs = rqs.filter(job_type__in=job_types)
+            has_recruiter_filters = True
 
         exp_levels = self.request.GET.getlist("experience_level")
         if exp_levels:
-            qs = qs.filter(experience_level__in=exp_levels)
-
-        location = self.request.GET.get("location")
-        if location:
-            qs = qs.filter(location__icontains=location)
+            rqs = rqs.filter(experience_level__in=exp_levels)
+            has_recruiter_filters = True
 
         is_remote = self.request.GET.get("is_remote")
         if is_remote:
-            qs = qs.filter(is_remote=True)
+            rqs = rqs.filter(is_remote=True)
+            has_recruiter_filters = True
 
         category = self.request.GET.get("category")
         if category:
-            qs = qs.filter(category__slug=category)
+            rqs = rqs.filter(category__slug=category)
+            has_recruiter_filters = True
 
-        salary_min = self.request.GET.get("salary_min")
-        if salary_min:
-            qs = qs.filter(salary_min__gte=salary_min)
-
-        salary_max = self.request.GET.get("salary_max")
-        if salary_max:
-            qs = qs.filter(salary_max__lte=salary_max)
+        # Convert to list & Combine
+        r_jobs = list(rqs)
+        s_jobs = [] if has_recruiter_filters else list(sqs)
+        combined = r_jobs + s_jobs
 
         # Ordering
         sort = self.request.GET.get("sort", "-created_at")
-        if sort in ["-created_at", "salary_min", "-salary_min", "deadline"]:
-            qs = qs.order_by(sort)
-        else:
-            qs = qs.order_by("-is_featured", "-created_at")
+        if sort == "salary_min":
+            combined.sort(key=lambda j: getattr(j, "salary_min", None) or getattr(j, "offered_salary", 0))
+        elif sort == "-salary_min":
+            combined.sort(key=lambda j: getattr(j, "salary_min", None) or getattr(j, "offered_salary", 0), reverse=True)
+        elif sort == "deadline":
+            # For staff jobs without a deadline, sort them last
+            combined.sort(key=lambda j: getattr(j, "deadline", None) or (j.published_at or j.created_at).date())
+        else: # default: recent / featured
+            def get_sort_key(j):
+                is_feat = getattr(j, "is_featured", False)
+                pub_time = j.published_at or j.created_at
+                return (is_feat, pub_time)
+            combined.sort(key=get_sort_key, reverse=True)
 
-        paginator = Paginator(qs, 12)
+        paginator = Paginator(combined, 12)
         page = self.request.GET.get("page", 1)
         ctx["page_obj"] = paginator.get_page(page)
         ctx["jobs"] = ctx["page_obj"]
@@ -324,18 +374,35 @@ class JobApplyView(LoginRequiredMixin, View):
         cover_letter = request.POST.get("cover_letter", "")
         expected_salary = request.POST.get("expected_salary") or None
         
-        job = get_object_or_404(Job, id=job_id)
+        # Check if job_id refers to a StaffJob or standard Job
+        is_staff = StaffJob.objects.filter(id=job_id).exists()
+        
+        if is_staff:
+            job = get_object_or_404(StaffJob, id=job_id)
+        else:
+            job = get_object_or_404(Job, id=job_id)
+            
         resume = get_object_or_404(Resume, id=resume_id, job_seeker=request.user)
         
         try:
-            ApplicationService().submit(
-                job=job,
-                applicant=request.user,
-                resume=resume,
-                cover_letter=cover_letter,
-                expected_salary=expected_salary
-            )
-            messages.success(request, f"Successfully applied to {job.title}!")
+            if is_staff:
+                ApplicationService().submit(
+                    staff_job=job,
+                    applicant=request.user,
+                    resume=resume,
+                    cover_letter=cover_letter,
+                    expected_salary=expected_salary
+                )
+                messages.success(request, f"Successfully applied to {job.designation}!")
+            else:
+                ApplicationService().submit(
+                    job=job,
+                    applicant=request.user,
+                    resume=resume,
+                    cover_letter=cover_letter,
+                    expected_salary=expected_salary
+                )
+                messages.success(request, f"Successfully applied to {job.title}!")
         except Exception as e:
             msg = str(e)
             if hasattr(e, 'detail'):
@@ -348,4 +415,40 @@ class JobApplyView(LoginRequiredMixin, View):
                     msg = str(e.detail)
             messages.error(request, f"Application failed: {msg}")
             
-        return redirect("core:job-detail", slug=job.slug)
+        if is_staff:
+            return redirect("core:staff-job-detail", pk=job.id)
+        else:
+            return redirect("core:job-detail", slug=job.slug)
+
+
+class StaffJobDetailPageView(DetailView):
+    template_name = "pages/staff_job_detail.html"
+    model = StaffJob
+    context_object_name = "job"
+
+    def get_queryset(self):
+        return StaffJob.objects.select_related("created_by")
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        job = self.object
+        
+        # Similar staff jobs
+        ctx["similar_jobs"] = (
+            StaffJob.objects.filter(
+                status=StaffJob.Status.ACTIVE,
+                is_active=True,
+            )
+            .exclude(pk=job.pk)[:4]
+        )
+
+        # Resumes for apply modal
+        if self.request.user.is_authenticated and self.request.user.is_job_seeker:
+            ctx["resumes"] = self.request.user.resumes.all()
+            ctx["has_applied"] = job.applications.filter(applicant=self.request.user).exists()
+
+        ctx["breadcrumbs"] = [
+            {"label": "Find Jobs", "url": "/jobs/"},
+            {"label": job.designation},
+        ]
+        return ctx

@@ -1,0 +1,92 @@
+{% extends "dashboard/staff/_layout.html" %}
+{% load static %}
+{% block title %}My Profile — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="sj-dashboard-header mb-4">
+  <h4 class="fw-800 mb-0">My Profile</h4>
+  <p class="subtitle mb-0">Manage your staff member details</p>
+</div>
+
+<div class="row g-4">
+  <!-- Profile details form -->
+  <div class="col-lg-8">
+    <div class="sj-card p-4">
+      <h5 class="fw-700 mb-3 text-primary"><i class="bi bi-person-gear me-2"></i>Edit Profile Information</h5>
+      
+      <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="first_name" class="form-label fw-semibold">First Name *</label>
+            <input type="text" class="form-control" id="first_name" name="first_name" 
+                   value="{{ request.user.first_name|default:'' }}" required>
+          </div>
+          <div class="col-md-6">
+            <label for="last_name" class="form-label fw-semibold">Last Name *</label>
+            <input type="text" class="form-control" id="last_name" name="last_name" 
+                   value="{{ request.user.last_name|default:'' }}" required>
+          </div>
+          <div class="col-md-12">
+            <label for="phone" class="form-label fw-semibold">Phone Number</label>
+            <input type="tel" class="form-control" id="phone" name="phone" 
+                   placeholder="e.g. 9876543210" value="{{ request.user.phone|default:'' }}">
+            <div class="form-text fs-xs">Provide a valid mobile number (10-15 digits).</div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-2">
+          <button type="submit" class="btn btn-gradient">
+            <i class="bi bi-check-circle me-1"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Read-only account overview -->
+  <div class="col-lg-4">
+    <div class="sj-card p-4 h-100">
+      <h5 class="fw-700 mb-3 text-primary"><i class="bi bi-shield-lock me-2"></i>Account Overview</h5>
+      
+      <div class="mb-3">
+        <label class="text-muted-2 fs-xs text-uppercase fw-bold">Employee ID</label>
+        <div class="fw-bold text-ink">
+          {% if request.user.staff_profile %}
+            {{ request.user.staff_profile.employee_id }}
+          {% else %}
+            N/A
+          {% endif %}
+        </div>
+      </div>
+      
+      <div class="mb-3">
+        <label class="text-muted-2 fs-xs text-uppercase fw-bold">Username</label>
+        <div class="text-ink">{{ request.user.username|default:"None" }}</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="text-muted-2 fs-xs text-uppercase fw-bold">Email Address</label>
+        <div class="text-ink text-truncate">{{ request.user.email }}</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="text-muted-2 fs-xs text-uppercase fw-bold">Account Status</label>
+        <div>
+          {% if request.user.staff_profile and request.user.staff_profile.status == 'Active' %}
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Active</span>
+          {% else %}
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Inactive</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="text-muted-2 fs-xs text-uppercase fw-bold">Member Since</label>
+        <div class="text-ink">{{ request.user.date_joined|date:"M d, Y" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

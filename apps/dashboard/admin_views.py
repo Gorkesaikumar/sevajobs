@@ -5,6 +5,7 @@ from django.views.generic import TemplateView
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.urls import reverse
+from django.contrib import messages
 
 from apps.accounts.models import User
 from apps.jobs.models import Job
@@ -862,3 +863,279 @@ class AdminImpersonateView(AdminMixin, TemplateView):
             pass
 
         return redirect(request.META.get('HTTP_REFERER', 'admin-panel:users'))
+
+
+# ===========================================================================
+# Staff Management Views (Phase 1)
+# ===========================================================================
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.views import View
+from django.shortcuts import render, redirect, get_object_or_404
+from apps.accounts.forms import StaffCreationForm, StaffEditForm
+from apps.accounts.models import StaffProfile, AuditLog
+from apps.accounts.middleware import get_client_ip
+import random
+import string
+
+class AdminStaffListView(AdminMixin, PermissionRequiredMixin, TemplateView):
+    template_name = "dashboard/admin/my_staff.html"
+    sidebar_section = "staff"
+    permission_required = "accounts.can_create_staff"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from django.db.models import Count
+        
+        # Base Query
+        qs = StaffProfile.objects.all().select_related("user").annotate(
+            jobs_posted_count=Count("user__staff_jobs")
+        )
+        
+        # Search
+        q = self.request.GET.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                Q(full_name__icontains=q) |
+                Q(email__icontains=q) |
+                Q(phone_number__icontains=q)
+            )
+            
+        # Status Filter
+        status = self.request.GET.get("status", "").strip()
+        if status in ["Active", "Inactive"]:
+            qs = qs.filter(status=status)
+            
+        # Pagination
+        paginator = Paginator(qs.order_by("-created_at"), 10)
+        page_number = self.request.GET.get("page", 1)
+        ctx["page_obj"] = paginator.get_page(page_number)
+        ctx["staff_profiles"] = ctx["page_obj"]
+        
+        return ctx
+
+
+class AdminStaffCreateView(AdminMixin, PermissionRequiredMixin, View):
+    template_name = "dashboard/admin/add_staff.html"
+    sidebar_section = "staff"
+    permission_required = "accounts.can_create_staff"
+
+    def get(self, request):
+        form = StaffCreationForm()
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request):
+        form = StaffCreationForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+            password = form.cleaned_data["password"]
+            full_name = form.cleaned_data["full_name"]
+            phone = form.cleaned_data["phone_number"]
+            # New staff accounts are always created as Active.
+            # Status can be toggled later from the My Staff list.
+            status = "Active"
+
+            # Split name
+            parts = full_name.split(" ", 1)
+            first_name = parts[0]
+            last_name = parts[1] if len(parts) > 1 else ""
+
+            # Create User — no username, email is the only identifier
+            user = User.objects.create_user(
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                phone=phone,
+                role=User.Role.STAFF,
+                is_active=(status == "Active")
+            )
+
+            # Generate unique employee ID
+            while True:
+                emp_id = "EMP-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+                if not StaffProfile.objects.filter(employee_id=emp_id).exists():
+                    break
+
+            # Create StaffProfile
+            profile = StaffProfile.objects.create(
+                user=user,
+                employee_id=emp_id,
+                full_name=full_name,
+                email=email,
+                phone_number=phone,
+                status=status,
+                created_by=request.user
+            )
+
+            # Audit Log
+            AuditLog.objects.create(
+                user=request.user,
+                role=request.user.role,
+                action="Staff Created",
+                module="Staff Management",
+                ip_address=get_client_ip(request),
+                details={"employee_id": emp_id, "email": email, "status": "Active"}
+            )
+
+            messages.success(request, f"Staff account for '{full_name}' created successfully. Please share the credentials.")
+            # Render the success screen inline (same page) so admin can copy/WhatsApp the login URL
+            return render(request, self.template_name, {"created_profile": profile, "temporary_password": password})
+        else:
+            return render(request, self.template_name, {"form": form})
+
+
+class AdminStaffUpdateView(AdminMixin, PermissionRequiredMixin, View):
+    template_name = "dashboard/admin/edit_staff.html"
+    sidebar_section = "staff"
+    permission_required = "accounts.can_edit_staff"
+
+    def get(self, request, pk):
+        profile = get_object_or_404(StaffProfile, id=pk)
+        
+        # Strip +91 for the form display since it expects exactly 10 digits
+        phone = profile.phone_number
+        if phone.startswith("+91"):
+            phone = phone[3:]
+
+        initial_data = {
+            "full_name": profile.full_name,
+            "email": profile.email,
+            "phone_number": phone,
+            "status": profile.status,
+        }
+        form = StaffEditForm(staff_profile=profile, initial=initial_data)
+        return render(request, self.template_name, {"form": form, "profile": profile})
+
+    def post(self, request, pk):
+        profile = get_object_or_404(StaffProfile, id=pk)
+        form = StaffEditForm(profile, request.POST)
+        if form.is_valid():
+            full_name = form.cleaned_data["full_name"]
+            email = form.cleaned_data["email"]
+            phone = form.cleaned_data["phone_number"]
+            status = form.cleaned_data["status"]
+
+            parts = full_name.split(" ", 1)
+            first_name = parts[0]
+            last_name = parts[1] if len(parts) > 1 else ""
+
+            user = profile.user
+            old_status = profile.status
+
+            # Update user — no username change, email is the identifier
+            user.email = email
+            user.phone = phone
+            user.first_name = first_name
+            user.last_name = last_name
+            user.is_active = (status == "Active")
+            user.save()
+
+            # Update profile
+            profile.full_name = full_name
+            profile.email = email
+            profile.phone_number = phone
+            profile.status = status
+            profile.save()
+
+            # Audit Log
+            AuditLog.objects.create(
+                user=request.user,
+                role=request.user.role,
+                action="Staff Updated",
+                module="Staff Management",
+                ip_address=get_client_ip(request),
+                details={"employee_id": profile.employee_id, "email": email}
+            )
+
+            # Email notifications removed; WhatsApp sharing used for onboarding.
+
+            messages.success(request, f"Staff account for '{full_name}' updated successfully.")
+            return redirect("admin-panel:staff-list")
+        else:
+            return render(request, self.template_name, {"form": form, "profile": profile})
+
+
+class AdminStaffToggleView(AdminMixin, PermissionRequiredMixin, View):
+    permission_required = "accounts.can_disable_staff"
+
+    def post(self, request, pk):
+        profile = get_object_or_404(StaffProfile, id=pk)
+        action = request.POST.get("action")
+        user = profile.user
+
+        if action == "activate":
+            profile.status = "Active"
+            user.is_active = True
+            profile.save(update_fields=["status"])
+            user.save(update_fields=["is_active"])
+
+            AuditLog.objects.create(
+                user=request.user,
+                role=request.user.role,
+                action="Staff Activated",
+                module="Staff Management",
+                ip_address=get_client_ip(request),
+                details={"employee_id": profile.employee_id}
+            )
+
+            messages.success(request, f"Staff member '{profile.full_name}' has been activated.")
+
+        elif action == "deactivate":
+            profile.status = "Inactive"
+            user.is_active = False
+            profile.save(update_fields=["status"])
+            user.save(update_fields=["is_active"])
+
+            AuditLog.objects.create(
+                user=request.user,
+                role=request.user.role,
+                action="Staff Deactivated",
+                module="Staff Management",
+                ip_address=get_client_ip(request),
+                details={"employee_id": profile.employee_id}
+            )
+
+            messages.success(request, f"Staff member '{profile.full_name}' has been deactivated.")
+
+        return redirect("admin-panel:staff-list")
+
+
+class AdminStaffResetPasswordView(AdminMixin, PermissionRequiredMixin, View):
+    permission_required = "accounts.can_reset_staff_password"
+
+    def post(self, request, pk):
+        profile = get_object_or_404(StaffProfile, id=pk)
+        user = profile.user
+
+        # Generate a new random password
+        new_password = "".join(random.choices(string.ascii_letters + string.digits, k=10))
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+
+        AuditLog.objects.create(
+            user=request.user,
+            role=request.user.role,
+            action="Password Reset",
+            module="Staff Management",
+            ip_address=get_client_ip(request),
+            details={"employee_id": profile.employee_id}
+        )
+
+        messages.success(request, f"Password reset for '{profile.full_name}' successfully. Please share the new credentials via WhatsApp.")
+        # Render the success screen instead of redirecting so the Admin can copy/WhatsApp the new password
+        return render(request, "dashboard/admin/add_staff.html", {
+            "created_profile": profile, 
+            "temporary_password": new_password,
+            "is_reset": True
+        })
+
+
+class AdminSchoolsPlaceholderView(AdminMixin, TemplateView):
+    template_name = "dashboard/admin/schools_coming_soon.html"
+    sidebar_section = "schools"
+
+
+class AdminCollegesPlaceholderView(AdminMixin, TemplateView):
+    template_name = "dashboard/admin/colleges_coming_soon.html"
+    sidebar_section = "colleges"
+

@@ -228,7 +228,7 @@ function submitBulk(action) {
     modalText.textContent = 'Are you sure you want to activate the selected advertisements?';
   }
   
-  new bootstrap.Modal(document.getElementById('bulkActionConfirmModal')).show();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('bulkActionConfirmModal')).show();
 }
 
 function confirmBulkAction() {
@@ -242,7 +242,7 @@ function toggleActive(adId) {
 
 function deleteAd(adId) {
   document.getElementById('deleteAdId').value = adId;
-  new bootstrap.Modal(document.getElementById('deleteAdConfirmModal')).show();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteAdConfirmModal')).show();
 }
 
 function confirmDeleteAd() {

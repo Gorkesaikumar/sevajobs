@@ -6,7 +6,7 @@ from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 
-from .models import Job
+from .models import Job, StaffJob
 
 
 class JobForm(forms.ModelForm):
@@ -73,3 +73,62 @@ class JobFeatureForm(forms.Form):
         self.helper = FormHelper()
         self.helper.form_method = "post"
         self.helper.add_input(Submit("submit", "Update", css_class="btn btn-primary"))
+
+
+class StaffJobForm(forms.ModelForm):
+    """Form for staff members to directly publish jobs."""
+
+    class Meta:
+        model = StaffJob
+        fields = [
+            "designation",
+            "organization_name",
+            "qualification",
+            "vacancies",
+            "offered_salary",
+            "job_location",
+            "phone_number",
+            "email",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "post"
+        self.helper.add_input(Submit("submit", "Publish Job", css_class="btn btn-primary w-100"))
+
+    def clean_phone_number(self):
+        import re
+        phone = self.cleaned_data.get("phone_number", "").strip()
+        if not re.match(r"^\d{10,15}$", phone):
+            raise forms.ValidationError("Enter a valid phone number consisting of 10 to 15 digits.")
+        return phone
+
+    def clean(self):
+        cleaned_data = super().clean()
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Spam check (duplicate prevention within 5 minutes)
+        # Note: self.instance._state.adding is True for new unsaved objects (since UUID pk is generated on init)
+        is_new = getattr(self.instance, "_state", None) and self.instance._state.adding
+        if is_new and getattr(self, "request", None) and getattr(self.request, "user", None):
+            designation = cleaned_data.get("designation")
+            org_name = cleaned_data.get("organization_name")
+            location = cleaned_data.get("job_location")
+            
+            if designation and org_name and location:
+                five_minutes_ago = timezone.now() - timedelta(minutes=5)
+                duplicate_exists = StaffJob.objects.filter(
+                    created_by=self.request.user,
+                    designation__iexact=designation,
+                    organization_name__iexact=org_name,
+                    job_location__iexact=location,
+                    created_at__gte=five_minutes_ago
+                ).exists()
+                
+                if duplicate_exists:
+                    raise forms.ValidationError("A duplicate job posting was detected recently. Please wait a few minutes before posting again.")
+                    
+        return cleaned_data

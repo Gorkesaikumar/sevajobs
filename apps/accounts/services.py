@@ -35,8 +35,8 @@ class UserService:
         role: str = User.Role.JOB_SEEKER,
         phone: Optional[str] = None,
     ) -> User:
-        if role == User.Role.ADMIN:
-            raise ValidationError({"role": "Admin accounts cannot be self-registered."})
+        if role in (User.Role.ADMIN, User.Role.SUPER_ADMIN, User.Role.STAFF):
+            raise ValidationError({"role": "Admin, Super Admin, and Staff accounts cannot be self-registered."})
         if UserRepository.email_exists(email):
             raise ValidationError({"email": "A user with this email already exists."})
         if phone and UserRepository.phone_exists(phone):
