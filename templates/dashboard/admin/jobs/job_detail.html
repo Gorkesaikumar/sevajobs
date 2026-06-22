@@ -1,0 +1,231 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}{{ title }} — Job Details — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="mb-4">
+  <a href="{% url 'admin-panel:all-jobs' %}" class="btn btn-sm btn-light border mb-2">
+    <i class="bi bi-arrow-left"></i> Back to All Jobs
+  </a>
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+    <div>
+      <h4 class="fw-800 mb-1">{{ title }}</h4>
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="badge rounded-pill fs-xs
+          {% if owner_type == 'Admin' %}bg-primary
+          {% elif owner_type == 'Staff' %}bg-info
+          {% else %}bg-success{% endif %}">{{ owner_type }} Job</span>
+        {% if not is_active %}
+          <span class="badge bg-dark-subtle text-dark border border-dark-subtle">Archived</span>
+        {% elif status_raw == 'active' %}
+          <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+        {% elif status_raw == 'closed' %}
+          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Closed</span>
+        {% elif status_raw == 'draft' %}
+          <span class="badge bg-info-subtle text-info border border-info-subtle">Draft</span>
+        {% elif status_raw == 'expired' %}
+          <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Expired</span>
+        {% else %}
+          <span class="badge bg-light text-dark border">{{ status }}</span>
+        {% endif %}
+        <span class="fs-xs text-muted-2">ID: {{ job_id_display }}</span>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-shrink-0">
+      <a href="{% url 'admin-panel:job-applications' pk=job.id %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-people me-1"></i> Applications ({{ app_count }})
+      </a>
+      {% if source_type == 'staff_job' %}
+        <a href="{% url 'admin-panel:edit-job' pk=job.id %}" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-pencil me-1"></i> Edit
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left Column: Job Info -->
+  <div class="col-lg-8">
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Job Information</h6>
+      <div class="table-responsive">
+        <table class="table table-borderless fs-sm mb-0">
+          <tr>
+            <td width="30%" class="text-muted fw-semibold">Title</td>
+            <td>{{ title }}</td>
+          </tr>
+          <tr>
+            <td class="text-muted fw-semibold">Organization</td>
+            <td>{{ organization }}</td>
+          </tr>
+          <tr>
+            <td class="text-muted fw-semibold">Location</td>
+            <td>{{ location }}</td>
+          </tr>
+          <tr>
+            <td class="text-muted fw-semibold">Salary</td>
+            <td class="fw-bold text-success">
+              {% if source_type == 'staff_job' %}
+                &#8377;{{ salary|intcomma }}
+              {% elif salary %}
+                &#8377;{{ salary }}
+              {% else %}
+                <span class="text-muted fw-normal">Not Disclosed</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td class="text-muted fw-semibold">Vacancies</td>
+            <td>{{ vacancies }}</td>
+          </tr>
+          {% if qualification %}
+          <tr>
+            <td class="text-muted fw-semibold">Qualification</td>
+            <td>{{ qualification }}</td>
+          </tr>
+          {% endif %}
+          {% if job_type %}
+          <tr>
+            <td class="text-muted fw-semibold">Job Type</td>
+            <td>{{ job_type }}</td>
+          </tr>
+          {% endif %}
+          {% if experience_level %}
+          <tr>
+            <td class="text-muted fw-semibold">Experience</td>
+            <td>{{ experience_level }}</td>
+          </tr>
+          {% endif %}
+          {% if segment %}
+          <tr>
+            <td class="text-muted fw-semibold">Segment</td>
+            <td>{{ segment }}</td>
+          </tr>
+          {% endif %}
+          {% if phone %}
+          <tr>
+            <td class="text-muted fw-semibold">Phone</td>
+            <td>{{ phone }}</td>
+          </tr>
+          {% endif %}
+          {% if email %}
+          <tr>
+            <td class="text-muted fw-semibold">Email</td>
+            <td>{{ email }}</td>
+          </tr>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+
+    {% if description %}
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Description</h6>
+      <div class="text-muted-2" style="white-space:pre-wrap;line-height:1.7;">{{ description }}</div>
+    </div>
+    {% endif %}
+
+    {% if responsibilities %}
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Responsibilities</h6>
+      <div class="text-muted-2" style="white-space:pre-wrap;line-height:1.7;">{{ responsibilities }}</div>
+    </div>
+    {% endif %}
+
+    {% if benefits %}
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Benefits</h6>
+      <div class="text-muted-2" style="white-space:pre-wrap;line-height:1.7;">{{ benefits }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Ownership, Recruitment, Actions -->
+  <div class="col-lg-4">
+    <!-- Ownership Card -->
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Ownership</h6>
+      <div class="fs-sm mb-2"><strong>Created By:</strong> {{ creator_name }}</div>
+      <div class="fs-sm mb-2"><strong>Owner Type:</strong>
+        <span class="badge rounded-pill
+          {% if owner_type == 'Admin' %}bg-primary
+          {% elif owner_type == 'Staff' %}bg-info
+          {% else %}bg-success{% endif %}">{{ owner_type }}</span>
+      </div>
+      <div class="fs-sm mb-2"><strong>Posted:</strong> {{ posted_date|date:"M d, Y h:i A" }}</div>
+      {% if approval_status %}
+        <div class="fs-sm"><strong>Approval:</strong> {{ approval_status }}</div>
+      {% endif %}
+      {% if views_count %}
+        <div class="fs-sm mt-2"><strong>Views:</strong> {{ views_count|intcomma }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Recruitment Card -->
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Recruitment</h6>
+      <div class="fs-sm mb-3">
+        <strong>Applications:</strong>
+        <a href="{% url 'admin-panel:job-applications' pk=job.id %}" class="text-primary fw-bold text-decoration-none">
+          {{ app_count }} applicant{{ app_count|pluralize }}
+        </a>
+      </div>
+      <div class="fs-sm mb-2"><strong>Assigned Staff:</strong></div>
+      {% if assigned_staff %}
+        <div class="d-flex flex-wrap gap-1 mb-3">
+          {% for assignment in assigned_staff %}
+            <span class="badge bg-light text-dark border py-2 px-3">
+              <i class="bi bi-person text-primary me-1"></i>{{ assignment.assigned_staff.get_full_name }}
+            </span>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted fs-xs fst-italic mb-3">No staff assigned</p>
+      {% endif %}
+      {% if source_type == 'staff_job' and owner_type == 'Admin' %}
+        <a href="{% url 'admin-panel:assign-staff' pk=job.id %}" class="btn btn-outline-primary btn-sm w-100">
+          <i class="bi bi-person-plus me-1"></i> Manage Team
+        </a>
+      {% endif %}
+    </div>
+
+    <!-- Actions Card -->
+    <div class="sj-card p-4">
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Actions</h6>
+      <div class="d-grid gap-2">
+        <a href="{% url 'admin-panel:job-applications' pk=job.id %}" class="btn btn-primary btn-sm">
+          <i class="bi bi-people me-1"></i> View Applications
+        </a>
+        {% if source_type == 'staff_job' %}
+          <a href="{% url 'admin-panel:edit-job' pk=job.id %}" class="btn btn-outline-info btn-sm">
+            <i class="bi bi-pencil me-1"></i> Edit Job
+          </a>
+        {% endif %}
+        <form action="{% url 'admin-panel:toggle-job' pk=job.id %}" method="post" class="d-grid gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="source_type" value="{{ source_type }}">
+          {% if not is_active %}
+            <button type="submit" name="action" value="reopen" class="btn btn-outline-success btn-sm">
+              <i class="bi bi-arrow-clockwise me-1"></i> Restore & Reopen
+            </button>
+          {% else %}
+            {% if status_raw == 'active' %}
+              <button type="submit" name="action" value="close" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-x-circle me-1"></i> Close Job
+              </button>
+            {% elif status_raw == 'closed' %}
+              <button type="submit" name="action" value="reopen" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-arrow-clockwise me-1"></i> Reopen Job
+              </button>
+            {% endif %}
+            <button type="submit" name="action" value="archive" class="btn btn-outline-dark btn-sm">
+              <i class="bi bi-archive me-1"></i> Archive (Soft Delete)
+            </button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

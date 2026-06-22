@@ -211,6 +211,10 @@ class StaffCreationForm(forms.Form):
     phone_number = forms.CharField(label="Phone Number", validators=[staff_phone_validator])
     password = forms.CharField(label="Password", widget=forms.PasswordInput, strip=False)
     confirm_password = forms.CharField(label="Confirm Password", widget=forms.PasswordInput, strip=False)
+    country = forms.CharField(label="Country", max_length=100, initial="India", required=True)
+    state = forms.CharField(label="State", max_length=100, required=True)
+    district = forms.CharField(label="District", max_length=100, required=True)
+    city = forms.CharField(label="City/Town", max_length=100, required=True)
     # Status is NOT a creation field — new accounts default to Active.
     # Status management lives on the My Staff list page.
 
@@ -248,6 +252,10 @@ class StaffEditForm(forms.Form):
     full_name = forms.CharField(label="Full Name", max_length=255)
     email = forms.EmailField(label="Email Address")
     phone_number = forms.CharField(label="Phone Number", validators=[staff_phone_validator])
+    country = forms.CharField(label="Country", max_length=100, initial="India", required=True)
+    state = forms.CharField(label="State", max_length=100, required=True)
+    district = forms.CharField(label="District", max_length=100, required=True)
+    city = forms.CharField(label="City/Town", max_length=100, required=True)
     status = forms.ChoiceField(label="Status", choices=[("Active", "Active"), ("Inactive", "Inactive")])
 
     def __init__(self, staff_profile, *args, **kwargs):

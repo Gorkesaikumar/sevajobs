@@ -5,40 +5,193 @@
 <div class="d-flex align-items-center justify-content-between mb-4">
   <h4 class="fw-800 mb-0">Reports & Analytics</h4>
   <div class="d-flex gap-2">
-    <a href="?timeframe={{ timeframe }}&export=excel{% if view_type == 'jobs' %}&company_id={{ selected_company.id }}{% endif %}" class="btn btn-outline-success btn-sm fw-semibold">
+    <a href="?report_type={{ report_type }}&timeframe={{ timeframe }}&export=excel{% if view_type == 'jobs' %}&company_id={{ selected_company.id }}{% endif %}{% if request.GET.state %}&state={{ request.GET.state }}{% endif %}{% if request.GET.district %}&district={{ request.GET.district }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}" class="btn btn-outline-success btn-sm fw-semibold">
       <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
     </a>
-    <a href="?timeframe={{ timeframe }}&export=pdf{% if view_type == 'jobs' %}&company_id={{ selected_company.id }}{% endif %}" class="btn btn-outline-danger btn-sm fw-semibold">
+    <a href="?report_type={{ report_type }}&timeframe={{ timeframe }}&export=pdf{% if view_type == 'jobs' %}&company_id={{ selected_company.id }}{% endif %}{% if request.GET.state %}&state={{ request.GET.state }}{% endif %}{% if request.GET.district %}&district={{ request.GET.district }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}" class="btn btn-outline-danger btn-sm fw-semibold">
       <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+    </a>
+    <a href="?report_type={{ report_type }}&timeframe={{ timeframe }}&export=csv{% if view_type == 'jobs' %}&company_id={{ selected_company.id }}{% endif %}{% if request.GET.state %}&state={{ request.GET.state }}{% endif %}{% if request.GET.district %}&district={{ request.GET.district }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}" class="btn btn-outline-primary btn-sm fw-semibold">
+      <i class="bi bi-file-earmark-arrow-down me-1"></i> Export CSV
     </a>
   </div>
 </div>
+
+<ul class="nav nav-pills mb-4 bg-light p-1 rounded-3" style="width: fit-content;">
+  <li class="nav-item">
+    <a class="nav-link {% if report_type != 'location' %}active{% endif %}" href="?report_type=institutions&timeframe={{ timeframe }}"><i class="bi bi-building me-1"></i>Institution Reports</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if report_type == 'location' %}active{% endif %}" href="?report_type=location&timeframe={{ timeframe }}"><i class="bi bi-geo-alt me-1"></i>Location Reports</a>
+  </li>
+</ul>
 
 <div class="sj-card p-4 border-0 shadow-sm mb-4" style="border-radius: 16px;">
   <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
     <div class="d-flex align-items-center gap-3">
       <div class="avatar shadow-sm d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4338ca; border-radius: 12px;">
-        <i class="bi bi-bar-chart-fill fs-5"></i>
+        <i class="bi {% if report_type == 'location' %}bi-geo-fill{% else %}bi-bar-chart-fill{% endif %} fs-5"></i>
       </div>
       <div>
-        <h5 class="fw-800 mb-1 text-dark">Application Analytics</h5>
-        <p class="text-muted fs-sm mb-0">Detailed overview of your platform's job performance.</p>
+        <h5 class="fw-800 mb-1 text-dark">{% if report_type == 'location' %}Location Reports{% else %}Application Analytics{% endif %}</h5>
+        <p class="text-muted fs-sm mb-0">{% if report_type == 'location' %}Monitor staff performance and job metrics by region.{% else %}Detailed overview of your platform's job performance.{% endif %}</p>
       </div>
     </div>
-    <form class="d-flex gap-2" method="get">
-      <div class="input-group shadow-sm bg-white border" style="border-radius: 10px; overflow: hidden; min-width: 170px;">
-        <span class="input-group-text bg-white border-0 text-primary pe-1"><i class="bi bi-calendar-event"></i></span>
-        <select name="timeframe" class="form-select border-0 fw-semibold text-dark ps-2" onchange="this.form.submit()" style="box-shadow: none; cursor: pointer; background-color: transparent;">
-          <option value="day" {% if timeframe == 'day' %}selected{% endif %}>Last 24 Hours</option>
-          <option value="week" {% if timeframe == 'week' %}selected{% endif %}>Last 7 Days</option>
-          <option value="month" {% if timeframe == 'month' %}selected{% endif %}>Last 30 Days</option>
-          <option value="year" {% if timeframe == 'year' %}selected{% endif %}>Last 12 Months</option>
+    
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      {% if report_type == 'location' %}
+      <form class="d-flex flex-wrap gap-2" method="get">
+        <input type="hidden" name="report_type" value="location">
+        <input type="hidden" name="timeframe" value="{{ timeframe }}">
+        
+        <!-- State Select -->
+        <select name="state" class="form-select form-select-sm" style="width:auto; min-width: 120px;" onchange="this.form.submit()">
+          <option value="">All States</option>
+          {% for st in states_list %}
+            <option value="{{ st }}" {% if request.GET.state == st %}selected{% endif %}>{{ st }}</option>
+          {% endfor %}
         </select>
-      </div>
-    </form>
+
+        <!-- District Select -->
+        <select name="district" class="form-select form-select-sm" style="width:auto; min-width: 120px;" onchange="this.form.submit()">
+          <option value="">All Districts</option>
+          {% for dt in districts_list %}
+            <option value="{{ dt }}" {% if request.GET.district == dt %}selected{% endif %}>{{ dt }}</option>
+          {% endfor %}
+        </select>
+
+        <!-- City Select -->
+        <select name="city" class="form-select form-select-sm" style="width:auto; min-width: 120px;" onchange="this.form.submit()">
+          <option value="">All Cities</option>
+          {% for ct in cities_list %}
+            <option value="{{ ct }}" {% if request.GET.city == ct %}selected{% endif %}>{{ ct }}</option>
+          {% endfor %}
+        </select>
+        
+        {% if request.GET.state or request.GET.district or request.GET.city %}
+          <a href="?report_type=location&timeframe={{ timeframe }}" class="btn btn-sm btn-ghost text-muted"><i class="bi bi-x-circle"></i> Clear</a>
+        {% endif %}
+      </form>
+      {% endif %}
+
+      <form class="d-flex gap-2" method="get">
+        <input type="hidden" name="report_type" value="{{ report_type }}">
+        {% if request.GET.state %}<input type="hidden" name="state" value="{{ request.GET.state }}">{% endif %}
+        {% if request.GET.district %}<input type="hidden" name="district" value="{{ request.GET.district }}">{% endif %}
+        {% if request.GET.city %}<input type="hidden" name="city" value="{{ request.GET.city }}">{% endif %}
+        <div class="input-group shadow-sm bg-white border" style="border-radius: 10px; overflow: hidden; min-width: 170px;">
+          <span class="input-group-text bg-white border-0 text-primary pe-1"><i class="bi bi-calendar-event"></i></span>
+          <select name="timeframe" class="form-select border-0 fw-semibold text-dark ps-2" onchange="this.form.submit()" style="box-shadow: none; cursor: pointer; background-color: transparent;">
+            <option value="day" {% if timeframe == 'day' %}selected{% endif %}>Last 24 Hours</option>
+            <option value="week" {% if timeframe == 'week' %}selected{% endif %}>Last 7 Days</option>
+            <option value="month" {% if timeframe == 'month' %}selected{% endif %}>Last 30 Days</option>
+            <option value="year" {% if timeframe == 'year' %}selected{% endif %}>Last 12 Months</option>
+          </select>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
+{% if report_type == 'location' %}
+<!-- ====== LOCATION REPORTS SUMMARY ====== -->
+<div class="row g-3 mb-4 animate-fade-up">
+  <!-- Card 1: Total Staff -->
+  <div class="col-md-4">
+    <div class="sj-card border-0 shadow-sm position-relative overflow-hidden p-4 transition-all hover-lift" style="border-radius: 16px;">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.04; font-size: 8rem; transition: transform 0.3s ease;">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div class="d-flex align-items-center position-relative z-1">
+        <div class="avatar avatar-lg shadow-sm me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem; background: linear-gradient(135deg, var(--bs-primary), #3b82f6); color: white;">
+          <i class="bi bi-person-badge"></i>
+        </div>
+        <div>
+          <div class="text-muted fs-xs text-uppercase fw-bold mb-1" style="letter-spacing: 0.5px;">Total Staff</div>
+          <h2 class="fw-900 mb-0 text-dark">{{ total_staff_all|default:"0"|intcomma }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Card 2: Jobs Posted -->
+  <div class="col-md-4">
+    <div class="sj-card border-0 shadow-sm position-relative overflow-hidden p-4 transition-all hover-lift" style="border-radius: 16px;">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.04; font-size: 8rem; color: #4F46E5; transition: transform 0.3s ease;">
+        <i class="bi bi-briefcase-fill"></i>
+      </div>
+      <div class="d-flex align-items-center position-relative z-1">
+        <div class="avatar avatar-lg shadow-sm me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem; background: linear-gradient(135deg, #4f46e5, #818cf8); color: white;">
+          <i class="bi bi-briefcase"></i>
+        </div>
+        <div>
+          <div class="text-muted fs-xs text-uppercase fw-bold mb-1" style="letter-spacing: 0.5px;">Jobs Posted</div>
+          <h2 class="fw-900 mb-0 text-dark">{{ total_jobs_all|default:"0"|intcomma }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: Applications Received -->
+  <div class="col-md-4">
+    <div class="sj-card border-0 shadow-sm position-relative overflow-hidden p-4 transition-all hover-lift" style="border-radius: 16px;">
+      <div class="position-absolute" style="top: -20px; right: -20px; opacity: 0.04; font-size: 8rem; color: #10B981; transition: transform 0.3s ease;">
+        <i class="bi bi-send-fill"></i>
+      </div>
+      <div class="d-flex align-items-center position-relative z-1">
+        <div class="avatar avatar-lg shadow-sm me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem; background: linear-gradient(135deg, #10b981, #34d399); color: white;">
+          <i class="bi bi-send"></i>
+        </div>
+        <div>
+          <div class="text-muted fs-xs text-uppercase fw-bold mb-1" style="letter-spacing: 0.5px;">Apps Received</div>
+          <h2 class="fw-900 mb-0" style="color: #059669;">{{ total_applications_all|default:"0"|intcomma }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>State</th>
+          <th>District</th>
+          <th>City</th>
+          <th class="text-center">Staff Count</th>
+          <th class="text-center">Jobs Posted</th>
+          <th class="text-center">Apps Received</th>
+          <th class="text-center">Active Jobs</th>
+          <th class="text-center">Closed Jobs</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in reports_data %}
+        <tr>
+          <td class="fw-semibold text-dark">{{ row.state }}</td>
+          <td>{{ row.district }}</td>
+          <td>{{ row.city }}</td>
+          <td class="text-center fw-bold">{{ row.staff_count }}</td>
+          <td class="text-center fw-bold">{{ row.jobs_posted }}</td>
+          <td class="text-center fw-bold">{{ row.applications_received }}</td>
+          <td class="text-center text-success fw-bold">{{ row.active_jobs }}</td>
+          <td class="text-center text-danger fw-bold">{{ row.closed_jobs }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5 text-muted-2">
+            No data available for the selected filters/timeframe.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<!-- ====== INSTITUTION REPORTS ====== -->
 <div class="row g-3 mb-4">
   <!-- Card 1: Total Applications -->
   <div class="col-md-4">
@@ -103,7 +256,7 @@
         <h5 class="fw-bold mb-0 text-dark">{{ selected_company.name }}</h5>
         <span class="badge bg-primary rounded-pill">{{ reports_data|length }} Jobs</span>
       </div>
-      <a href="?timeframe={{ timeframe }}" class="btn btn-sm btn-outline-secondary fw-semibold">
+      <a href="?report_type=institutions&timeframe={{ timeframe }}" class="btn btn-sm btn-outline-secondary fw-semibold">
         <i class="bi bi-arrow-left me-1"></i> Back to All Schools/Colleges
       </a>
     </div>
@@ -129,7 +282,7 @@
         <tr>
           {% if view_type == 'companies' %}
           <td class="fw-semibold">
-            <a href="?timeframe={{ timeframe }}&company_id={{ row.id }}" class="text-decoration-none text-primary">
+            <a href="?report_type=institutions&timeframe={{ timeframe }}&company_id={{ row.id }}" class="text-decoration-none text-primary">
               {{ row.name }}
             </a>
           </td>
@@ -152,4 +305,5 @@
     </table>
   </div>
 </div>
+{% endif %}
 {% endblock %}

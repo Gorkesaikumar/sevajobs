@@ -26,7 +26,11 @@
   </div>
 
   <div class="d-flex flex-wrap gap-2 mb-3">
-    <span class="sj-chip"><i class="bi bi-geo-alt"></i> {{ job.location|truncatechars:20 }}</span>
+    {% if job.state and job.city %}
+      <span class="sj-chip text-primary fw-semibold" style="border-color: rgba(var(--bs-primary-rgb), 0.2); background-color: rgba(var(--bs-primary-rgb), 0.05);"><i class="bi bi-geo-alt-fill text-primary"></i> {{ job.state }} • {{ job.city }}</span>
+    {% else %}
+      <span class="sj-chip"><i class="bi bi-geo-alt"></i> {{ job.location|truncatechars:20 }}</span>
+    {% endif %}
     <span class="sj-chip"><i class="bi bi-briefcase"></i> {{ job.get_job_type_display }}</span>
     <span class="sj-chip"><i class="bi bi-bar-chart"></i> {{ job.get_experience_level_display }}</span>
   </div>

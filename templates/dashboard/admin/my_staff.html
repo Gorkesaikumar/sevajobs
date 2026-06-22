@@ -100,48 +100,82 @@
               </button>
             </form>
           </td>
-          <td>
-            <div class="sj-table-actions d-flex gap-1">
-              <!-- View Detail Drawer Trigger -->
-              <button type="button" class="btn btn-ghost btn-sm" title="View Details"
-                      data-bs-toggle="offcanvas" data-bs-target="#viewModal-{{ profile.id }}">
+          <td class="text-end">
+            <!-- Desktop: Tooltips & Icons -->
+            <div class="d-none d-md-flex justify-content-end gap-1">
+              <!-- View -->
+              <button type="button" class="btn btn-light btn-icon btn-sm rounded-circle text-primary" data-bs-toggle="tooltip" title="View Details" data-bs-toggle="offcanvas" data-bs-target="#viewModal-{{ profile.id }}">
                 <i class="bi bi-eye"></i>
               </button>
 
               <!-- Edit -->
-              <a href="{% url 'admin-panel:staff-edit' pk=profile.id %}" class="btn btn-ghost btn-sm" title="Edit Staff">
+              <a href="{% url 'admin-panel:staff-edit' pk=profile.id %}" class="btn btn-light btn-icon btn-sm rounded-circle text-info" data-bs-toggle="tooltip" title="Edit Staff">
                 <i class="bi bi-pencil"></i>
               </a>
 
               <!-- Toggle Active/Inactive Status -->
               {% if profile.status == 'Active' %}
-                <form method="post" action="{% url 'admin-panel:staff-toggle' pk=profile.id %}" class="d-inline sj-confirm-form"
+                <form method="post" action="{% url 'admin-panel:staff-toggle' pk=profile.id %}" class="d-inline sj-confirm-form m-0 p-0"
                       data-message="Are you sure you want to deactivate this staff account?">
                   {% csrf_token %}
                   <input type="hidden" name="action" value="deactivate">
-                  <button type="submit" class="btn btn-ghost btn-sm text-warning" title="Deactivate">
+                  <button type="submit" class="btn btn-light btn-icon btn-sm rounded-circle text-warning" data-bs-toggle="tooltip" title="Deactivate">
                     <i class="bi bi-x-circle"></i>
                   </button>
                 </form>
               {% else %}
-                <form method="post" action="{% url 'admin-panel:staff-toggle' pk=profile.id %}" class="d-inline sj-confirm-form"
+                <form method="post" action="{% url 'admin-panel:staff-toggle' pk=profile.id %}" class="d-inline sj-confirm-form m-0 p-0"
                       data-message="Are you sure you want to activate this staff account?">
                   {% csrf_token %}
                   <input type="hidden" name="action" value="activate">
-                  <button type="submit" class="btn btn-ghost btn-sm text-success" title="Activate">
+                  <button type="submit" class="btn btn-light btn-icon btn-sm rounded-circle text-success" data-bs-toggle="tooltip" title="Activate">
                     <i class="bi bi-check-circle"></i>
                   </button>
                 </form>
               {% endif %}
 
               <!-- Reset Password -->
-              <form method="post" action="{% url 'admin-panel:staff-reset-password' pk=profile.id %}" class="d-inline sj-confirm-form"
+              <form method="post" action="{% url 'admin-panel:staff-reset-password' pk=profile.id %}" class="d-inline sj-confirm-form m-0 p-0"
                     data-message="Generate a new temporary password for this account?">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-ghost btn-sm text-danger" title="Reset Password">
+                <button type="submit" class="btn btn-light btn-icon btn-sm rounded-circle text-danger" data-bs-toggle="tooltip" title="Reset Password">
                   <i class="bi bi-key"></i>
                 </button>
               </form>
+            </div>
+
+            <!-- Mobile: Dropdown -->
+            <div class="d-md-none dropdown text-end">
+              <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end fs-sm shadow-sm">
+                <li><button class="dropdown-item" type="button" data-bs-toggle="offcanvas" data-bs-target="#viewModal-{{ profile.id }}"><i class="bi bi-eye me-2 text-primary"></i> View Details</button></li>
+                <li><a class="dropdown-item" href="{% url 'admin-panel:staff-edit' pk=profile.id %}"><i class="bi bi-pencil me-2 text-info"></i> Edit Staff</a></li>
+                {% if profile.status == 'Active' %}
+                  <li>
+                    <form method="post" action="{% url 'admin-panel:staff-toggle' pk=profile.id %}" class="sj-confirm-form m-0 p-0" data-message="Are you sure you want to deactivate this staff account?">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="deactivate">
+                      <button type="submit" class="dropdown-item"><i class="bi bi-x-circle me-2 text-warning"></i> Deactivate</button>
+                    </form>
+                  </li>
+                {% else %}
+                  <li>
+                    <form method="post" action="{% url 'admin-panel:staff-toggle' pk=profile.id %}" class="sj-confirm-form m-0 p-0" data-message="Are you sure you want to activate this staff account?">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="activate">
+                      <button type="submit" class="dropdown-item"><i class="bi bi-check-circle me-2 text-success"></i> Activate</button>
+                    </form>
+                  </li>
+                {% endif %}
+                <li>
+                  <form method="post" action="{% url 'admin-panel:staff-reset-password' pk=profile.id %}" class="sj-confirm-form m-0 p-0" data-message="Generate a new temporary password for this account?">
+                    {% csrf_token %}
+                    <button type="submit" class="dropdown-item"><i class="bi bi-key me-2 text-danger"></i> Reset Password</button>
+                  </form>
+                </li>
+              </ul>
             </div>
           </td>
         </tr>
@@ -281,17 +315,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Explicitly close modal on Cancel/dismiss button click
-  confirmModalEl.addEventListener('click', function(e) {
-    const dismissBtn = e.target.closest('[data-bs-dismiss="modal"]');
-    if (dismissBtn) {
-      confirmModal.hide();
-    }
-  });
-
   // Reset activeForm when modal is hidden
   confirmModalEl.addEventListener('hidden.bs.modal', function() {
     activeForm = null;
+  });
+
+  // Initialize tooltips
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
   });
 });
 </script>

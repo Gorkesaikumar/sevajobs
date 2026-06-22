@@ -239,17 +239,6 @@ class LogoutView(View):
         return self.get(request)
 
 
-class StopImpersonationView(View):
-    def post(self, request):
-        admin_id = request.session.get("original_admin_id")
-        if admin_id:
-            from django.contrib.auth import login
-            admin_user = User.objects.get(id=admin_id)
-            login(request, admin_user, backend='django.contrib.auth.backends.ModelBackend')
-            request.session['current_role_scope'] = 'admin'
-            messages.success(request, "Returned to admin session.")
-        return redirect("/dashboard/admin/")
-
 class ForgotPasswordView(View):
     template_name = "pages/forgot_password.html"
 

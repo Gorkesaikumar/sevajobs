@@ -121,6 +121,54 @@ class ApplicationService:
                     entity_type="JobApplication",
                     entity_id=application.id,
                 )
+            
+            # Notify assigned staff members
+            for assignment in staff_job.assignments.filter(status__in=["assigned", "in_progress"]):
+                assigned_staff_user = assignment.assigned_staff
+                if assigned_staff_user != staff_user:
+                    self._notifications.notify(
+                        recipient=assigned_staff_user,
+                        actor=applicant,
+                        notification_type=Notification.Type.APPLICATION_RECEIVED,
+                        title="New application received",
+                        message=f"{applicant.full_name} applied for {staff_job.designation}.",
+                        entity_type="JobApplication",
+                        entity_id=application.id,
+                    )
+
+        # Notify admins
+        from apps.accounts.models import User
+        admins = User.objects.filter(role__in=["super_admin", "admin"], is_active=True)
+        job_title = job.title if job else staff_job.designation
+        for admin in admins:
+            self._notifications.notify(
+                recipient=admin,
+                actor=applicant,
+                notification_type=Notification.Type.APPLICATION_RECEIVED,
+                title="New application received",
+                message=f"{applicant.full_name} applied for {job_title}.",
+                entity_type="JobApplication",
+                entity_id=application.id,
+            )
+
+        # Check application volume threshold
+        if job:
+            job.refresh_from_db()
+            app_count = job.applications_count
+        else:
+            app_count = JobApplication.objects.filter(staff_job=staff_job).count()
+        
+        if app_count >= 100:
+            if app_count % 100 == 0 or app_count == 100:
+                for admin in admins:
+                    self._notifications.notify(
+                        recipient=admin,
+                        notification_type=Notification.Type.HIGH_APP_VOLUME,
+                        title="High Application Volume",
+                        message=f"Job '{job_title}' has received {app_count} applications.",
+                        entity_type="Job" if job else "StaffJob",
+                        entity_id=job.id if job else staff_job.id,
+                    )
 
         logger.info("Application %s submitted by %s", application.id, applicant.email)
         return application

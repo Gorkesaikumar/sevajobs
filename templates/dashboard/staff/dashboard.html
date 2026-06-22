@@ -21,13 +21,23 @@
 </div>
 
 <div class="sj-kpi-grid mb-4 stagger-children">
-  <div class="sj-kpi animate-fade-up">
+  <a href="{% url 'staff:my-jobs' %}" class="sj-kpi animate-fade-up text-decoration-none text-reset">
     <div class="kpi-icon ico-gradient-primary"><i class="bi bi-briefcase"></i></div>
     <div>
       <div class="kpi-value" data-counter="{{ total_jobs }}">{{ total_jobs }}</div>
-      <div class="kpi-label">Total Jobs Posted</div>
+      <div class="kpi-label">My Jobs</div>
     </div>
-  </div>
+  </a>
+  <a href="{% url 'staff:my-jobs' %}" class="sj-kpi animate-fade-up text-decoration-none text-reset position-relative">
+    <div class="kpi-icon ico-gradient-cool"><i class="bi bi-person-check"></i></div>
+    <div>
+      <div class="kpi-value" data-counter="{{ assigned_jobs_count }}">{{ assigned_jobs_count }}</div>
+      <div class="kpi-label">Assigned Jobs</div>
+    </div>
+    {% if staff_assigned_unread %}
+      <span class="badge bg-danger rounded-pill position-absolute top-0 end-0 m-2">{{ staff_assigned_unread }} new</span>
+    {% endif %}
+  </a>
   <div class="sj-kpi animate-fade-up">
     <div class="kpi-icon ico-gradient-green"><i class="bi bi-patch-check"></i></div>
     <div>
@@ -35,20 +45,13 @@
       <div class="kpi-label">Active Jobs</div>
     </div>
   </div>
-  <div class="sj-kpi animate-fade-up">
-    <div class="kpi-icon ico-gradient-warm"><i class="bi bi-x-circle"></i></div>
-    <div>
-      <div class="kpi-value" data-counter="{{ closed_jobs }}">{{ closed_jobs }}</div>
-      <div class="kpi-label">Closed Jobs</div>
-    </div>
-  </div>
-  <div class="sj-kpi animate-fade-up">
-    <div class="kpi-icon ico-gradient-cool"><i class="bi bi-inbox"></i></div>
+  <a href="{% url 'staff:applications' %}" class="sj-kpi animate-fade-up text-decoration-none text-reset">
+    <div class="kpi-icon ico-gradient-warm"><i class="bi bi-inbox"></i></div>
     <div>
       <div class="kpi-value" data-counter="{{ total_applications }}">{{ total_applications }}</div>
-      <div class="kpi-label">Total Applications</div>
+      <div class="kpi-label">Applications Received</div>
     </div>
-  </div>
+  </a>
 </div>
 
 <div class="row g-4">

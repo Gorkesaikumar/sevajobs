@@ -49,8 +49,8 @@
           <th>Job Designation</th>
           <th>Phone</th>
           <th>Applied Date</th>
-          <th>Resume</th>
           <th>Status</th>
+          <th class="text-end">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -78,18 +78,49 @@
             {{ app.applied_at|date:"M j, Y" }}
           </td>
           <td>
-            {% if app.resume and app.resume.file %}
-              <a href="{{ app.resume.file.url }}" target="_blank" class="btn btn-outline-primary btn-sm text-nowrap" download>
-                <i class="bi bi-download me-1"></i> Download
-              </a>
-            {% else %}
-              <span class="text-muted-2 fs-xs">No resume</span>
-            {% endif %}
-          </td>
-          <td>
-            <span class="status-pill status-{{ app.status }}">
+            <span class="badge rounded-pill fs-xs px-3 py-1 fw-bold
+              {% if app.status == 'applied' %}btn-warning text-dark
+              {% elif app.status == 'under_review' %}btn-info text-white
+              {% elif app.status == 'shortlisted' %}btn-success text-white
+              {% elif app.status == 'interview_scheduled' %}btn-primary text-white
+              {% elif app.status == 'selected' %}btn-success text-white
+              {% elif app.status == 'rejected' %}btn-danger text-white
+              {% else %}btn-secondary{% endif %}">
+              {% if app.status == 'applied' %}🟡
+              {% elif app.status == 'under_review' %}🔵
+              {% elif app.status == 'shortlisted' %}🟢
+              {% elif app.status == 'interview_scheduled' %}🟣
+              {% elif app.status == 'selected' %}✅
+              {% elif app.status == 'rejected' %}🔴
+              {% endif %}
               {{ app.get_status_display }}
             </span>
+          </td>
+          <td class="text-end">
+            <!-- Desktop: Tooltips & Icons -->
+            <div class="d-none d-md-flex justify-content-end gap-1">
+              {% if app.resume and app.resume.file %}
+                <a href="{{ app.resume.file.url }}" target="_blank" class="btn btn-light btn-icon btn-sm rounded-circle text-secondary" data-bs-toggle="tooltip" title="Download Resume" download>
+                  <i class="bi bi-download"></i>
+                </a>
+              {% else %}
+                <span class="text-muted-2 fs-xs mt-1">No resume</span>
+              {% endif %}
+            </div>
+
+            <!-- Mobile: Dropdown -->
+            <div class="d-md-none dropdown text-end">
+              {% if app.resume and app.resume.file %}
+                <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end fs-sm shadow-sm">
+                  <li><a class="dropdown-item" href="{{ app.resume.file.url }}" target="_blank" download><i class="bi bi-download me-2 text-secondary"></i> Download Resume</a></li>
+                </ul>
+              {% else %}
+                <span class="text-muted-2 fs-xs">No resume</span>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -107,4 +138,13 @@
   <p class="text-muted-2 fs-sm">You haven't received any applications matching the selected criteria.</p>
 </div>
 {% endif %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });
+</script>
 {% endblock %}

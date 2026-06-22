@@ -44,11 +44,13 @@
         <button class="btn btn-outline-light-brand btn-sm d-lg-none" id="filter-toggle">
           <i class="bi bi-funnel me-1"></i> Filters
         </button>
-        <select class="form-select form-select-sm" style="width:auto;" onchange="window.location.search='sort='+this.value">
-          <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>Newest first</option>
-          <option value="-salary_min" {% if request.GET.sort == '-salary_min' %}selected{% endif %}>Salary: High to Low</option>
-          <option value="salary_min" {% if request.GET.sort == 'salary_min' %}selected{% endif %}>Salary: Low to High</option>
-          <option value="deadline" {% if request.GET.sort == 'deadline' %}selected{% endif %}>Deadline</option>
+        <select class="form-select form-select-sm" style="width:auto;" onchange="const urlParams = new URLSearchParams(window.location.search); urlParams.set('sort', this.value); urlParams.delete('page'); window.location.search = urlParams.toString();">
+          <option value="-published_at" {% if not request.GET.sort or request.GET.sort == '-published_at' %}selected{% endif %}>Newest First</option>
+          <option value="published_at" {% if request.GET.sort == 'published_at' %}selected{% endif %}>Oldest First</option>
+          <option value="-salary_min" {% if request.GET.sort == '-salary_min' %}selected{% endif %}>Salary High To Low</option>
+          <option value="salary_min" {% if request.GET.sort == 'salary_min' %}selected{% endif %}>Salary Low To High</option>
+          <option value="-applications_count" {% if request.GET.sort == '-applications_count' %}selected{% endif %}>Most Applied</option>
+          <option value="featured" {% if request.GET.sort == 'featured' %}selected{% endif %}>Featured First</option>
         </select>
       </div>
     </div>

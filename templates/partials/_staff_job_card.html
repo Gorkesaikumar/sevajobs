@@ -1,27 +1,53 @@
 {# Staff Job Card — expects `job` (which is a StaffJob instance) in context #}
 {% load humanize %}
 <article class="sj-card p-4 h-100 d-flex flex-column position-relative">
+  <!-- Top: Logo and Title/Org Info -->
   <div class="d-flex align-items-start gap-3 mb-3">
     <div class="sj-logo flex-shrink-0 bg-soft-primary text-primary fw-bold d-flex align-items-center justify-content-center" aria-hidden="true" style="font-size: 1.5rem; width: 48px; height: 48px; border-radius: 12px;">
       {{ job.organization_name|default:"S"|slice:":1"|upper }}
     </div>
     <div class="flex-grow-1 min-w-0">
-      <div class="d-flex flex-wrap gap-2 mb-1">
-        <span class="sj-badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-person-badge me-1"></i>Staff Job</span>
-      </div>
+      <!-- Title -->
       <h3 class="h6 mb-1 text-truncate">
-        <a href="{% url 'core:staff-job-detail' pk=job.id %}" class="stretched-link text-reset">{{ job.designation }}</a>
+        <a href="{% url 'core:staff-job-detail' pk=job.id %}" class="stretched-link text-reset fw-bold">{{ job.designation }}</a>
       </h3>
-      <p class="text-muted-2 small mb-0">{{ job.organization_name }}</p>
+      <!-- Organization Name -->
+      <p class="text-muted-2 small mb-2">{{ job.organization_name }}</p>
+
+      {% if job.created_by_type == 'Admin' %}
+      <div class="mb-2" style="position: relative; z-index: 3;">
+        <span class="badge bg-primary text-white" style="font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; font-weight: 600; letter-spacing: 0.5px;">
+          Powered by SevaJobs
+        </span>
+      </div>
+      {% endif %}
+      
+      <!-- Location Badge (prominent, directly below title and organization) -->
+      <div class="mb-2">
+        <span class="badge bg-light text-dark border p-2" style="font-size: 0.85rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+          📍 {{ job.display_location }}
+        </span>
+      </div>
     </div>
   </div>
 
-  <div class="d-flex flex-wrap gap-2 mb-3">
-    <span class="sj-chip"><i class="bi bi-geo-alt"></i> {{ job.job_location|truncatechars:20 }}</span>
-    <span class="sj-chip"><i class="bi bi-book"></i> {{ job.qualification|truncatechars:20 }}</span>
-    <span class="sj-chip"><i class="bi bi-people"></i> {{ job.vacancies }} Vacanc{{ job.vacancies|pluralize:"y,ies" }}</span>
+  <!-- Mid: Details in required order: Qualification, Salary, Vacancies -->
+  <div class="d-flex flex-wrap gap-2 mb-3" style="position: relative; z-index: 2;">
+    <!-- Qualification Badge -->
+    <span class="sj-chip" style="background-color: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb;">
+      <i class="bi bi-book me-1"></i>{{ job.qualification }}
+    </span>
+    <!-- Salary Badge -->
+    <span class="sj-chip" style="background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;">
+      <i class="bi bi-currency-rupee me-1"></i>₹{{ job.offered_salary|intcomma }} p.a.
+    </span>
+    <!-- Vacancies Badge -->
+    <span class="sj-chip" style="background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">
+      <i class="bi bi-people me-1"></i>{{ job.vacancies }} Vacanc{{ job.vacancies|pluralize:"y,ies" }}
+    </span>
   </div>
 
+  <!-- Contact info (secondary detail, keep small) -->
   <div class="fs-xs text-muted-2 mb-3" style="position: relative; z-index: 2;">
     <div class="d-flex align-items-center gap-1 mb-1">
       <i class="bi bi-telephone"></i> <span>{{ job.phone_number }}</span>
@@ -31,10 +57,16 @@
     </div>
   </div>
 
-  <div class="mt-auto d-flex align-items-center justify-content-between pt-3 border-top">
-    <span class="fw-semibold text-ink">
-      ₹{{ job.offered_salary|intcomma }} p.a.
-    </span>
-    <span class="text-muted-2 small">{{ job.created_at|timesince }} ago</span>
+  <!-- Bottom/Footer: Staff Job tag, Date and Apply Button -->
+  <div class="mt-auto pt-3 border-top" style="position: relative; z-index: 2;">
+    <div class="mb-3">
+      <span class="text-muted-2 small">
+        <i class="bi bi-clock me-1"></i>{{ job.created_at|timesince }} ago
+      </span>
+    </div>
+    <!-- Apply Button -->
+    <a href="{% url 'core:staff-job-detail' pk=job.id %}" class="btn btn-primary w-100 text-center fw-semibold py-2" style="border-radius: 8px;">
+      Apply Now <i class="bi bi-arrow-right ms-1"></i>
+    </a>
   </div>
 </article>

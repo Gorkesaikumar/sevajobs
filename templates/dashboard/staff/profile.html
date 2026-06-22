@@ -34,6 +34,34 @@
                    placeholder="e.g. 9876543210" value="{{ request.user.phone|default:'' }}">
             <div class="form-text fs-xs">Provide a valid mobile number (10-15 digits).</div>
           </div>
+          
+          <div class="col-md-12 mt-4">
+            <h6 class="fw-bold text-primary mb-3">Location Information</h6>
+          </div>
+          
+          <div class="col-md-6">
+            <label for="country" class="form-label fw-semibold">Country *</label>
+            <input type="text" class="form-control" id="country" name="country" 
+                   value="{{ request.user.staff_profile.country|default:'India' }}" required>
+          </div>
+          
+          <div class="col-md-6">
+            <label for="state" class="form-label fw-semibold">State *</label>
+            <input type="text" class="form-control" id="state" name="state" 
+                   value="{{ request.user.staff_profile.state|default:'' }}" required>
+          </div>
+          
+          <div class="col-md-6">
+            <label for="district" class="form-label fw-semibold">District *</label>
+            <input type="text" class="form-control" id="district" name="district" 
+                   value="{{ request.user.staff_profile.district|default:'' }}" required>
+          </div>
+          
+          <div class="col-md-6">
+            <label for="city" class="form-label fw-semibold">City/Town *</label>
+            <input type="text" class="form-control" id="city" name="city" 
+                   value="{{ request.user.staff_profile.city|default:'' }}" required>
+          </div>
         </div>
 
         <div class="mt-4 pt-2">

@@ -42,7 +42,7 @@
     <button type="submit" name="action" value="bulk_activate" class="btn btn-sm btn-outline-success" form="bulkActionForm"><i class="bi bi-play-circle me-1"></i>Activate</button>
     <button type="submit" name="action" value="bulk_deactivate" class="btn btn-sm btn-outline-warning" form="bulkActionForm"><i class="bi bi-pause-circle me-1"></i>Deactivate</button>
     <button type="submit" name="action" value="bulk_export" class="btn btn-sm btn-outline-primary" form="bulkActionForm"><i class="bi bi-download me-1"></i>Export Selected CSV</button>
-    <button type="submit" name="action" value="bulk_delete" class="btn btn-sm btn-outline-danger ms-auto" form="bulkActionForm" onclick="return confirm('Are you sure you want to permanently delete the selected users?');"><i class="bi bi-trash me-1"></i>Delete</button>
+    <button type="submit" name="action" value="bulk_delete" class="btn btn-sm btn-outline-danger ms-auto" form="bulkActionForm" onclick="return confirm('Are you sure you want to archive the selected users? They will be removed from the active list and unable to log in.');"><i class="bi bi-archive me-1"></i>Delete</button>
   </div>
   <div class="table-responsive">
     <table class="table sj-table mb-0">
@@ -91,29 +91,46 @@
           <td class="fs-sm text-muted-2">{{ u.date_joined|date:"M j, Y" }}</td>
           <td class="fs-sm text-muted-2">{% if u.last_login %}{{ u.last_login|date:"M j, Y g:i A" }}{% else %}Never{% endif %}</td>
           <td>{% if u.is_active %}<span class="status-pill status-active">Active</span>{% else %}<span class="status-pill status-inactive">Inactive</span>{% endif %}</td>
-          <td>
-            <div class="sj-table-actions d-flex gap-1">
-              <button type="button" class="btn btn-ghost btn-sm" title="View" data-bs-toggle="modal" data-bs-target="#viewUserModal{{ u.id }}"><i class="bi bi-eye"></i></button>
-              
-              {% if not u.is_admin_role and not u.is_superuser %}
-              <form method="post" action="{% url 'admin-panel:impersonate' %}" style="display:inline;" class="m-0">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="impersonate">
-                <input type="hidden" name="user_id" value="{{ u.id }}">
-                <button type="submit" class="btn btn-ghost btn-sm text-primary" title="Impersonate"><i class="bi bi-person-bounding-box"></i></button>
-              </form>
-              {% endif %}
-              
-              <button type="button" class="btn btn-ghost btn-sm text-info" title="Send Password Reset" data-bs-toggle="modal" data-bs-target="#resetPasswordModal{{ u.id }}"><i class="bi bi-key"></i></button>
-              
+          <td class="text-end">
+            <!-- Desktop: Tooltips & Icons -->
+            <div class="d-none d-md-flex justify-content-end gap-1">
+              <button type="button" class="btn btn-light btn-icon btn-sm rounded-circle text-secondary" data-bs-toggle="modal" data-bs-target="#viewUserModal{{ u.id }}" title="View Details">
+                <i class="bi bi-eye"></i>
+              </button>
+
               {% if request.user != u %}
                 {% if u.is_active %}
-                <button type="button" class="btn btn-ghost btn-sm text-warning" title="Deactivate" data-bs-toggle="modal" data-bs-target="#confirmToggleModal{{ u.id }}"><i class="bi bi-pause-circle"></i></button>
+                <button type="button" class="btn btn-light btn-icon btn-sm rounded-circle text-warning" data-bs-toggle="modal" data-bs-target="#confirmToggleModal{{ u.id }}" title="Deactivate">
+                  <i class="bi bi-pause-circle"></i>
+                </button>
                 {% else %}
-                <button type="button" class="btn btn-ghost btn-sm text-success" title="Activate" data-bs-toggle="modal" data-bs-target="#confirmToggleModal{{ u.id }}"><i class="bi bi-play-circle"></i></button>
+                <button type="button" class="btn btn-light btn-icon btn-sm rounded-circle text-success" data-bs-toggle="modal" data-bs-target="#confirmToggleModal{{ u.id }}" title="Activate">
+                  <i class="bi bi-play-circle"></i>
+                </button>
                 {% endif %}
-                <button type="button" class="btn btn-ghost btn-sm text-danger" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ u.id }}"><i class="bi bi-trash"></i></button>
+                <button type="button" class="btn btn-light btn-icon btn-sm rounded-circle text-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ u.id }}" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
               {% endif %}
+            </div>
+
+            <!-- Mobile: Dropdown -->
+            <div class="d-md-none dropdown text-end">
+              <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end fs-sm shadow-sm">
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#viewUserModal{{ u.id }}"><i class="bi bi-eye me-2 text-secondary"></i> View Details</button></li>
+
+                {% if request.user != u %}
+                  {% if u.is_active %}
+                  <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#confirmToggleModal{{ u.id }}"><i class="bi bi-pause-circle me-2 text-warning"></i> Deactivate</button></li>
+                  {% else %}
+                  <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#confirmToggleModal{{ u.id }}"><i class="bi bi-play-circle me-2 text-success"></i> Activate</button></li>
+                  {% endif %}
+                  <li><button class="dropdown-item text-danger" type="button" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ u.id }}"><i class="bi bi-trash me-2"></i> Delete</button></li>
+                {% endif %}
+              </ul>
             </div>
           </td>
         </tr>
@@ -264,16 +281,16 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header border-bottom-0">
-        <h5 class="modal-title fw-bold">Permanent Deletion</h5>
+        <h5 class="modal-title fw-bold">Archive User</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body text-center py-4">
         <div class="mb-3">
           <div class="avatar avatar-xl bg-soft-danger text-danger mb-3 mx-auto" style="width: 70px; height: 70px;">
-            <i class="bi bi-trash fs-2"></i>
+            <i class="bi bi-archive fs-2"></i>
           </div>
           <h4 class="fw-bold">Delete {{ u.full_name }}?</h4>
-          <p class="text-muted-2 px-3">This action cannot be undone. All data associated with this user will be permanently removed.</p>
+          <p class="text-muted-2 px-3">Are you sure you want to delete this user? The account will be archived and removed from the active list, and the user will no longer be able to log in.</p>
         </div>
       </div>
       <div class="modal-footer bg-light border-top-0 d-flex justify-content-between">
@@ -289,36 +306,6 @@
   </div>
 </div>
 {% endif %}
-
-<!-- Reset Password Modal -->
-<div class="modal fade" id="resetPasswordModal{{ u.id }}" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header border-bottom-0">
-        <h5 class="modal-title fw-bold">Reset Password</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body text-center py-4">
-        <div class="mb-3">
-          <div class="avatar avatar-xl bg-soft-info text-info mb-3 mx-auto" style="width: 70px; height: 70px;">
-            <i class="bi bi-envelope-check fs-2"></i>
-          </div>
-          <h4 class="fw-bold">Send Reset Link?</h4>
-          <p class="text-muted-2 px-3">Are you sure you want to send a password reset link to <strong>{{ u.email }}</strong>?</p>
-        </div>
-      </div>
-      <div class="modal-footer bg-light border-top-0 d-flex justify-content-between">
-        <button type="button" class="btn btn-white text-muted fw-semibold" data-bs-dismiss="modal">Cancel</button>
-        <form method="post" action="{% url 'admin-panel:users' %}" class="m-0">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="send_password_reset">
-          <input type="hidden" name="user_id" value="{{ u.id }}">
-          <button type="submit" class="btn btn-info text-white fw-semibold">Send Link</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
 {% endfor %}
 
 <script>
@@ -358,6 +345,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       updateToolbar();
     });
+  });
+
+  // Initialize tooltips
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
   });
 });
 </script>

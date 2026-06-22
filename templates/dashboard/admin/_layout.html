@@ -1,6 +1,14 @@
 {% extends "dashboard/_layout.html" %}
 {% block sidebar_nav %}
 <a class="nav-link {% if sidebar_section == 'dashboard' %}active{% endif %}" href="{% url 'admin-panel:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+
+<div class="sidebar-section">Job Management</div>
+<a class="nav-link {% if sidebar_section == 'admin_all_jobs' %}active{% endif %}" href="{% url 'admin-panel:all-jobs' %}"><i class="bi bi-briefcase"></i> All Jobs</a>
+<a class="nav-link {% if sidebar_section == 'admin_create_job' %}active{% endif %}" href="{% url 'admin-panel:create-job' %}"><i class="bi bi-plus-circle"></i> Create Job</a>
+<a class="nav-link {% if sidebar_section == 'admin_applications' %}active{% endif %}" href="{% url 'admin-panel:applications' %}"><i class="bi bi-file-earmark-person"></i> Applications</a>
+<a class="nav-link {% if sidebar_section == 'admin_assigned_recruitment' %}active{% endif %}" href="{% url 'admin-panel:assigned-recruitment' %}"><i class="bi bi-people"></i> Assigned Recruitment</a>
+<a class="nav-link {% if sidebar_section == 'admin_recruitment_workflow' %}active{% endif %}" href="{% url 'admin-panel:recruitment-workflow' %}"><i class="bi bi-diagram-3"></i> Recruitment Workflow</a>
+
 <div class="sidebar-section">Management</div>
 <a class="nav-link {% if sidebar_section == 'users' %}active{% endif %}" href="{% url 'admin-panel:users' %}"><i class="bi bi-people"></i> Users</a>
 <a class="nav-link {% if sidebar_section == 'approvals' %}active{% endif %}" href="{% url 'admin-panel:job-approvals' %}"><i class="bi bi-check2-square"></i> Job Approvals{% if pending_jobs %} <span class="badge bg-danger ms-1">{{ pending_jobs }}</span>{% endif %}</a>
@@ -10,6 +18,9 @@
 <div class="sidebar-section">Staff Management</div>
 <a class="nav-link {% if sidebar_section == 'staff' %}active{% endif %}" href="{% url 'admin-panel:staff-list' %}">
   <i class="bi bi-person-badge"></i> My Staff
+</a>
+<a class="nav-link {% if sidebar_section == 'staff_applicants' %}active{% endif %}" href="{% url 'admin-panel:staff-applicants' %}">
+  <i class="bi bi-briefcase"></i> Staff Job Applicants
 </a>
 <a class="nav-link {% if sidebar_section == 'schools' %}active{% endif %}" href="{% url 'admin-panel:schools-placeholder' %}">
   <i class="bi bi-book"></i> Schools

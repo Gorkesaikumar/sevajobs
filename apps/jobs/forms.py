@@ -90,6 +90,11 @@ class StaffJobForm(forms.ModelForm):
             "phone_number",
             "email",
         ]
+        error_messages = {
+            "job_location": {
+                "required": "Job Location is required.",
+            }
+        }
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)
@@ -132,3 +137,67 @@ class StaffJobForm(forms.ModelForm):
                     raise forms.ValidationError("A duplicate job posting was detected recently. Please wait a few minutes before posting again.")
                     
         return cleaned_data
+
+
+class AdminStaffJobForm(forms.ModelForm):
+    """Form for Admins to create/edit jobs directly from Admin Dashboard."""
+    
+    class Meta:
+        model = StaffJob
+        fields = [
+            "designation",
+            "organization_name",
+            "qualification",
+            "description",
+            "vacancies",
+            "offered_salary",
+            "state",
+            "district",
+            "city",
+            "job_location",
+            "phone_number",
+            "email",
+        ]
+        labels = {
+            "phone_number": "Contact Phone Number",
+            "email": "Contact Email",
+            "vacancies": "Number of Vacancies",
+        }
+        error_messages = {
+            "designation": {"required": "Designation is required."},
+            "organization_name": {"required": "Organization Name is required."},
+            "qualification": {"required": "Qualification is required."},
+            "description": {"required": "Job Description is required."},
+            "vacancies": {"required": "Number of Vacancies is required."},
+            "offered_salary": {"required": "Offered Salary is required."},
+            "state": {"required": "State is required."},
+            "district": {"required": "District is required."},
+            "city": {"required": "City is required."},
+            "job_location": {"required": "Job Location is required."},
+            "phone_number": {"required": "Contact Phone Number is required."},
+            "email": {"required": "Contact Email is required."},
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = "post"
+        self.helper.add_input(Submit("submit", "Publish Job", css_class="btn btn-primary w-100"))
+        
+        # Make fields required
+        self.fields["description"].required = True
+        self.fields["state"].required = True
+        self.fields["district"].required = True
+        self.fields["city"].required = True
+        
+        # Textarea widgets
+        self.fields["description"].widget = forms.Textarea(attrs={"rows": 4})
+
+    def clean_phone_number(self):
+        import re
+        phone = self.cleaned_data.get("phone_number", "").strip()
+        if not re.match(r"^\d{10,15}$", phone):
+            raise forms.ValidationError("Enter a valid phone number consisting of 10 to 15 digits.")
+        return phone
+

@@ -113,6 +113,20 @@ class JobService:
             description=f"Job '{job.title}' submitted for approval.",
             metadata={"event": "submit_for_approval"},
         )
+
+        # Notify admins
+        from apps.accounts.models import User
+        admins = User.objects.filter(role__in=["super_admin", "admin"], is_active=True)
+        for admin in admins:
+            NotificationService.notify(
+                recipient=admin,
+                notification_type=Notification.Type.JOB_POSTED,
+                title="New Job Posted",
+                message=f"Job '{job.title}' has been submitted for review by {recruiter_profile.user.full_name}.",
+                entity_type="Job",
+                entity_id=job.id,
+            )
+
         logger.info("Job %s submitted for approval", job.id)
         return job
 
@@ -133,6 +147,20 @@ class JobService:
         self._assert_owner(job, recruiter_profile)
         job.status = Job.Status.CLOSED
         job.save(update_fields=["status"])
+
+        # Notify admins
+        from apps.accounts.models import User
+        admins = User.objects.filter(role__in=["super_admin", "admin"], is_active=True)
+        for admin in admins:
+            NotificationService.notify(
+                recipient=admin,
+                notification_type=Notification.Type.SYSTEM,
+                title="Job Closed",
+                message=f"Recruiter Job '{job.title}' has been closed.",
+                entity_type="Job",
+                entity_id=job.id,
+            )
+
         return job
 
     # ----- admin approval workflow ----------------------------------------
@@ -198,9 +226,24 @@ class JobService:
         JobRepository.increment_views(job_id)
 
     def expire_due_jobs(self) -> int:
+        today = timezone.now().date()
+        due_jobs = list(Job.objects.filter(status=Job.Status.ACTIVE, deadline__isnull=False, deadline__lt=today))
         count = JobRepository.expire_due_jobs()
         if count:
             logger.info("Expired %d job(s) past deadline", count)
+            # Notify admins
+            from apps.accounts.models import User
+            admins = User.objects.filter(role__in=["super_admin", "admin"], is_active=True)
+            for job in due_jobs:
+                for admin in admins:
+                    NotificationService.notify(
+                        recipient=admin,
+                        notification_type=Notification.Type.JOB_EXPIRING,
+                        title="Job Expired",
+                        message=f"Job '{job.title}' has reached its deadline and is now expired.",
+                        entity_type="Job",
+                        entity_id=job.id,
+                    )
         return count
 
     # ----- helpers ---------------------------------------------------------

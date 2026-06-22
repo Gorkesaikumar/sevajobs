@@ -171,6 +171,55 @@ function sendWhatsApp() {
         {% endif %}
       </div>
 
+      <!-- Staff Location Section -->
+      <div class="col-12 mt-4">
+        <h5 class="fw-bold mb-3 border-bottom pb-2">Staff Location</h5>
+      </div>
+
+      <!-- Country -->
+      <div class="col-md-6">
+        <label for="id_country" class="form-label fw-semibold">Country *</label>
+        <input type="text" class="form-control {% if form.country.errors %}is-invalid{% endif %}"
+               id="id_country" name="country" placeholder="e.g. India"
+               value="{{ form.country.value|default:'India' }}" required>
+        {% if form.country.errors %}
+          <div class="invalid-feedback">{% for error in form.country.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- State -->
+      <div class="col-md-6">
+        <label for="id_state" class="form-label fw-semibold">State *</label>
+        <input type="text" class="form-control {% if form.state.errors %}is-invalid{% endif %}"
+               id="id_state" name="state" placeholder="e.g. Telangana"
+               value="{{ form.state.value|default:'' }}" required>
+        {% if form.state.errors %}
+          <div class="invalid-feedback">{% for error in form.state.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- District -->
+      <div class="col-md-6">
+        <label for="id_district" class="form-label fw-semibold">District *</label>
+        <input type="text" class="form-control {% if form.district.errors %}is-invalid{% endif %}"
+               id="id_district" name="district" placeholder="e.g. Nizamabad"
+               value="{{ form.district.value|default:'' }}" required>
+        {% if form.district.errors %}
+          <div class="invalid-feedback">{% for error in form.district.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- City/Town -->
+      <div class="col-md-6">
+        <label for="id_city" class="form-label fw-semibold">City/Town *</label>
+        <input type="text" class="form-control {% if form.city.errors %}is-invalid{% endif %}"
+               id="id_city" name="city" placeholder="e.g. Nizamabad"
+               value="{{ form.city.value|default:'' }}" required>
+        {% if form.city.errors %}
+          <div class="invalid-feedback">{% for error in form.city.errors %}{{ error }}{% endfor %}</div>
+        {% endif %}
+      </div>
+
       <!-- Password -->
       <div class="col-md-6">
         <label for="id_password" class="form-label fw-semibold">Password *</label>

@@ -137,15 +137,48 @@ class JobSearchView(TemplateView):
         # Search Query q
         q = self.request.GET.get("q", "").strip()
         if q:
-            rqs = rqs.filter(Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q))
-            sqs = sqs.filter(Q(designation__icontains=q) | Q(organization_name__icontains=q) | Q(job_location__icontains=q))
+            rqs = rqs.filter(Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q) | Q(state__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q))
+            sqs = sqs.filter(Q(designation__icontains=q) | Q(organization_name__icontains=q) | Q(job_location__icontains=q) | Q(state__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q))
             ctx["search_query"] = q
 
-        # Location filter
+        # Location filter (workplace address search)
         location = self.request.GET.get("location", "").strip()
         if location:
-            rqs = rqs.filter(location__icontains=location)
-            sqs = sqs.filter(job_location__icontains=location)
+            rqs = rqs.filter(Q(location__icontains=location) | Q(city__icontains=location) | Q(district__icontains=location) | Q(state__icontains=location))
+            sqs = sqs.filter(Q(job_location__icontains=location) | Q(city__icontains=location) | Q(district__icontains=location) | Q(state__icontains=location))
+
+        # Specific regional dropdown filters
+        state_filter = self.request.GET.get("state", "").strip()
+        if state_filter:
+            rqs = rqs.filter(state__iexact=state_filter)
+            sqs = sqs.filter(state__iexact=state_filter)
+
+        district_filter = self.request.GET.get("district", "").strip()
+        if district_filter:
+            rqs = rqs.filter(district__iexact=district_filter)
+            sqs = sqs.filter(district__iexact=district_filter)
+
+        city_filter = self.request.GET.get("city", "").strip()
+        if city_filter:
+            rqs = rqs.filter(city__iexact=city_filter)
+            sqs = sqs.filter(city__iexact=city_filter)
+
+        # Get active states, districts, and cities for the filter sidebar
+        active_states = list(Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).values_list('state', flat=True).distinct()) + \
+                        list(StaffJob.objects.filter(status=StaffJob.Status.ACTIVE, is_active=True).values_list('state', flat=True).distinct())
+        active_states = sorted(list(set([s for s in active_states if s])))
+
+        active_districts = list(Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).values_list('district', flat=True).distinct()) + \
+                           list(StaffJob.objects.filter(status=StaffJob.Status.ACTIVE, is_active=True).values_list('district', flat=True).distinct())
+        active_districts = sorted(list(set([d for d in active_districts if d])))
+
+        active_cities = list(Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).values_list('city', flat=True).distinct()) + \
+                        list(StaffJob.objects.filter(status=StaffJob.Status.ACTIVE, is_active=True).values_list('city', flat=True).distinct())
+        active_cities = sorted(list(set([c for c in active_cities if c])))
+
+        ctx["active_states"] = active_states
+        ctx["active_districts"] = active_districts
+        ctx["active_cities"] = active_cities
 
         # Salary Min filter
         salary_min = self.request.GET.get("salary_min", "").strip()
@@ -181,26 +214,49 @@ class JobSearchView(TemplateView):
             rqs = rqs.filter(category__slug=category)
             has_recruiter_filters = True
 
+        # Ordering
+        sort = self.request.GET.get("sort", "-published_at")
+        
+        # Apply database-level sorting to querysets for performance
+        if sort == "published_at": # Oldest First
+            rqs = rqs.order_by("published_at", "created_at")
+            sqs = sqs.order_by("published_at", "created_at")
+        elif sort == "salary_min": # Salary Low to High
+            rqs = rqs.order_by("salary_min", "-published_at", "-created_at")
+            sqs = sqs.order_by("offered_salary", "-published_at", "-created_at")
+        elif sort == "-salary_min": # Salary High to Low
+            rqs = rqs.order_by("-salary_min", "-published_at", "-created_at")
+            sqs = sqs.order_by("-offered_salary", "-published_at", "-created_at")
+        elif sort == "-applications_count": # Most Applied
+            rqs = rqs.order_by("-applications_count", "-published_at", "-created_at")
+            sqs = sqs.annotate(num_apps=Count("applications")).order_by("-num_apps", "-published_at", "-created_at")
+        elif sort == "featured": # Featured First
+            rqs = rqs.order_by("-is_featured", "-published_at", "-created_at")
+            sqs = sqs.order_by("-published_at", "-created_at")
+        else: # Default: Newest First ("-published_at")
+            # If Featured Jobs exist: Featured Jobs (Newest First) then Regular Jobs (Newest First)
+            rqs = rqs.order_by("-is_featured", "-published_at", "-created_at")
+            sqs = sqs.order_by("-published_at", "-created_at")
+
         # Convert to list & Combine
         r_jobs = list(rqs)
         s_jobs = [] if has_recruiter_filters else list(sqs)
         combined = r_jobs + s_jobs
 
-        # Ordering
-        sort = self.request.GET.get("sort", "-created_at")
-        if sort == "salary_min":
+        # Python-level sorting to merge the two sorted lists correctly
+        if sort == "published_at": # Oldest First
+            combined.sort(key=lambda j: j.published_at or j.created_at)
+        elif sort == "salary_min": # Salary Low to High
             combined.sort(key=lambda j: getattr(j, "salary_min", None) or getattr(j, "offered_salary", 0))
-        elif sort == "-salary_min":
+        elif sort == "-salary_min": # Salary High to Low
             combined.sort(key=lambda j: getattr(j, "salary_min", None) or getattr(j, "offered_salary", 0), reverse=True)
-        elif sort == "deadline":
-            # For staff jobs without a deadline, sort them last
-            combined.sort(key=lambda j: getattr(j, "deadline", None) or (j.published_at or j.created_at).date())
-        else: # default: recent / featured
-            def get_sort_key(j):
-                is_feat = getattr(j, "is_featured", False)
-                pub_time = j.published_at or j.created_at
-                return (is_feat, pub_time)
-            combined.sort(key=get_sort_key, reverse=True)
+        elif sort == "-applications_count": # Most Applied
+            combined.sort(key=lambda j: getattr(j, "num_apps", None) or getattr(j, "applications_count", 0) or j.applications.count(), reverse=True)
+        elif sort == "featured": # Featured First
+            combined.sort(key=lambda j: (getattr(j, "is_featured", False), j.published_at or j.created_at), reverse=True)
+        else: # Default / Newest First ("-published_at")
+            # Pins Featured Jobs (Newest First) then Regular Jobs (Newest First)
+            combined.sort(key=lambda j: (getattr(j, "is_featured", False), j.published_at or j.created_at), reverse=True)
 
         paginator = Paginator(combined, 12)
         page = self.request.GET.get("page", 1)
@@ -238,7 +294,8 @@ class JobDetailPageView(DetailView):
                 category=job.category,
             )
             .exclude(pk=job.pk)
-            .select_related("company")[:4]
+            .select_related("company")
+            .order_by("-published_at", "-created_at")[:4]
         )
 
         # Resumes for apply modal
@@ -439,7 +496,8 @@ class StaffJobDetailPageView(DetailView):
                 status=StaffJob.Status.ACTIVE,
                 is_active=True,
             )
-            .exclude(pk=job.pk)[:4]
+            .exclude(pk=job.pk)
+            .order_by("-published_at", "-created_at")[:4]
         )
 
         # Resumes for apply modal

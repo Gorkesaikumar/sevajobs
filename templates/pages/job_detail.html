@@ -37,6 +37,11 @@
                 <a href="{% url 'core:company-detail' slug=job.company.slug %}" class="text-reset fw-semibold">{{ job.company.name }}</a>
                 {% if job.company.is_verified %}<i class="bi bi-patch-check-fill text-primary ms-1"></i>{% endif %}
               </p>
+              {% if job.state and job.district and job.city %}
+              <div class="mt-2 text-primary fs-sm fw-semibold">
+                <i class="bi bi-geo-alt-fill me-1"></i> Job Region: {{ job.state }} &rarr; {{ job.district }} &rarr; {{ job.city }}
+              </div>
+              {% endif %}
             </div>
           </div>
 

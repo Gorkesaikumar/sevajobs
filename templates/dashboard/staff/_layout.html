@@ -8,8 +8,11 @@
 <a class="nav-link {% if sidebar_section == 'add-job' %}active{% endif %}" href="{% url 'staff:add-job' %}">
   <i class="bi bi-plus-circle"></i> Add Job
 </a>
-<a class="nav-link {% if sidebar_section == 'jobs' and not request.GET.status %}active{% endif %}" href="{% url 'staff:my-jobs' %}">
+<a class="nav-link d-flex align-items-center {% if sidebar_section == 'jobs' and not request.GET.status %}active{% endif %}" href="{% url 'staff:my-jobs' %}">
   <i class="bi bi-briefcase"></i> My Jobs
+  {% if staff_assigned_unread %}
+    <span class="badge bg-danger rounded-pill ms-auto">{{ staff_assigned_unread }}</span>
+  {% endif %}
 </a>
 <a class="nav-link {% if sidebar_section == 'jobs' and request.GET.status == 'active' %}active{% endif %}" href="{% url 'staff:my-jobs' %}?status=active">
   <i class="bi bi-patch-check"></i> Active Jobs

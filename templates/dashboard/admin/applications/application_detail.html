@@ -1,0 +1,137 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}Application Details — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="mb-4 d-flex align-items-center justify-content-between">
+  <div>
+    <a href="{% url 'admin-panel:applications' %}" class="btn btn-sm btn-light border mb-2">
+      <i class="bi bi-arrow-left"></i> Back to Applications
+    </a>
+    <h4 class="fw-800 mb-0">Application Details</h4>
+    <p class="text-muted-2 fs-sm mb-0">View the complete application details and cover letter.</p>
+  </div>
+  <div>
+    <form action="{% url 'admin-panel:applications' %}" method="post" class="d-inline-block">
+      {% csrf_token %}
+      <input type="hidden" name="application_id" value="{{ app.id }}">
+      <input type="hidden" name="action" value="update_status">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white">Status</span>
+        <select name="status" class="form-select status-selector" onchange="this.form.submit()">
+          {% for val, name in app.Status.choices %}
+            <option value="{{ val }}" {% if app.status == val %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="sj-card p-4 text-center">
+      <div class="avatar avatar-xl bg-light-brand text-primary fw-bold rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 100px; height: 100px; font-size: 2.5rem;">
+        {{ app.applicant.first_name|first|upper }}{{ app.applicant.last_name|first|upper }}
+      </div>
+      <h5 class="fw-bold mb-1">{{ app.applicant.get_full_name }}</h5>
+      <p class="text-muted fs-sm mb-3"><i class="bi bi-envelope"></i> {{ app.applicant.email }}</p>
+      
+      {% if app.applicant.phone %}
+        <p class="text-muted fs-sm mb-3"><i class="bi bi-telephone"></i> {{ app.applicant.phone }}</p>
+      {% endif %}
+
+      <div class="d-grid gap-2 mt-4 text-start">
+        <div class="p-3 bg-light rounded border">
+          <div class="fs-sm mb-2"><strong>Status:</strong> <span class="badge bg-primary">{{ app.get_status_display }}</span></div>
+          <div class="fs-sm mb-2"><strong>Applied:</strong> {{ app.applied_at|date:"M d, Y" }}</div>
+          {% if app.expected_salary %}
+            <div class="fs-sm"><strong>Exp. Salary:</strong> ₹{{ app.expected_salary|intcomma }}</div>
+          {% endif %}
+        </div>
+      </div>
+      
+      <div class="d-grid gap-2 mt-3">
+        <a href="{% url 'admin-panel:applicant-profile' pk=app.id %}" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-person"></i> View Full Profile
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Job Information</h6>
+      <table class="table table-borderless fs-sm mb-0">
+        <tr>
+          <td width="30%" class="text-muted">Job Title:</td>
+          <td class="fw-semibold">{{ app.job_title }}</td>
+        </tr>
+        <tr>
+          <td class="text-muted">Organization:</td>
+          <td>{{ app.company_name }}</td>
+        </tr>
+        <tr>
+          <td class="text-muted">Location:</td>
+          <td>
+            {% if app.staff_job %}
+              {{ app.staff_job.display_location }}
+            {% else %}
+              {{ app.job.location }}
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td class="text-muted">Job Owner:</td>
+          <td>
+            {% if app.staff_job %}
+              <span class="fs-sm">{{ app.staff_job.created_by.get_full_name }}</span> (Staff)
+            {% else %}
+              <span class="fs-sm">{{ app.job.company.name }}</span> (Recruiter)
+            {% endif %}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    {% if app.cover_letter %}
+    <div class="sj-card p-4 mb-4">
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Cover Letter</h6>
+      <div class="p-3 bg-light rounded text-muted-2" style="white-space: pre-wrap; line-height: 1.6;">{{ app.cover_letter }}</div>
+    </div>
+    {% endif %}
+
+    <div class="sj-card p-4">
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Resume</h6>
+      {% if app.resume and app.resume.file %}
+        <div class="d-flex align-items-center justify-content-between p-3 border rounded bg-light">
+          <div class="d-flex align-items-center gap-3">
+            <div class="fs-1 text-danger"><i class="bi bi-file-earmark-pdf-fill"></i></div>
+            <div>
+              <div class="fw-bold">{{ app.resume.title|default:"Resume Document" }}</div>
+              <div class="fs-xs text-muted">Uploaded candidate resume</div>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'admin-panel:resume-viewer' pk=app.id %}" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-eye"></i> View Inline
+            </a>
+            <form action="{% url 'admin-panel:applications' %}" method="post" class="d-inline m-0 p-0">
+              {% csrf_token %}
+              <input type="hidden" name="application_id" value="{{ app.id }}">
+              <button type="submit" name="action" value="log_download_resume" class="btn btn-primary btn-sm">
+                <i class="bi bi-download"></i> Download
+              </button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <div class="text-center py-4 text-muted-2 bg-light rounded border">
+          <i class="bi bi-file-earmark-x fs-1"></i>
+          <p class="mt-2 mb-0">No resume was attached to this application.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

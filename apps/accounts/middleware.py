@@ -63,7 +63,7 @@ class RoleBasedCookieInterceptorMiddleware:
 
     def __call__(self, request):
         path = request.path_info.lower()
-        if path.startswith('/dashboard/admin') or path.startswith('/admin/login') or path.startswith('/admin/logout') or path.startswith('/accounts/stop-impersonate') or path.startswith('/django-admin'):
+        if path.startswith('/dashboard/admin') or path.startswith('/admin/login') or path.startswith('/admin/logout') or path.startswith('/django-admin'):
             expected_cookie = 'sessionid_admin'
         elif path.startswith('/dashboard/recruiter') or path.startswith('/recruiter/login') or path.startswith('/recruiter/logout'):
             expected_cookie = 'sessionid_recruiter'

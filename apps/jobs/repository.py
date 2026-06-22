@@ -22,7 +22,7 @@ class JobRepository:
         today = timezone.now().date()
         return (
             JobRepository._base_qs()
-            .filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED)
+            .filter(is_active=True, status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED)
             .filter(Q(deadline__isnull=True) | Q(deadline__gte=today))
         )
 

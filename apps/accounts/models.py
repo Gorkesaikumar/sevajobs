@@ -78,6 +78,12 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Soft-delete flag. Archived users are hidden from management lists and cannot log in.",
+    )
+    deleted_at = models.DateTimeField(null=True, blank=True)
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
 
@@ -407,7 +413,6 @@ class AuditLog(BaseModel):
         LOGIN = "login", "Login"
         LOGOUT = "logout", "Logout"
         FAILED_LOGIN = "failed_login", "Failed Login"
-        IMPERSONATION = "impersonation", "Admin Impersonation"
         SESSION_EXPIRED = "session_expired", "Session Expired"
         DEVICE_LOGOUT = "device_logout", "Device Logout"
         
@@ -452,6 +457,10 @@ class StaffProfile(BaseModel):
     full_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True, db_index=True)
     phone_number = models.CharField(max_length=16, unique=True, db_index=True)
+    country = models.CharField(max_length=100, default="India")
+    state = models.CharField(max_length=100, default="", db_index=True)
+    district = models.CharField(max_length=100, default="", db_index=True)
+    city = models.CharField(max_length=100, default="", db_index=True)
     status = models.CharField(
         max_length=20,
         choices=[("Active", "Active"), ("Inactive", "Inactive")],

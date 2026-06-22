@@ -1,0 +1,107 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}Recruitment Performance Analytics — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-800 mb-0">Recruitment Performance</h4>
+    <p class="text-muted-2 fs-sm mb-0">Track and monitor recruitment activity and metrics for all Staff members</p>
+  </div>
+  
+  <div>
+    <form method="get" class="d-flex align-items-center gap-2">
+      <label class="text-muted-2 fs-xs text-uppercase fw-bold mb-0 text-nowrap">Sort By:</label>
+      <select name="sort_by" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="apps_managed" {% if sort_by == 'apps_managed' %}selected{% endif %}>Most Applications Managed</option>
+        <option value="jobs_assigned" {% if sort_by == 'jobs_assigned' %}selected{% endif %}>Most Jobs Assigned</option>
+        <option value="best_performing" {% if sort_by == 'best_performing' %}selected{% endif %}>Best Performing Staff</option>
+      </select>
+    </form>
+  </div>
+</div>
+
+<!-- Performance stats cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="sj-card p-4 d-flex align-items-center justify-content-between">
+      <div>
+        <span class="text-muted-2 fs-sm">Total Staff Tracked</span>
+        <h3 class="fw-bold mb-0 mt-1">{{ performance_data|length }}</h3>
+      </div>
+      <div class="ico ico-lg bg-soft-primary text-primary rounded-circle"><i class="bi bi-people"></i></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sj-card p-4 d-flex align-items-center justify-content-between">
+      <div>
+        <span class="text-muted-2 fs-sm">Active Recruitments</span>
+        <h3 class="fw-bold mb-0 mt-1">
+          {{ total_active_recruitments }}
+        </h3>
+      </div>
+      <div class="ico ico-lg bg-soft-success text-success rounded-circle"><i class="bi bi-briefcase"></i></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sj-card p-4 d-flex align-items-center justify-content-between">
+      <div>
+        <span class="text-muted-2 fs-sm">Total Selections</span>
+        <h3 class="fw-bold mb-0 mt-1">
+          {{ total_selections }}
+        </h3>
+      </div>
+      <div class="ico ico-lg bg-soft-warning text-warning rounded-circle"><i class="bi bi-check2-circle"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table align-middle">
+      <thead>
+        <tr>
+          <th>Staff Name</th>
+          <th class="text-center">Jobs Assigned</th>
+          <th class="text-center">Active Recruitments</th>
+          <th class="text-center">Applications Handled</th>
+          <th class="text-center">Candidates Reviewed</th>
+          <th class="text-center">Candidates Shortlisted</th>
+          <th class="text-center">Candidates Selected</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in performance_data %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar avatar-sm bg-light-brand text-primary fw-bold rounded-circle d-flex align-items-center justify-content-center">
+                {{ item.staff.first_name|first|upper }}{{ item.staff.last_name|first|upper }}
+              </div>
+              <div>
+                <div class="fw-bold fs-sm">{{ item.staff.get_full_name }}</div>
+                <div class="fs-xs text-muted-2">Emp ID: {{ item.profile.employee_id|default:"—" }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="text-center fw-semibold">{{ item.jobs_assigned }}</td>
+          <td class="text-center fw-semibold text-primary">{{ item.active_recruitments }}</td>
+          <td class="text-center">{{ item.apps_handled }}</td>
+          <td class="text-center text-warning">{{ item.candidates_reviewed }}</td>
+          <td class="text-center text-info">{{ item.candidates_shortlisted }}</td>
+          <td class="text-center text-success fw-bold">{{ item.candidates_selected }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-5">
+            <div class="text-muted-2 mb-3"><i class="bi bi-graph-up fs-1"></i></div>
+            <h6 class="fw-bold">No Performance Data Available</h6>
+            <p class="fs-sm mb-0">Recruitment metrics will be calculated once jobs are assigned and candidates apply.</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

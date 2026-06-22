@@ -1,0 +1,168 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}{% if is_edit %}Edit Job — {{ job.designation }}{% else %}Post Admin Job{% endif %} — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="mb-4">
+  <a href="{% url 'admin-panel:all-jobs' %}" class="btn btn-link text-decoration-none p-0 mb-3 fs-sm text-muted-2">
+    <i class="bi bi-arrow-left me-1"></i> Back to Jobs
+  </a>
+  <h4 class="fw-800 mb-1">{% if is_edit %}Edit Job{% else %}Post New Job{% endif %}</h4>
+  <p class="text-muted-2 fs-sm mb-0">{% if is_edit %}Modify details for job ID: {{ job.job_id }}{% else %}Create and publish a new job on SevaJobs instantly{% endif %}</p>
+</div>
+
+<div class="sj-card p-4 p-md-5">
+  <form method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
+    
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger mb-4">
+        {% for error in form.non_field_errors %}
+          <div>{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- 1. Job Information -->
+    <div class="mb-4">
+      <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary"><i class="bi bi-info-circle me-2"></i>Job Information</h5>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="id_designation" class="form-label fw-semibold">Designation *</label>
+          <input type="text" class="form-control {% if form.designation.errors %}is-invalid{% endif %}"
+                 id="id_designation" name="designation" placeholder="Enter Job Designation"
+                 value="{{ form.designation.value|default:'' }}" required>
+          {% if form.designation.errors %}
+            <div class="invalid-feedback">{% for error in form.designation.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <label for="id_organization_name" class="form-label fw-semibold">Organization Name *</label>
+          <input type="text" class="form-control {% if form.organization_name.errors %}is-invalid{% endif %}"
+                 id="id_organization_name" name="organization_name" placeholder="Enter Organization Name"
+                 value="{{ form.organization_name.value|default:'' }}" required>
+          {% if form.organization_name.errors %}
+            <div class="invalid-feedback">{% for error in form.organization_name.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <label for="id_qualification" class="form-label fw-semibold">Qualification *</label>
+          <input type="text" class="form-control {% if form.qualification.errors %}is-invalid{% endif %}"
+                 id="id_qualification" name="qualification" placeholder="Enter Required Qualification"
+                 value="{{ form.qualification.value|default:'' }}" required>
+          {% if form.qualification.errors %}
+            <div class="invalid-feedback">{% for error in form.qualification.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12">
+          <label for="id_description" class="form-label fw-semibold">Job Description *</label>
+          <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                    id="id_description" name="description" placeholder="Describe the Job Role" rows="4" required>{{ form.description.value|default:'' }}</textarea>
+          {% if form.description.errors %}
+            <div class="invalid-feedback">{% for error in form.description.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Vacancy Information -->
+    <div class="mb-4">
+      <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary"><i class="bi bi-people me-2"></i>Vacancy Information</h5>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="id_vacancies" class="form-label fw-semibold">Number of Vacancies *</label>
+          <input type="number" class="form-control {% if form.vacancies.errors %}is-invalid{% endif %}"
+                 id="id_vacancies" name="vacancies" min="1" placeholder="Enter Number of Vacancies"
+                 value="{{ form.vacancies.value|default:'1' }}" required>
+          {% if form.vacancies.errors %}
+            <div class="invalid-feedback">{% for error in form.vacancies.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <label for="id_offered_salary" class="form-label fw-semibold">Offered Salary *</label>
+          <input type="number" class="form-control {% if form.offered_salary.errors %}is-invalid{% endif %}"
+                 id="id_offered_salary" name="offered_salary" placeholder="Enter Offered Salary (e.g. 300000)"
+                 value="{{ form.offered_salary.value|default:'' }}" required>
+          {% if form.offered_salary.errors %}
+            <div class="invalid-feedback">{% for error in form.offered_salary.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Location Information -->
+    <div class="mb-4">
+      <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary"><i class="bi bi-geo-alt me-2"></i>Location Information</h5>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label for="id_state" class="form-label fw-semibold">State *</label>
+          <input type="text" class="form-control {% if form.state.errors %}is-invalid{% endif %}"
+                 id="id_state" name="state" placeholder="Enter State"
+                 value="{{ form.state.value|default:'' }}" required>
+          {% if form.state.errors %}
+            <div class="invalid-feedback">{% for error in form.state.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-4">
+          <label for="id_district" class="form-label fw-semibold">District *</label>
+          <input type="text" class="form-control {% if form.district.errors %}is-invalid{% endif %}"
+                 id="id_district" name="district" placeholder="Enter District"
+                 value="{{ form.district.value|default:'' }}" required>
+          {% if form.district.errors %}
+            <div class="invalid-feedback">{% for error in form.district.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-4">
+          <label for="id_city" class="form-label fw-semibold">City *</label>
+          <input type="text" class="form-control {% if form.city.errors %}is-invalid{% endif %}"
+                 id="id_city" name="city" placeholder="Enter City"
+                 value="{{ form.city.value|default:'' }}" required>
+          {% if form.city.errors %}
+            <div class="invalid-feedback">{% for error in form.city.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-12">
+          <label for="id_job_location" class="form-label fw-semibold">Job Location *</label>
+          <input type="text" class="form-control {% if form.job_location.errors %}is-invalid{% endif %}"
+                 id="id_job_location" name="job_location" placeholder="Enter Job Location"
+                 value="{{ form.job_location.value|default:'' }}" required>
+          {% if form.job_location.errors %}
+            <div class="invalid-feedback">{% for error in form.job_location.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Contact Information -->
+    <div class="mb-4">
+      <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary"><i class="bi bi-envelope me-2"></i>Contact Information</h5>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="id_phone_number" class="form-label fw-semibold">Contact Phone Number *</label>
+          <input type="tel" class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}"
+                 id="id_phone_number" name="phone_number" placeholder="Enter Contact Phone Number"
+                 value="{{ form.phone_number.value|default:'' }}" required>
+          {% if form.phone_number.errors %}
+            <div class="invalid-feedback">{% for error in form.phone_number.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <label for="id_email" class="form-label fw-semibold">Contact Email *</label>
+          <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                 id="id_email" name="email" placeholder="Enter Contact Email"
+                 value="{{ form.email.value|default:'' }}" required>
+          {% if form.email.errors %}
+            <div class="invalid-feedback">{% for error in form.email.errors %}{{ error }}{% endfor %}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-4 pt-3 border-top d-flex gap-2 justify-content-end">
+      <a href="{% url 'admin-panel:all-jobs' %}" class="btn btn-outline-secondary">Cancel</a>
+      <button type="submit" class="btn btn-gradient px-4">{% if is_edit %}Update Job{% else %}Publish Job{% endif %}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}{{ job_title }} — Applications — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="mb-4">
+  <a href="{% url 'admin-panel:job-detail' pk=job_id %}" class="btn btn-sm btn-light border mb-2">
+    <i class="bi bi-arrow-left"></i> Back to Job Details
+  </a>
+  <h4 class="fw-800 mb-0">Applications — {{ job_title }}</h4>
+  <p class="text-muted-2 fs-sm mb-0">All applicants for this job posting</p>
+</div>
+
+<!-- ====== JOB INFORMATION ====== -->
+<div class="sj-card p-4 mb-4">
+  <div class="row g-3">
+    <div class="col-md-3">
+      <div class="fs-xs text-muted-2 fw-bold">Job Title</div>
+      <div class="fw-semibold">{{ job_title }}</div>
+    </div>
+    <div class="col-md-3">
+      <div class="fs-xs text-muted-2 fw-bold">Organization</div>
+      <div class="fw-semibold">{{ organization }}</div>
+    </div>
+    <div class="col-md-2">
+      <div class="fs-xs text-muted-2 fw-bold">Location</div>
+      <div class="fw-semibold">{{ location|default:"—" }}</div>
+    </div>
+    <div class="col-md-2">
+      <div class="fs-xs text-muted-2 fw-bold">Created By</div>
+      <div class="fw-semibold">{{ creator_name }}
+        <span class="badge rounded-pill fs-xxs
+          {% if owner_type == 'Admin' %}bg-primary
+          {% elif owner_type == 'Staff' %}bg-info
+          {% else %}bg-success{% endif %}">{{ owner_type }}</span>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="fs-xs text-muted-2 fw-bold">Total Applications</div>
+      <div class="fw-800 text-primary" style="font-size:1.3rem;">{{ total_applications }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SEARCH & FILTERS ====== -->
+<form class="sj-card p-3 mb-4" method="get">
+  <div class="row g-2">
+    <div class="col-md-6">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Search Applicant</label>
+      <input type="text" class="form-control form-control-sm" name="q"
+             placeholder="Name, email, phone..." value="{{ search_query }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Application Status</label>
+      <select class="form-select form-select-sm" name="status">
+        <option value="">All Statuses</option>
+        {% for val, name in status_choices %}
+          <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end gap-2">
+      <button type="submit" class="btn btn-primary btn-sm flex-grow-1 py-2">
+        <i class="bi bi-search"></i>
+      </button>
+      {% if search_query or status_filter %}
+        <a href="{% url 'admin-panel:job-applications' pk=job_id %}" class="btn btn-outline-secondary btn-sm py-2">Clear</a>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+<!-- ====== APPLICANTS TABLE ====== -->
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>Applicant</th>
+          <th class="d-none d-lg-table-cell">Qualification</th>
+          <th>Applied</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td>
+            <div class="fw-bold">{{ app.applicant.full_name }}</div>
+            <div class="fs-xs text-muted-2"><i class="bi bi-envelope"></i> {{ app.applicant.email }}</div>
+            {% if app.applicant.phone %}
+              <div class="fs-xs text-muted-2"><i class="bi bi-telephone"></i> {{ app.applicant.phone }}</div>
+            {% endif %}
+          </td>
+          <td class="d-none d-lg-table-cell">
+            {% with profile=app.applicant.job_seeker_profile %}
+              {% if profile and profile.designation %}
+                <div class="fs-sm">{{ profile.designation }}</div>
+              {% else %}
+                <span class="text-muted fs-xs">—</span>
+              {% endif %}
+            {% endwith %}
+          </td>
+          <td>
+            <span class="fs-sm">{{ app.applied_at|date:"M d, Y" }}</span>
+          </td>
+          <td>
+            <form action="" method="post" class="d-inline m-0 p-0">
+              {% csrf_token %}
+              <input type="hidden" name="application_id" value="{{ app.id }}">
+              <input type="hidden" name="action" value="update_status">
+              <select name="status" class="form-select form-select-sm fw-auto d-inline-block" style="min-width:150px;" onchange="this.form.submit()">
+                {% for val, name in status_choices %}
+                  <option value="{{ val }}" {% if app.status == val %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+          <td class="text-end">
+            <div class="d-none d-md-flex justify-content-end gap-1">
+              <a href="{% url 'admin-panel:application-detail' pk=app.id %}" class="btn btn-light btn-icon btn-sm rounded-circle text-primary" data-bs-toggle="tooltip" title="View Application">
+                <i class="bi bi-file-text"></i>
+              </a>
+              <a href="{% url 'admin-panel:applicant-profile' pk=app.id %}" class="btn btn-light btn-icon btn-sm rounded-circle text-info" data-bs-toggle="tooltip" title="Applicant Profile">
+                <i class="bi bi-person"></i>
+              </a>
+              {% if app.resume and app.resume.file %}
+                <a href="{% url 'admin-panel:resume-viewer' pk=app.id %}" class="btn btn-light btn-icon btn-sm rounded-circle text-secondary" data-bs-toggle="tooltip" title="View Resume">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{{ app.resume.file.url }}" download class="btn btn-light btn-icon btn-sm rounded-circle text-success" data-bs-toggle="tooltip" title="Download Resume">
+                  <i class="bi bi-download"></i>
+                </a>
+              {% endif %}
+            </div>
+
+            <div class="d-md-none dropdown text-end">
+              <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end fs-sm shadow-sm">
+                <li><a class="dropdown-item" href="{% url 'admin-panel:application-detail' pk=app.id %}"><i class="bi bi-file-text me-2 text-primary"></i> View Application</a></li>
+                <li><a class="dropdown-item" href="{% url 'admin-panel:applicant-profile' pk=app.id %}"><i class="bi bi-person me-2 text-info"></i> Applicant Profile</a></li>
+                {% if app.resume and app.resume.file %}
+                  <li><a class="dropdown-item" href="{% url 'admin-panel:resume-viewer' pk=app.id %}"><i class="bi bi-eye me-2 text-secondary"></i> View Resume</a></li>
+                  <li><a class="dropdown-item" href="{{ app.resume.file.url }}" download><i class="bi bi-download me-2 text-success"></i> Download Resume</a></li>
+                {% endif %}
+              </ul>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center py-5">
+            <div class="text-muted-2 mb-3"><i class="bi bi-file-earmark-person fs-1"></i></div>
+            <h6 class="fw-bold">No Applications Found</h6>
+            <p class="fs-sm mb-0">No applicants match your criteria for this job.</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/_pagination.html" %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+  });
+</script>
+{% endblock %}

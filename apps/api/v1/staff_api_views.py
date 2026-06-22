@@ -43,6 +43,16 @@ class StaffJobSerializer(serializers.ModelSerializer):
             "updated_at", "published_at", "is_active"
         ]
         read_only_fields = ["id", "job_id", "created_by", "created_at", "updated_at", "published_at", "is_active"]
+        extra_kwargs = {
+            "job_location": {
+                "required": True,
+                "allow_blank": False,
+                "error_messages": {
+                    "required": "Job Location is required.",
+                    "blank": "Job Location is required.",
+                }
+            }
+        }
 
     def validate_phone_number(self, value):
         phone = value.strip()

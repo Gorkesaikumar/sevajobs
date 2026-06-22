@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SevaJobs Location Analytics Report</title>
+<style>
+    @page {
+        size: A4 portrait;
+        margin: 2cm;
+        @frame footer {
+            -pdf-frame-content: footerContent;
+            bottom: 1cm;
+            margin-left: 2cm;
+            margin-right: 2cm;
+            height: 1cm;
+        }
+    }
+    body {
+        font-family: Helvetica, Arial, sans-serif;
+        color: #333333;
+        font-size: 11pt;
+    }
+    h1 {
+        color: #4F46E5;
+        font-size: 24pt;
+        margin-bottom: 5px;
+    }
+    h3 {
+        color: #6B7280;
+        font-size: 14pt;
+        margin-top: 0;
+        font-weight: normal;
+    }
+    table.report-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    table.report-table th, table.report-table td {
+        border: 1px solid #E5E7EB;
+        padding: 8px;
+        text-align: left;
+    }
+    table.report-table th {
+        background-color: #F3F4F6;
+        color: #374151;
+        font-weight: bold;
+    }
+    table.summary-table {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+    table.summary-table td {
+        text-align: center;
+        padding: 15px;
+        border: 1px solid #E5E7EB;
+        background-color: #F9FAFB;
+    }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .metric-value { font-size: 18pt; font-weight: bold; color: #111827; }
+    .metric-label { font-size: 10pt; color: #6B7280; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1>SevaJobs</h1>
+        <h3>Staff Performance by Location Report ({{ timeframe|title }})</h3>
+        <h4 style="color: #4B5563; margin-top: 5px; font-weight: normal;">All Staff Locations</h4>
+    </div>
+
+    <table class="summary-table">
+        <tr>
+            <td>
+                <div class="metric-label">Total Staff</div>
+                <div class="metric-value">{{ total_staff_all }}</div>
+            </td>
+            <td>
+                <div class="metric-label">Jobs Posted</div>
+                <div class="metric-value" style="color: #4F46E5;">{{ total_jobs_all }}</div>
+            </td>
+            <td>
+                <div class="metric-label">Applications Received</div>
+                <div class="metric-value" style="color: #10B981;">{{ total_applications_all }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>State</th>
+                <th>District</th>
+                <th>City</th>
+                <th class="text-center">Staff Count</th>
+                <th class="text-center">Jobs Posted</th>
+                <th class="text-center">Apps Received</th>
+                <th class="text-center">Active Jobs</th>
+                <th class="text-center">Closed Jobs</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in reports_data %}
+            <tr>
+                <td>{{ row.state }}</td>
+                <td>{{ row.district }}</td>
+                <td>{{ row.city }}</td>
+                <td class="text-center">{{ row.staff_count }}</td>
+                <td class="text-center">{{ row.jobs_posted }}</td>
+                <td class="text-center">{{ row.applications_received }}</td>
+                <td class="text-center" style="color: #10B981;">{{ row.active_jobs }}</td>
+                <td class="text-center" style="color: #EF4444;">{{ row.closed_jobs }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center">No data available for the selected filters.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div id="footerContent" style="text-align: right; color: #9CA3AF; font-size: 9pt;">
+        Page <pdf:pagenumber> of <pdf:pagecount>
+    </div>
+
+</body>
+</html>

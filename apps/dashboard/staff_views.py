@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.exceptions import PermissionDenied
 from django.views.generic import TemplateView, CreateView, UpdateView, View
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -10,10 +11,33 @@ import random
 import string
 
 from apps.accounts.models import User, AuditLog
-from apps.jobs.models import StaffJob
+from apps.jobs.models import StaffJob, JobAssignment
 from apps.applications.models import JobApplication
 from apps.jobs.forms import StaffJobForm
 from apps.accounts.middleware import get_client_ip
+
+
+def get_staff_job_for_user(request, pk):
+    """Resolve a StaffJob and the requesting staff member's relationship to it.
+
+    Returns a tuple ``(job, is_owner, is_assigned)``.
+
+    * Raises ``Http404`` only when the job genuinely does not exist.
+    * Raises ``PermissionDenied`` (403) when the staff member neither created
+      the job nor has an active assignment to it — this is what prevents the
+      previous behaviour of silently 404-ing on Admin-assigned jobs.
+    """
+    job = get_object_or_404(StaffJob, id=pk)
+    is_owner = job.created_by_id == request.user.id
+    is_assigned = JobAssignment.objects.filter(
+        job=job,
+        assigned_staff=request.user,
+        status__in=[JobAssignment.Status.ASSIGNED, JobAssignment.Status.IN_PROGRESS],
+    ).exists()
+    if not (is_owner or is_assigned):
+        raise PermissionDenied("You do not have permission to access this job.")
+    return job, is_owner, is_assigned
+
 
 class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     """Enforces that the user is logged in as a staff member with staff active scope."""
@@ -37,18 +61,46 @@ class StaffDashboardView(StaffRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         user = self.request.user
+        from apps.jobs.models import JobAssignment
         
-        # Stats
-        ctx["total_jobs"] = StaffJob.objects.filter(created_by=user).count()
-        ctx["active_jobs"] = StaffJob.objects.filter(created_by=user, status="active", is_active=True).count()
-        ctx["closed_jobs"] = StaffJob.objects.filter(created_by=user, status="closed", is_active=True).count()
-        ctx["total_applications"] = JobApplication.objects.filter(staff_job__created_by=user).count()
+        # Get active assignments
+        assigned_job_ids = list(JobAssignment.objects.filter(
+            assigned_staff=user,
+            status__in=["assigned", "in_progress"]
+        ).values_list("job_id", flat=True))
+        
+        # Jobs filter
+        staff_jobs_qs = StaffJob.objects.filter(
+            Q(created_by=user) | Q(id__in=assigned_job_ids)
+        ).distinct()
+        
+        # Dashboard cards metrics
+        ctx["assigned_jobs_count"] = len(assigned_job_ids)
+        
+        apps_qs = JobApplication.objects.filter(staff_job__in=staff_jobs_qs).distinct()
+        ctx["new_applications_count"] = apps_qs.filter(status=JobApplication.Status.APPLIED).count()
+        ctx["interviews_scheduled_count"] = apps_qs.filter(status=JobApplication.Status.INTERVIEW_SCHEDULED).count()
+        
+        progress_statuses = [
+            JobApplication.Status.UNDER_REVIEW,
+            JobApplication.Status.SHORTLISTED,
+            JobApplication.Status.INTERVIEWING,
+            JobApplication.Status.INTERVIEW_COMPLETED,
+            JobApplication.Status.DECISION_PENDING
+        ]
+        ctx["recruitment_progress_count"] = apps_qs.filter(status__in=progress_statuses).count()
+
+        # Keep these variables for template legacy compatibility if needed
+        ctx["total_jobs"] = staff_jobs_qs.count()
+        ctx["active_jobs"] = staff_jobs_qs.filter(status="active", is_active=True).count()
+        ctx["closed_jobs"] = staff_jobs_qs.filter(status="closed", is_active=True).count()
+        ctx["total_applications"] = apps_qs.count()
         
         # Recent Jobs
-        ctx["recent_jobs"] = StaffJob.objects.filter(created_by=user).order_by("-created_at")[:5]
+        ctx["recent_jobs"] = staff_jobs_qs.order_by("-created_at")[:5]
         
         # Recent Applications
-        ctx["recent_applications"] = JobApplication.objects.filter(staff_job__created_by=user).select_related("applicant", "staff_job").order_by("-applied_at")[:5]
+        ctx["recent_applications"] = apps_qs.select_related("applicant", "staff_job").order_by("-applied_at")[:5]
         
         return ctx
 
@@ -57,17 +109,36 @@ class StaffMyJobsView(StaffRequiredMixin, TemplateView):
     template_name = "dashboard/staff/manage_jobs.html"
     sidebar_section = "jobs"
 
+    def get(self, request, *args, **kwargs):
+        # Opening "My Jobs" acknowledges the assignment alerts: clear the
+        # unread "job assigned" notifications that drive the sidebar badge.
+        from apps.notifications.models import Notification
+        Notification.objects.filter(
+            recipient=request.user,
+            notification_type=Notification.Type.JOB_ASSIGNED,
+            is_read=False,
+        ).update(is_read=True, read_at=timezone.now())
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         user = self.request.user
-        qs = StaffJob.objects.filter(created_by=user)
+
+        assigned_job_ids = list(JobAssignment.objects.filter(
+            assigned_staff=user,
+            status__in=["assigned", "in_progress"]
+        ).values_list("job_id", flat=True))
+
+        qs = StaffJob.objects.select_related("created_by").filter(
+            Q(created_by=user) | Q(id__in=assigned_job_ids)
+        ).distinct()
 
         # Search
         q = self.request.GET.get("q", "").strip()
         if q:
             qs = qs.filter(
-                Q(designation__icontains=q) | 
-                Q(organization_name__icontains=q) | 
+                Q(designation__icontains=q) |
+                Q(organization_name__icontains=q) |
                 Q(job_location__icontains=q)
             )
 
@@ -79,9 +150,16 @@ class StaffMyJobsView(StaffRequiredMixin, TemplateView):
         # Pagination
         paginator = Paginator(qs.order_by("-created_at"), 10)
         page_number = self.request.GET.get("page", 1)
-        ctx["page_obj"] = paginator.get_page(page_number)
-        ctx["jobs"] = ctx["page_obj"]
-        
+        page_obj = paginator.get_page(page_number)
+
+        # Tag each job with its source relative to the current staff member so
+        # the template can show "Assigned by Admin" vs "Created by You".
+        for job in page_obj:
+            job.is_assigned_to_me = job.created_by_id != user.id
+
+        ctx["page_obj"] = page_obj
+        ctx["jobs"] = page_obj
+
         return ctx
 
 
@@ -99,6 +177,14 @@ class StaffAddJobView(StaffRequiredMixin, View):
             # Save the job
             job = form.save(commit=False)
             job.created_by = request.user
+            
+            # Inherit location fields from the Staff member's profile
+            if hasattr(request.user, "staff_profile"):
+                profile = request.user.staff_profile
+                job.country = profile.country
+                job.state = profile.state
+                job.district = profile.district
+                job.city = profile.city
             
             # Generate unique job_id: SJOB- + random 6 digits
             while True:
@@ -133,12 +219,23 @@ class StaffEditJobView(StaffRequiredMixin, View):
     sidebar_section = "jobs"
 
     def get(self, request, pk):
-        job = get_object_or_404(StaffJob, id=pk, created_by=request.user)
+        job, is_owner, is_assigned = get_staff_job_for_user(request, pk)
+        if not is_owner:
+            # Admin-assigned jobs are read-only for staff: the posting belongs
+            # to the Admin. Staff manage recruitment via the Applications page.
+            messages.info(
+                request,
+                "This job was assigned to you by Admin and is read-only. "
+                "You can manage its applications, but only the job owner can edit the posting.",
+            )
+            return redirect("staff:my-jobs")
         form = StaffJobForm(instance=job, request=request)
         return render(request, self.template_name, {"form": form, "is_edit": True, "job": job})
 
     def post(self, request, pk):
-        job = get_object_or_404(StaffJob, id=pk, created_by=request.user)
+        job, is_owner, is_assigned = get_staff_job_for_user(request, pk)
+        if not is_owner:
+            raise PermissionDenied("You cannot edit a job that was assigned to you by Admin.")
         form = StaffJobForm(request.POST, instance=job, request=request)
         if form.is_valid():
             form.save()
@@ -161,7 +258,10 @@ class StaffEditJobView(StaffRequiredMixin, View):
 
 class StaffJobToggleView(StaffRequiredMixin, View):
     def post(self, request, pk):
-        job = get_object_or_404(StaffJob, id=pk, created_by=request.user)
+        job, is_owner, is_assigned = get_staff_job_for_user(request, pk)
+        if not is_owner:
+            messages.error(request, "Only the job owner can close or reopen this posting.")
+            return redirect("staff:my-jobs")
         action = request.POST.get("action")
         
         if action == "close":
@@ -205,9 +305,16 @@ class StaffApplicationsView(StaffRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         user = self.request.user
+        from apps.jobs.models import JobAssignment
         
-        # Get all applications for jobs posted by this staff user
-        qs = JobApplication.objects.filter(staff_job__created_by=user).select_related("applicant", "staff_job", "resume")
+        assigned_job_ids = list(JobAssignment.objects.filter(
+            assigned_staff=user,
+            status__in=["assigned", "in_progress"]
+        ).values_list("job_id", flat=True))
+        
+        qs = JobApplication.objects.filter(
+            Q(staff_job__created_by=user) | Q(staff_job_id__in=assigned_job_ids)
+        ).select_related("applicant", "staff_job", "resume").distinct()
         
         # Search candidate name / email
         q = self.request.GET.get("q", "").strip()
@@ -242,9 +349,17 @@ class StaffProfileView(StaffRequiredMixin, View):
         first_name = request.POST.get("first_name", "").strip()
         last_name = request.POST.get("last_name", "").strip()
         phone = request.POST.get("phone", "").strip()
+        country = request.POST.get("country", "").strip()
+        state = request.POST.get("state", "").strip()
+        district = request.POST.get("district", "").strip()
+        city = request.POST.get("city", "").strip()
         
         if not first_name or not last_name:
             messages.error(request, "First name and last name are required.")
+            return render(request, self.template_name)
+
+        if not country or not state or not district or not city:
+            messages.error(request, "Location fields (Country, State, District, City) are required.")
             return render(request, self.template_name)
 
         user = request.user
@@ -264,7 +379,11 @@ class StaffProfileView(StaffRequiredMixin, View):
             profile = user.staff_profile
             profile.full_name = f"{first_name} {last_name}".strip()
             profile.phone_number = phone
-            profile.save(update_fields=["full_name", "phone_number"])
+            profile.country = country
+            profile.state = state
+            profile.district = district
+            profile.city = city
+            profile.save()
 
         messages.success(request, "Profile updated successfully.")
         return redirect("staff:profile")

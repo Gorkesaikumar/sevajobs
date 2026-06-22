@@ -750,6 +750,15 @@ img {
   font-size: var(--sj-fs-base);
 }
 
+/* Keep arrow clearance on the public search-bar selects (shorthand above
+   resets the global right padding). */
+.sj-search .form-select {
+  padding-right: 2.5rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .sj-search .input-divider {
   border-left: 1px solid var(--sj-line);
 }
@@ -1275,6 +1284,32 @@ img {
 
 .form-control::placeholder {
   color: var(--sj-subtle);
+}
+
+/* --------------------------------------------------------------------------
+   Global select-dropdown standard
+   Reserves dedicated space on the right for the dropdown arrow so option
+   text never overlaps, touches, or hides behind the icon. Long options
+   truncate with an ellipsis instead of colliding with the arrow.
+   Applies consistently to every <select class="form-select"> in the app.
+   -------------------------------------------------------------------------- */
+.form-select {
+  padding-right: 2.5rem;
+  background-position: right .9rem center;
+  background-size: 16px 12px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.form-select-sm {
+  padding-right: 2rem;
+  background-position: right .65rem center;
+}
+
+.form-select-lg {
+  padding-right: 2.75rem;
+  background-position: right 1.1rem center;
 }
 
 .form-control-lg {

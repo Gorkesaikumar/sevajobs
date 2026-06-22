@@ -179,6 +179,10 @@ class Job(BaseModel):
     metadata = models.JSONField(default=dict, blank=True)
 
     location = models.CharField(max_length=200)
+    country = models.CharField(max_length=100, default="India")
+    state = models.CharField(max_length=100, default="", db_index=True)
+    district = models.CharField(max_length=100, default="", db_index=True)
+    city = models.CharField(max_length=100, default="", db_index=True)
     is_remote = models.BooleanField(default=False, db_index=True)
     job_type = models.CharField(max_length=20, choices=JobType.choices, default=JobType.FULL_TIME, db_index=True)
     experience_level = models.CharField(max_length=20, choices=ExperienceLevel.choices, db_index=True)
@@ -212,6 +216,7 @@ class Job(BaseModel):
     # --- Featured placement (admin-controlled) -----------------------------
     is_featured = models.BooleanField(default=False, db_index=True)
     featured_until = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
 
     class Meta(BaseModel.Meta):
         verbose_name = "Job"
@@ -414,8 +419,13 @@ class StaffJob(BaseModel):
     vacancies = models.PositiveIntegerField(default=1)
     offered_salary = models.PositiveIntegerField(db_index=True)
     job_location = models.CharField(max_length=255, db_index=True)
+    country = models.CharField(max_length=100, default="India")
+    state = models.CharField(max_length=100, default="", db_index=True)
+    district = models.CharField(max_length=100, default="", db_index=True)
+    city = models.CharField(max_length=100, default="", db_index=True)
     phone_number = models.CharField(max_length=16)
     email = models.EmailField()
+    description = models.TextField(blank=True, default="")
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -443,9 +453,95 @@ class StaffJob(BaseModel):
         return f"{self.designation} at {self.organization_name} ({self.job_id})"
 
     @property
+    def display_location(self) -> str:
+        if self.job_location:
+            return self.job_location
+        if hasattr(self.created_by, "staff_profile"):
+            profile = self.created_by.staff_profile
+            parts = []
+            if profile.city:
+                parts.append(profile.city)
+            if profile.district and profile.district != profile.city:
+                parts.append(profile.district)
+            if profile.state:
+                parts.append(profile.state)
+            if parts:
+                return ", ".join(parts)
+        parts = []
+        if self.city:
+            parts.append(self.city)
+        if self.district and self.district != self.city:
+            parts.append(self.district)
+        if self.state:
+            parts.append(self.state)
+        if parts:
+            return ", ".join(parts)
+        return ""
+
+    @property
     def is_staff_job(self) -> bool:
         return True
         
     @property
     def is_published(self) -> bool:
         return self.is_active and self.status == self.Status.ACTIVE
+
+    @property
+    def created_by_type(self) -> str:
+        if self.created_by.role in ["super_admin", "admin"]:
+            return "Admin"
+        return "Staff"
+
+
+class JobAssignment(BaseModel):
+    """
+    Model linking StaffJob, assigned Staff member (User), and assigner (Admin).
+    Tracks the status and history of recruitment assignments.
+    """
+    class Status(models.TextChoices):
+        ASSIGNED = "assigned", "Assigned"
+        IN_PROGRESS = "in_progress", "In Progress"
+        COMPLETED = "completed", "Completed"
+        REASSIGNED = "reassigned", "Reassigned"
+
+    job = models.ForeignKey(
+        StaffJob,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="assignments"
+    )
+    recruiter_job = models.ForeignKey(
+        "jobs.Job",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="assignments"
+    )
+    assigned_staff = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="job_assignments"
+    )
+    assigned_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_jobs_by"
+    )
+    assigned_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.ASSIGNED,
+        db_index=True
+    )
+    notes = models.TextField(blank=True, default="")
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Job Assignment"
+        verbose_name_plural = "Job Assignments"
+
+    def __str__(self) -> str:
+        return f"{self.job.designation} assigned to {self.assigned_staff.email}"

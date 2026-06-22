@@ -1,0 +1,98 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}Applicants for {{ staff_job.designation }} — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="mb-4">
+  <a href="{% url 'admin-panel:staff-applicants' %}" class="btn btn-link text-decoration-none p-0 mb-3 fs-sm text-muted-2">
+    <i class="bi bi-arrow-left me-1"></i> Back to Staff Jobs
+  </a>
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <h4 class="fw-800 mb-1">{{ staff_job.designation }}</h4>
+      <div class="d-flex align-items-center gap-3 fs-sm text-muted-2">
+        <span><i class="bi bi-building me-1"></i> {{ staff_job.organization_name }}</span>
+        <span><i class="bi bi-geo-alt me-1"></i> {{ staff_job.job_location }}</span>
+        <span><i class="bi bi-person-badge me-1"></i> Posted by: {{ staff_job.created_by.get_full_name }}</span>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      {% if staff_job.status == 'active' %}
+        <span class="badge bg-success-subtle text-success border border-success-subtle d-flex align-items-center px-3 fs-sm">Active</span>
+      {% else %}
+        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle d-flex align-items-center px-3 fs-sm">Closed</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="sj-card overflow-hidden">
+  <div class="card-header bg-white border-bottom py-3">
+    <h6 class="fw-bold mb-0">Job Applications ({{ page_obj.paginator.count }})</h6>
+  </div>
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>Applicant</th>
+          <th>Contact</th>
+          <th>Applied On</th>
+          <th>Status</th>
+          <th class="text-end">Resume</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in page_obj %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar avatar-sm bg-light text-primary fw-bold rounded-circle d-flex align-items-center justify-content-center border">
+                {{ app.applicant.first_name|first|upper }}{{ app.applicant.last_name|first|upper }}
+              </div>
+              <div>
+                <div class="fw-bold fs-sm">{{ app.applicant.get_full_name }}</div>
+                {% if app.expected_salary %}
+                <div class="fs-xs text-muted-2">Exp. Salary: ₹{{ app.expected_salary|intcomma }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="fs-sm"><i class="bi bi-envelope text-muted-2 me-1"></i> {{ app.applicant.email }}</div>
+            {% if app.applicant.phone %}
+            <div class="fs-sm"><i class="bi bi-telephone text-muted-2 me-1"></i> {{ app.applicant.phone }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <span class="fs-sm">{{ app.created_at|date:"M d, Y" }}</span>
+          </td>
+          <td>
+            <span class="badge bg-light-brand text-primary border border-primary-subtle">{{ app.get_status_display }}</span>
+          </td>
+          <td class="text-end">
+            {% if app.resume and app.resume.file %}
+              <a href="{{ app.resume.file.url }}" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill">
+                <i class="bi bi-download me-1"></i> Resume
+              </a>
+            {% else %}
+              <span class="text-muted fs-sm fst-italic">No Resume</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center py-5">
+            <div class="text-muted-2 mb-3"><i class="bi bi-people fs-1"></i></div>
+            <h6 class="fw-bold">No Applications Yet</h6>
+            <p class="fs-sm mb-0">This job hasn't received any applications.</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/_pagination.html" %}
+
+{% endblock %}

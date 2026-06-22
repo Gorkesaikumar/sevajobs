@@ -64,6 +64,10 @@ class StaffManagementTests(APITestCase):
             "phone_number": "1234567890",
             "password": "staffpassword123",
             "confirm_password": "staffpassword123",
+            "country": "India",
+            "state": "Telangana",
+            "district": "Hyderabad",
+            "city": "Hyderabad",
         }
 
         # Valid creation — expect 200 with success screen (created_profile in context)

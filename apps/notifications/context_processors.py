@@ -21,4 +21,13 @@ def notifications(request):
             ).count()
             context['pending_interviews_count'] = pending_interviews_count
 
+        if request.user.role == 'staff':
+            # Count unread "new job assigned" notifications for the sidebar /
+            # dashboard badge. Stays unread until the staff opens "My Jobs".
+            context['staff_assigned_unread'] = Notification.objects.filter(
+                recipient=request.user,
+                notification_type=Notification.Type.JOB_ASSIGNED,
+                is_read=False,
+            ).count()
+
     return context

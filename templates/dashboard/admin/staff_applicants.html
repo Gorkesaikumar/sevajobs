@@ -1,0 +1,120 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}Staff Job Applicants — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-800 mb-0">Staff Job Applicants</h4>
+    <p class="text-muted-2 fs-sm mb-0">Monitor staff job postings and applications</p>
+  </div>
+</div>
+
+<!-- Search Form -->
+<form class="sj-card p-3 mb-4" method="get" action="{% url 'admin-panel:staff-applicants' %}">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-9">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Search</label>
+      <input type="text" class="form-control form-control-sm" name="q"
+             placeholder="Search by Job Title, Staff Name, Organization..." value="{{ search_query }}">
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm w-100">
+        <i class="bi bi-search"></i> Search
+      </button>
+      {% if search_query %}
+        <a href="{% url 'admin-panel:staff-applicants' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>Job Details</th>
+          <th>Staff Member</th>
+          <th>Organization</th>
+          <th>Status</th>
+          <th>Applicants</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in page_obj %}
+        <tr>
+          <td>
+            <div class="fw-bold">{{ job.designation }}</div>
+            <div class="fs-xs text-muted-2">ID: {{ job.job_id }}</div>
+            <div class="fs-xs text-muted-2">Posted: {{ job.created_at|date:"M d, Y" }}</div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar avatar-xs bg-light-brand text-primary fw-bold rounded-circle d-flex align-items-center justify-content-center">
+                {{ job.created_by.first_name|first|upper }}{{ job.created_by.last_name|first|upper }}
+              </div>
+              <div>
+                <div class="fw-bold fs-sm">{{ job.created_by.get_full_name|default:"Staff" }}</div>
+                <div class="fs-xs text-muted-2">{{ job.created_by.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="fs-sm">{{ job.organization_name }}</span>
+          </td>
+          <td>
+            {% if job.status == 'active' %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Closed</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge bg-primary rounded-pill">{{ job.applicant_count }}</span>
+          </td>
+          <td class="text-end">
+            <!-- Desktop: Tooltips & Icons -->
+            <div class="d-none d-md-flex justify-content-end gap-1">
+              <a href="{% url 'admin-panel:staff-applicant-detail' pk=job.pk %}" class="btn btn-light btn-icon btn-sm rounded-circle text-primary" data-bs-toggle="tooltip" title="View Applicants">
+                <i class="bi bi-people-fill"></i>
+              </a>
+            </div>
+
+            <!-- Mobile: Dropdown -->
+            <div class="d-md-none dropdown text-end">
+              <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end fs-sm shadow-sm">
+                <li><a class="dropdown-item" href="{% url 'admin-panel:staff-applicant-detail' pk=job.pk %}"><i class="bi bi-people-fill me-2 text-primary"></i> View Applicants</a></li>
+              </ul>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-5">
+            <div class="text-muted-2 mb-3"><i class="bi bi-briefcase fs-1"></i></div>
+            <h6 class="fw-bold">No Staff Jobs Found</h6>
+            <p class="fs-sm mb-0">There are no staff job postings matching your criteria.</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/_pagination.html" %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });
+</script>
+{% endblock %}

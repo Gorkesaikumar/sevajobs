@@ -1,0 +1,323 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}All Jobs — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-800 mb-0">Job Management</h4>
+    <p class="text-muted-2 fs-sm mb-0">View and manage all jobs across the platform</p>
+  </div>
+  <a href="{% url 'admin-panel:create-job' %}" class="btn btn-gradient btn-sm">
+    <i class="bi bi-plus-circle me-1"></i> Post Admin Job
+  </a>
+</div>
+
+<!-- ====== SUMMARY CARDS ====== -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-lg">
+    <div class="sj-card p-3 text-center h-100">
+      <div class="fw-800 text-primary" style="font-size:1.5rem;">{{ summary.total }}</div>
+      <div class="fs-xs text-muted-2">Total Jobs</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg">
+    <div class="sj-card p-3 text-center h-100">
+      <div class="fw-800 text-success" style="font-size:1.5rem;">{{ summary.active }}</div>
+      <div class="fs-xs text-muted-2">Active</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg">
+    <div class="sj-card p-3 text-center h-100">
+      <div class="fw-800 text-secondary" style="font-size:1.5rem;">{{ summary.closed }}</div>
+      <div class="fs-xs text-muted-2">Closed</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg">
+    <div class="sj-card p-3 text-center h-100">
+      <div class="fw-800 text-danger" style="font-size:1.5rem;">{{ summary.expired }}</div>
+      <div class="fs-xs text-muted-2">Expired</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg">
+    <div class="sj-card p-3 text-center h-100">
+      <div class="fw-800 text-info" style="font-size:1.5rem;">{{ summary.total_applications }}</div>
+      <div class="fs-xs text-muted-2">Applications</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SOURCE BREAKDOWN ====== -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <a href="?source=admin" class="sj-card p-3 d-flex align-items-center gap-3 text-decoration-none text-reset h-100 {% if source_filter == 'admin' %}border-primary{% endif %}">
+      <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style="width:40px;height:40px;">
+        <i class="bi bi-shield-check text-primary"></i>
+      </div>
+      <div>
+        <div class="fw-800" style="font-size:1.2rem;">{{ summary.admin }}</div>
+        <div class="fs-xs text-muted-2">Admin Jobs</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="?source=staff" class="sj-card p-3 d-flex align-items-center gap-3 text-decoration-none text-reset h-100 {% if source_filter == 'staff' %}border-primary{% endif %}">
+      <div class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style="width:40px;height:40px;">
+        <i class="bi bi-person-badge text-info"></i>
+      </div>
+      <div>
+        <div class="fw-800" style="font-size:1.2rem;">{{ summary.staff }}</div>
+        <div class="fs-xs text-muted-2">Staff Jobs</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="?source=recruiter" class="sj-card p-3 d-flex align-items-center gap-3 text-decoration-none text-reset h-100 {% if source_filter == 'recruiter' %}border-primary{% endif %}">
+      <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style="width:40px;height:40px;">
+        <i class="bi bi-buildings text-success"></i>
+      </div>
+      <div>
+        <div class="fw-800" style="font-size:1.2rem;">{{ summary.recruiter }}</div>
+        <div class="fs-xs text-muted-2">Recruiter Jobs</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== FILTERS & SEARCH ====== -->
+<form class="sj-card p-3 mb-4" method="get" action="{% url 'admin-panel:all-jobs' %}">
+  <div class="row g-2">
+    <div class="col-md-3">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Search</label>
+      <input type="text" class="form-control form-control-sm" name="q"
+             placeholder="Title, Org, ID, Staff, Location..." value="{{ search_query }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Job Source</label>
+      <select class="form-select form-select-sm" name="source">
+        <option value="">All Sources</option>
+        <option value="admin" {% if source_filter == 'admin' %}selected{% endif %}>Admin Jobs</option>
+        <option value="staff" {% if source_filter == 'staff' %}selected{% endif %}>Staff Jobs</option>
+        <option value="recruiter" {% if source_filter == 'recruiter' %}selected{% endif %}>Recruiter Jobs</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Status</label>
+      <select class="form-select form-select-sm" name="status">
+        <option value="">All Statuses</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Closed</option>
+        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+        <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+        <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>Archived</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Applications</label>
+      <select class="form-select form-select-sm" name="has_apps">
+        <option value="">All</option>
+        <option value="yes" {% if has_apps_filter == 'yes' %}selected{% endif %}>Has Applications</option>
+        <option value="no" {% if has_apps_filter == 'no' %}selected{% endif %}>No Applications</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end gap-2">
+      <button type="submit" class="btn btn-primary btn-sm flex-grow-1 py-2">
+        <i class="bi bi-search me-1"></i> Filter
+      </button>
+      {% if search_query or status_filter or source_filter or has_apps_filter %}
+        <a href="{% url 'admin-panel:all-jobs' %}" class="btn btn-outline-secondary btn-sm py-2">Clear</a>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+<!-- ====== UNIFIED JOBS TABLE ====== -->
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>Job Details</th>
+          <th>Created By</th>
+          <th class="d-none d-lg-table-cell">Salary & Vacancies</th>
+          <th>Applications</th>
+          <th>Status</th>
+          <th class="d-none d-xl-table-cell">Assigned Staff</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in jobs %}
+        <tr {% if not job.is_active %}class="table-light"{% endif %}>
+          <td>
+            <div class="fw-bold">
+              <a href="{% url 'admin-panel:job-detail' pk=job.id %}" class="text-reset text-decoration-none">
+                {{ job.title }}
+              </a>
+            </div>
+            {% if job.owner_type == 'Admin' %}
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-xxs">Powered by SevaJobs</span>
+            {% elif job.source_type == 'recruiter_job' %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle fs-xxs">Recruiter</span>
+            {% endif %}
+            <div class="fs-xs text-muted-2 mt-1">ID: {{ job.job_id }}</div>
+            <div class="fs-xs text-muted-2">{{ job.location }}</div>
+          </td>
+          <td>
+            <div class="fw-semibold fs-sm">{{ job.organization }}</div>
+            <div class="fs-xs text-muted-2">{{ job.creator_name }}</div>
+            <span class="badge rounded-pill fs-xxs
+              {% if job.owner_type == 'Admin' %}bg-primary
+              {% elif job.owner_type == 'Staff' %}bg-info
+              {% else %}bg-success{% endif %}">{{ job.owner_type }}</span>
+          </td>
+          <td class="d-none d-lg-table-cell">
+            {% if job.salary %}
+              <div class="fs-sm fw-bold text-success">
+                {% if job.source_type == 'staff_job' %}
+                  &#8377;{{ job.salary|intcomma }}
+                {% else %}
+                  &#8377;{{ job.salary }}
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="fs-xs text-muted">Not Disclosed</div>
+            {% endif %}
+            <div class="fs-xs text-muted-2">{{ job.vacancies }} vacancy{{ job.vacancies|pluralize:"y,ies" }}</div>
+          </td>
+          <td>
+            <a href="{% url 'admin-panel:job-applications' pk=job.id %}" class="fw-bold text-primary text-decoration-none fs-sm">
+              {{ job.app_count }}
+              <i class="bi bi-box-arrow-up-right ms-1 fs-xxs"></i>
+            </a>
+          </td>
+          <td>
+            {% if not job.is_active %}
+              <span class="badge bg-dark-subtle text-dark border border-dark-subtle">Archived</span>
+            {% elif job.status == 'active' %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+            {% elif job.status == 'closed' %}
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Closed</span>
+            {% elif job.status == 'draft' %}
+              <span class="badge bg-info-subtle text-info border border-info-subtle">Draft</span>
+            {% elif job.status == 'expired' %}
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Expired</span>
+            {% elif job.status == 'paused' %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Paused</span>
+            {% else %}
+              <span class="badge bg-light text-dark border">{{ job.status_display }}</span>
+            {% endif %}
+            <div class="fs-xxs text-muted-2 mt-1">{{ job.posted_date|date:"M d, Y" }}</div>
+          </td>
+          <td class="d-none d-xl-table-cell">
+            <div class="d-flex flex-wrap gap-1">
+              {% for assignment in job.assigned_staff %}
+                <span class="badge bg-light text-dark border" title="{{ assignment.assigned_staff.email }}">
+                  {{ assignment.assigned_staff.get_full_name|default:"Staff" }}
+                </span>
+              {% empty %}
+                <span class="text-muted fs-xs fst-italic">—</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td class="text-end">
+            <!-- Desktop: Icon Buttons -->
+            <div class="d-none d-md-flex justify-content-end gap-1">
+              <a href="{% url 'admin-panel:job-detail' pk=job.id %}" class="btn btn-light btn-icon btn-sm rounded-circle text-primary" data-bs-toggle="tooltip" title="View Details">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{% url 'admin-panel:job-applications' pk=job.id %}" class="btn btn-light btn-icon btn-sm rounded-circle text-info" data-bs-toggle="tooltip" title="View Applications ({{ job.app_count }})">
+                <i class="bi bi-people"></i>
+              </a>
+              {% if job.source_type == 'staff_job' %}
+                <a href="{% url 'admin-panel:edit-job' pk=job.id %}" class="btn btn-light btn-icon btn-sm rounded-circle text-warning" data-bs-toggle="tooltip" title="Edit Job">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                {% if job.owner_type == 'Admin' %}
+                  <a href="{% url 'admin-panel:assign-staff' pk=job.id %}" class="btn btn-light btn-icon btn-sm rounded-circle text-success" data-bs-toggle="tooltip" title="Assign Staff">
+                    <i class="bi bi-person-plus"></i>
+                  </a>
+                {% endif %}
+              {% endif %}
+              <form action="{% url 'admin-panel:toggle-job' pk=job.id %}" method="post" class="d-inline m-0 p-0">
+                {% csrf_token %}
+                <input type="hidden" name="source_type" value="{{ job.source_type }}">
+                {% if not job.is_active %}
+                  <button type="submit" name="action" value="reopen" class="btn btn-light btn-icon btn-sm rounded-circle text-success" data-bs-toggle="tooltip" title="Restore & Reopen">
+                    <i class="bi bi-arrow-clockwise"></i>
+                  </button>
+                {% elif job.status == 'active' %}
+                  <button type="submit" name="action" value="close" class="btn btn-light btn-icon btn-sm rounded-circle text-danger" data-bs-toggle="tooltip" title="Close Job">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                {% elif job.status == 'closed' %}
+                  <button type="submit" name="action" value="reopen" class="btn btn-light btn-icon btn-sm rounded-circle text-success" data-bs-toggle="tooltip" title="Reopen">
+                    <i class="bi bi-arrow-clockwise"></i>
+                  </button>
+                {% endif %}
+                {% if job.is_active %}
+                  <button type="submit" name="action" value="archive" class="btn btn-light btn-icon btn-sm rounded-circle text-dark" data-bs-toggle="tooltip" title="Archive (Soft Delete)">
+                    <i class="bi bi-archive"></i>
+                  </button>
+                {% endif %}
+              </form>
+            </div>
+
+            <!-- Mobile: Dropdown -->
+            <div class="d-md-none dropdown text-end">
+              <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end fs-sm shadow-sm">
+                <li><a class="dropdown-item" href="{% url 'admin-panel:job-detail' pk=job.id %}"><i class="bi bi-eye me-2 text-primary"></i> View Details</a></li>
+                <li><a class="dropdown-item" href="{% url 'admin-panel:job-applications' pk=job.id %}"><i class="bi bi-people me-2 text-info"></i> Applications ({{ job.app_count }})</a></li>
+                {% if job.source_type == 'staff_job' %}
+                  <li><a class="dropdown-item" href="{% url 'admin-panel:edit-job' pk=job.id %}"><i class="bi bi-pencil me-2 text-warning"></i> Edit</a></li>
+                  {% if job.owner_type == 'Admin' %}
+                    <li><a class="dropdown-item" href="{% url 'admin-panel:assign-staff' pk=job.id %}"><i class="bi bi-person-plus me-2 text-success"></i> Assign Staff</a></li>
+                  {% endif %}
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <form action="{% url 'admin-panel:toggle-job' pk=job.id %}" method="post" class="m-0 p-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="source_type" value="{{ job.source_type }}">
+                    {% if not job.is_active %}
+                      <button type="submit" name="action" value="reopen" class="dropdown-item"><i class="bi bi-arrow-clockwise me-2 text-success"></i> Restore</button>
+                    {% elif job.status == 'active' %}
+                      <button type="submit" name="action" value="close" class="dropdown-item"><i class="bi bi-x-circle me-2 text-danger"></i> Close</button>
+                    {% elif job.status == 'closed' %}
+                      <button type="submit" name="action" value="reopen" class="dropdown-item"><i class="bi bi-arrow-clockwise me-2 text-success"></i> Reopen</button>
+                    {% endif %}
+                    {% if job.is_active %}
+                      <button type="submit" name="action" value="archive" class="dropdown-item"><i class="bi bi-archive me-2 text-dark"></i> Archive</button>
+                    {% endif %}
+                  </form>
+                </li>
+              </ul>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-5">
+            <div class="text-muted-2 mb-3"><i class="bi bi-briefcase fs-1"></i></div>
+            <h6 class="fw-bold">No Jobs Found</h6>
+            <p class="fs-sm mb-0">No jobs match your current filters.</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/_pagination.html" %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+  });
+</script>
+{% endblock %}

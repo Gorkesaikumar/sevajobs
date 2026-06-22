@@ -50,6 +50,39 @@
       <div class="form-check"><input class="form-check-input" type="checkbox" name="is_remote" value="true" id="remote-yes"><label class="form-check-label" for="remote-yes">Remote</label></div>
     </div>
 
+    <!-- State Filter -->
+    <div class="filter-group">
+      <label for="state-select" class="filter-title d-block mb-1">State</label>
+      <select class="form-select form-select-sm" name="state" id="state-select">
+        <option value="">All States</option>
+        {% for state in active_states %}
+          <option value="{{ state }}" {% if request.GET.state == state %}selected{% endif %}>{{ state }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- District Filter -->
+    <div class="filter-group">
+      <label for="district-select" class="filter-title d-block mb-1">District</label>
+      <select class="form-select form-select-sm" name="district" id="district-select">
+        <option value="">All Districts</option>
+        {% for district in active_districts %}
+          <option value="{{ district }}" {% if request.GET.district == district %}selected{% endif %}>{{ district }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- City Filter -->
+    <div class="filter-group">
+      <label for="city-select" class="filter-title d-block mb-1">City/Town</label>
+      <select class="form-select form-select-sm" name="city" id="city-select">
+        <option value="">All Cities</option>
+        {% for city in active_cities %}
+          <option value="{{ city }}" {% if request.GET.city == city %}selected{% endif %}>{{ city }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
     <!-- Category -->
     {% if categories %}
     <div class="filter-group">

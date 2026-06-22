@@ -1,0 +1,88 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}Assign Recruitment Team for {{ job.designation }} — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="mb-4">
+  <a href="{% url 'admin-panel:assigned-recruitment' %}" class="btn btn-link text-decoration-none p-0 mb-3 fs-sm text-muted-2">
+    <i class="bi bi-arrow-left me-1"></i> Back to Assigned Recruitment
+  </a>
+  <h4 class="fw-800 mb-1">Assign Recruitment Team</h4>
+  <p class="text-muted-2 fs-sm mb-0">Select one or more Staff members to manage recruitment for: <strong>{{ job.designation }}</strong> at <strong>{{ job.organization_name }}</strong></p>
+</div>
+
+<form method="post" class="sj-card p-4 p-md-5">
+  {% csrf_token %}
+  
+  <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary"><i class="bi bi-person-check me-2"></i>Available Staff</h5>
+  
+  <div class="table-responsive mb-4">
+    <table class="table table-hover sj-table align-middle">
+      <thead>
+        <tr>
+          <th width="5%" class="text-center">Select</th>
+          <th>Staff Name</th>
+          <th>Employee ID</th>
+          <th>Email</th>
+          <th class="text-center">Active Jobs</th>
+          <th class="text-center">Applications Managed</th>
+          <th class="text-center">Current Workload</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for staff in staff_data %}
+        <tr>
+          <td class="text-center">
+            <input type="checkbox" name="staff_members" value="{{ staff.user.id }}" 
+                   id="staff_{{ staff.user.id }}" class="form-check-input"
+                   {% if staff.is_assigned %}checked{% endif %}>
+          </td>
+          <td>
+            <label for="staff_{{ staff.user.id }}" class="fw-bold mb-0 style-clickable" style="cursor: pointer;">
+              {{ staff.user.get_full_name }}
+            </label>
+          </td>
+          <td>
+            <span class="badge bg-secondary-subtle text-secondary">{{ staff.profile.employee_id|default:"—" }}</span>
+          </td>
+          <td>
+            <span class="fs-sm">{{ staff.user.email }}</span>
+          </td>
+          <td class="text-center fw-bold">{{ staff.active_jobs }}</td>
+          <td class="text-center">{{ staff.apps_managed }}</td>
+          <td class="text-center">
+            <span class="badge bg-{{ staff.workload_class }}-subtle text-{{ staff.workload_class }} border border-{{ staff.workload_class }}-subtle">
+              {{ staff.workload }}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-4">
+            <div class="text-muted mb-2"><i class="bi bi-people fs-2"></i></div>
+            <h6 class="fw-bold">No Staff Members Found</h6>
+            <p class="fs-sm mb-0">Please create staff profiles first in Staff Management.</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mb-4">
+    <label class="form-label fw-bold" for="notes">Notes / Instructions for Staff</label>
+    <textarea name="notes" id="notes" class="form-control" rows="3" placeholder="Add specific hiring requirements, deadlines, or instructions..."></textarea>
+  </div>
+
+  <div class="d-flex gap-2 justify-content-end border-top pt-3">
+    <a href="{% url 'admin-panel:assigned-recruitment' %}" class="btn btn-outline-secondary">Cancel</a>
+    <button type="submit" class="btn btn-gradient px-4">Assign Recruitment Team</button>
+  </div>
+</form>
+
+<style>
+  .style-clickable:hover {
+    color: var(--sj-primary);
+  }
+</style>
+{% endblock %}

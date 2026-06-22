@@ -28,6 +28,11 @@ class Notification(BaseModel):
         JOB_EXPIRING = "job_expiring", "Job Expiring Soon"
         PROFILE_VIEWED = "profile_viewed", "Profile Viewed"
         SYSTEM = "system", "System"
+        JOB_ASSIGNED = "job_assigned", "Job Assigned"
+        JOB_REASSIGNED = "job_reassigned", "Job Reassigned"
+        RECRUITMENT_COMPLETED = "recruitment_completed", "Recruitment Completed"
+        CANDIDATE_SELECTED = "candidate_selected", "Candidate Selected"
+        HIGH_APP_VOLUME = "high_app_volume", "High Application Volume"
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,
