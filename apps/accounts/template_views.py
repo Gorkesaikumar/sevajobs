@@ -165,7 +165,7 @@ class RegisterView(View):
         
         if form.is_valid():
             user = form.save()
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             role = user.role
             request.session['current_role_scope'] = role
             messages.success(request, "Welcome to SevaJobs! Let's set up your profile.")
