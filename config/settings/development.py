@@ -27,6 +27,13 @@ CACHES = {
     }
 }
 
+# Use in-memory channel layer for dev / testing
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
 # Use SQLite for local development and testing if USE_SQLITE is True
 if config("USE_SQLITE", default=True, cast=bool):
     DATABASES = {

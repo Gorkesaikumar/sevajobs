@@ -1,5 +1,7 @@
 """Template views for session-based authentication."""
 
+import logging
+
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -8,6 +10,8 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 
 from .models import User
+
+logger = logging.getLogger("apps.accounts")
 
 class LoginView(View):
     """Fallback dispatcher for generic /accounts/login/ links."""
@@ -245,29 +249,89 @@ class ForgotPasswordView(View):
     def get(self, request):
         return render(request, self.template_name)
 
+    @method_decorator(csrf_protect)
     def post(self, request):
+        from apps.accounts.middleware import get_client_ip
+        from apps.accounts.services import AuthService
+
         email = request.POST.get("email", "").strip().lower()
+        if email:
+            try:
+                auth_service = AuthService()
+                auth_service.request_password_reset(email, ip=get_client_ip(request))
+            except Exception as exc:
+                logger.error("Error requesting password reset for %s: %s", email, exc)
+
         # Always show success to prevent email enumeration
-        messages.success(request, "If an account exists with this email, you'll receive a password reset link shortly.")
+        messages.success(
+            request,
+            "If an account exists with this email, you'll receive a password reset link shortly."
+        )
         return render(request, self.template_name)
 
 
 class ResetPasswordView(View):
     template_name = "pages/reset_password.html"
 
-    def get(self, request, token=None):
-        return render(request, self.template_name, {"token": token})
+    def _get_token_str(self, request, token=None) -> str:
+        return (token or request.GET.get("token") or request.POST.get("token") or "").strip()
 
+    def get(self, request, token=None):
+        token_str = self._get_token_str(request, token)
+        if not token_str:
+            messages.error(request, "Invalid or missing password reset link.")
+            return render(request, self.template_name, {"token_invalid": True, "token": ""})
+
+        from apps.accounts.models import PasswordResetToken
+        token_obj = PasswordResetToken.objects.select_related("user").filter(token=token_str).first()
+        if token_obj is None or not token_obj.is_valid():
+            messages.error(request, "This password reset link is invalid or has expired.")
+            return render(request, self.template_name, {"token_invalid": True, "token": token_str})
+
+        return render(request, self.template_name, {"token_invalid": False, "token": token_str})
+
+    @method_decorator(csrf_protect)
     def post(self, request, token=None):
+        token_str = self._get_token_str(request, token)
         password = request.POST.get("password", "")
         password2 = request.POST.get("password2", "")
+
+        if not token_str:
+            messages.error(request, "Invalid or missing password reset link.")
+            return render(request, self.template_name, {"token_invalid": True, "token": ""})
+
         if password != password2:
             messages.error(request, "Passwords do not match.")
-            return render(request, self.template_name, {"token": token})
-        if len(password) < 8:
-            messages.error(request, "Password must be at least 8 characters.")
-            return render(request, self.template_name, {"token": token})
-        messages.success(request, "Your password has been reset. You can now log in.")
+            return render(request, self.template_name, {"token_invalid": False, "token": token_str})
+
+        from apps.accounts.models import PasswordResetToken
+        token_obj = PasswordResetToken.objects.select_related("user").filter(token=token_str).first()
+        if token_obj is None or not token_obj.is_valid():
+            messages.error(request, "This password reset link is invalid or has expired.")
+            return render(request, self.template_name, {"token_invalid": True, "token": token_str})
+
+        # Run Django password validators
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            validate_password(password, user=token_obj.user)
+        except DjangoValidationError as ve:
+            for err in ve.messages:
+                messages.error(request, err)
+            return render(request, self.template_name, {"token_invalid": False, "token": token_str})
+
+        # Call AuthService business logic
+        from apps.accounts.services import AuthService
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        try:
+            auth_service = AuthService()
+            auth_service.reset_password(token_str=token_str, new_password=password)
+        except (DRFValidationError, Exception) as exc:
+            logger.error("Password reset failed for token %s: %s", token_str[:8] if token_str else "", exc)
+            messages.error(request, "Failed to reset password. The link may have expired or already been used.")
+            return render(request, self.template_name, {"token_invalid": True, "token": token_str})
+
+        messages.success(request, "Your password has been reset successfully. You can now log in with your new password.")
         return redirect("accounts:login")
 
 

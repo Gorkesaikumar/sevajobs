@@ -286,7 +286,7 @@ DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="SevaJobs <noreply@sev
 SERVER_EMAIL = config("SERVER_EMAIL", default="SevaJobs <noreply@sevajobs.in>")
 
 # Public URL of the frontend, used to build verification / reset links.
-FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
+FRONTEND_URL = config("FRONTEND_URL", default="https://sevajobs.in")
 
 # ---------------------------------------------------------------------------
 # Celery

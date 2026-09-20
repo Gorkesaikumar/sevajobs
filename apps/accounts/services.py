@@ -20,7 +20,7 @@ logger = logging.getLogger("apps.accounts")
 security_logger = logging.getLogger("django.security")
 User = get_user_model()
 
-FRONTEND_URL = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = getattr(settings, "FRONTEND_URL", "https://sevajobs.in")
 
 
 class UserService:
@@ -153,14 +153,21 @@ class AuthService:
             used_at=timezone.now()
         )
         token = PasswordResetToken.issue(user, requested_ip=ip)
-        link = f"{FRONTEND_URL}/reset-password?token={token.token}"
+
+        base_url = getattr(settings, "FRONTEND_URL", "https://sevajobs.in").rstrip("/")
+        try:
+            from django.urls import reverse
+            relative_path = reverse("accounts:reset-password", kwargs={"token": token.token})
+            link = f"{base_url}{relative_path}"
+        except Exception:
+            link = f"{base_url}/accounts/reset-password/{token.token}/"
 
         EmailService.send_template_email(
             template_name="password_reset",
             to_email=user.email,
             subject="Reset your SevaJobs password",
             context={
-                "first_name": user.first_name,
+                "first_name": user.first_name or "User",
                 "reset_url": link,
                 "ttl_hours": PasswordResetToken.DEFAULT_TTL_HOURS,
             },
