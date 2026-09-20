@@ -12,7 +12,7 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
 # Console backend for local mail testing if SES is disabled
-EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 
 # CORS settings for development
 CORS_ALLOW_ALL_ORIGINS = True
@@ -26,6 +26,15 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
     }
 }
+
+# Use SQLite for local development and testing if USE_SQLITE is True
+if config("USE_SQLITE", default=True, cast=bool):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # Run Celery tasks synchronously locally without needing Redis
 CELERY_TASK_ALWAYS_EAGER = True

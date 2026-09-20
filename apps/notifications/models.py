@@ -1,5 +1,7 @@
 """Notification model (table #12)."""
 
+from __future__ import annotations
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -114,7 +116,7 @@ class EmailSuppression(BaseModel):
         bounce_type: str = "",
         bounce_sub_type: str = "",
         details: dict | None = None,
-    ) -> "EmailSuppression" | None:
+    ) -> EmailSuppression | None:
         if not email or not isinstance(email, str) or not email.strip():
             return None
         normalized = email.strip().lower()

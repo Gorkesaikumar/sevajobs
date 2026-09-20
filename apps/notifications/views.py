@@ -80,6 +80,8 @@ from rest_framework.permissions import AllowAny
 
 from .models import EmailSuppression
 
+logger = logging.getLogger("apps.notifications")
+
 AWS_SNS_HOST_PATTERN = re.compile(r"^sns\.[a-z0-9-]+\.amazonaws\.com$", re.IGNORECASE)
 
 
