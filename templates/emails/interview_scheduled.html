@@ -1,0 +1,58 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h1 class="h1">Interview Scheduled — {{ job_title }}</h1>
+<p>Hi {{ candidate_name }},</p>
+<p>An interview has been scheduled for your application for <strong>{{ job_title }}</strong> at <strong>{{ company_name }}</strong>.</p>
+
+<div class="details-box">
+    {% if interview_date_display %}
+    <div class="details-row">
+        <span class="details-label">Date:</span>
+        <span class="details-value"><strong>{{ interview_date_display }}</strong></span>
+    </div>
+    {% endif %}
+    {% if interview_time_display %}
+    <div class="details-row">
+        <span class="details-label">Time:</span>
+        <span class="details-value"><strong>{{ interview_time_display }}</strong></span>
+    </div>
+    {% endif %}
+    {% if interview_mode_display %}
+    <div class="details-row">
+        <span class="details-label">Mode:</span>
+        <span class="details-value">{{ interview_mode_display }}</span>
+    </div>
+    {% endif %}
+    {% if interview_type %}
+    <div class="details-row">
+        <span class="details-label">Interview Type:</span>
+        <span class="details-value">{{ interview_type }}</span>
+    </div>
+    {% endif %}
+    {% if interviewer_name %}
+    <div class="details-row">
+        <span class="details-label">Interviewer:</span>
+        <span class="details-value">{{ interviewer_name }}</span>
+    </div>
+    {% endif %}
+    {% if meeting_link %}
+    <div class="details-row">
+        <span class="details-label">Meeting Link:</span>
+        <span class="details-value"><a href="{{ meeting_link }}" style="color: #4f46e5;">{{ meeting_link }}</a></span>
+    </div>
+    {% endif %}
+    {% if interview_location %}
+    <div class="details-row">
+        <span class="details-label">Location:</span>
+        <span class="details-value">{{ interview_location }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<p>Please log in to your dashboard to confirm your attendance and view full interview instructions.</p>
+
+<div class="btn-container">
+    <a href="{{ frontend_url }}/dashboard/seeker/applications" class="btn">View Interview Details</a>
+</div>
+{% endblock %}

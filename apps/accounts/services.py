@@ -12,6 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 
+from apps.notifications.email_service import EmailService
 from .models import EmailVerificationToken, PasswordResetToken
 from .repository import UserRepository
 
@@ -51,6 +52,18 @@ class UserService:
             phone=phone,
         )
         logger.info("New user registered: %s (role=%s)", user.email, role)
+
+        # Send Welcome Email asynchronously
+        EmailService.send_template_email(
+            template_name="welcome",
+            to_email=user.email,
+            subject=f"Welcome to SevaJobs, {user.first_name}!",
+            context={
+                "first_name": user.first_name,
+                "is_job_seeker": user.is_job_seeker,
+            },
+            idempotency_key=f"welcome:{user.id}",
+        )
         return user
 
     def update_profile(self, user: User, **fields) -> User:
@@ -64,6 +77,14 @@ class UserService:
         user.set_password(new_password)
         user.save(update_fields=["password"])
         security_logger.info("Password changed for user %s", user.pk)
+
+        # Send Security Notification
+        EmailService.send_template_email(
+            template_name="password_changed",
+            to_email=user.email,
+            subject="Security Alert: Password Changed",
+            context={"first_name": user.first_name},
+        )
 
     def deactivate(self, user: User) -> None:
         UserRepository.update(user, is_active=False)
@@ -86,14 +107,17 @@ class AuthService:
         )
         token = EmailVerificationToken.issue(user)
         link = f"{FRONTEND_URL}/verify-email?token={token.token}"
-        self._send(
+
+        EmailService.send_template_email(
+            template_name="verification",
+            to_email=user.email,
             subject="Verify your SevaJobs email address",
-            message=(
-                f"Hi {user.first_name},\n\n"
-                f"Please confirm your email by visiting:\n{link}\n\n"
-                f"This link expires in {EmailVerificationToken.DEFAULT_TTL_HOURS} hours."
-            ),
-            recipient=user.email,
+            context={
+                "first_name": user.first_name,
+                "verification_url": link,
+                "ttl_hours": EmailVerificationToken.DEFAULT_TTL_HOURS,
+            },
+            idempotency_key=f"verify:{token.token}",
         )
         logger.info("Verification email dispatched to %s", user.email)
         return token
@@ -130,15 +154,17 @@ class AuthService:
         )
         token = PasswordResetToken.issue(user, requested_ip=ip)
         link = f"{FRONTEND_URL}/reset-password?token={token.token}"
-        self._send(
+
+        EmailService.send_template_email(
+            template_name="password_reset",
+            to_email=user.email,
             subject="Reset your SevaJobs password",
-            message=(
-                f"Hi {user.first_name},\n\n"
-                f"Use the link below to reset your password:\n{link}\n\n"
-                f"This link expires in {PasswordResetToken.DEFAULT_TTL_HOURS} hours. "
-                f"If you did not request this, you can safely ignore this email."
-            ),
-            recipient=user.email,
+            context={
+                "first_name": user.first_name,
+                "reset_url": link,
+                "ttl_hours": PasswordResetToken.DEFAULT_TTL_HOURS,
+            },
+            idempotency_key=f"pwd_reset:{token.token}",
         )
         security_logger.info("Password reset token issued for user %s", user.pk)
 
@@ -156,15 +182,12 @@ class AuthService:
             used_at=timezone.now()
         )
         security_logger.info("Password reset completed for user %s", user.pk)
-        return user
 
-    # ----- helpers ---------------------------------------------------------
-    @staticmethod
-    def _send(*, subject: str, message: str, recipient: str) -> None:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[recipient],
-            fail_silently=False,
+        # Send Security Notification
+        EmailService.send_template_email(
+            template_name="password_changed",
+            to_email=user.email,
+            subject="Security Alert: Password Changed",
+            context={"first_name": user.first_name},
         )
+        return user

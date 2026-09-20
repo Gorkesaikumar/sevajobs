@@ -1,0 +1,13 @@
+{% extends "emails/base.txt" %}
+
+{% block content %}
+🎉 You've Been Shortlisted!
+
+Hi {{ candidate_name }},
+
+Great news! Your application for {{ job_title }} at {{ company_name }} has been shortlisted.
+
+The recruiter will reach out with next steps soon.
+
+View status: {{ frontend_url }}/dashboard/seeker/applications
+{% endblock %}

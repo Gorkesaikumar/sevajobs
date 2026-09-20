@@ -1,0 +1,34 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h1 class="h1">Job Listing Status Update</h1>
+<p>Hi {{ recruiter_name }},</p>
+<p>Your job posting <strong>"{{ job_title }}"</strong> has been reviewed by the SevaJobs administration team.</p>
+
+<div class="details-box">
+    <div class="details-row">
+        <span class="details-label">Job Title:</span>
+        <span class="details-value"><strong>{{ job_title }}</strong></span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">Decision:</span>
+        <span class="details-value">
+            {% if is_approved %}
+                <strong style="color: #059669;">Approved & Active</strong>
+            {% else %}
+                <strong style="color: #ef4444;">Rejected / Needs Revision</strong>
+            {% endif %}
+        </span>
+    </div>
+    {% if comment %}
+    <div class="details-row">
+        <span class="details-label">Admin Notes:</span>
+        <span class="details-value">{{ comment }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<div class="btn-container">
+    <a href="{{ frontend_url }}/dashboard/recruiter/jobs" class="btn">Manage Jobs</a>
+</div>
+{% endblock %}

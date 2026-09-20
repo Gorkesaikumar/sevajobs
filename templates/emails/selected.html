@@ -1,0 +1,30 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h1 class="h1">🎉 Congratulations! You Have Been Selected</h1>
+<p>Hi {{ candidate_name }},</p>
+<p>We are thrilled to inform you that you have been selected for the position of <strong>{{ job_title }}</strong> at <strong>{{ company_name }}</strong>!</p>
+
+{% if offer_package_summary or joining_date %}
+<div class="details-box">
+    {% if offer_package_summary %}
+    <div class="details-row">
+        <span class="details-label">Offered Package:</span>
+        <span class="details-value"><strong>{{ offer_package_summary }}</strong></span>
+    </div>
+    {% endif %}
+    {% if joining_date %}
+    <div class="details-row">
+        <span class="details-label">Expected Joining:</span>
+        <span class="details-value">{{ joining_date }}</span>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<p>Please log in to your SevaJobs dashboard to review and accept your offer details.</p>
+
+<div class="btn-container">
+    <a href="{{ frontend_url }}/dashboard/seeker/applications" class="btn" style="background-color: #059669;">Review Offer Details</a>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "emails/base.txt" %}
+
+{% block content %}
+Job Listing Status Update
+
+Hi {{ recruiter_name }},
+
+Your job posting "{{ job_title }}" has been reviewed.
+
+Status: {% if is_approved %}Approved & Active{% else %}Rejected / Needs Revision{% endif %}
+{% if comment %}Admin Notes: {{ comment }}{% endif %}
+
+Manage jobs: {{ frontend_url }}/dashboard/recruiter/jobs
+{% endblock %}

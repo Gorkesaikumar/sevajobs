@@ -1,0 +1,8 @@
+SevaJobs Recruitment Platform
+==================================================
+
+{% block content %}{% endblock %}
+
+--------------------------------------------------
+© {% now "Y" %} SevaJobs Recruitment Platform.
+Support: {{ support_email }} | {{ frontend_url }}

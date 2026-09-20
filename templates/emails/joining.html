@@ -1,0 +1,13 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h1 class="h1">Joining Confirmation — {{ job_title }}</h1>
+<p>Hi {{ candidate_name }},</p>
+<p>Congratulations on confirming your joining for the position of <strong>{{ job_title }}</strong> at <strong>{{ company_name }}</strong>!</p>
+
+<p>Your employer has been notified, and your candidate status is now marked as <strong>Joined</strong>.</p>
+
+<div class="btn-container">
+    <a href="{{ frontend_url }}/dashboard/seeker/applications" class="btn">View Application Details</a>
+</div>
+{% endblock %}

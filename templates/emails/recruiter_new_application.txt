@@ -1,0 +1,14 @@
+{% extends "emails/base.txt" %}
+
+{% block content %}
+New Application Received
+
+Hi {{ recruiter_name }},
+
+A new application has been submitted for your job listing: {{ job_title }}.
+
+Applicant: {{ applicant_name }} ({{ applicant_email }})
+{% if expected_salary %}Expected Salary: ₹{{ expected_salary }}{% endif %}
+
+View Application: {{ application_url }}
+{% endblock %}

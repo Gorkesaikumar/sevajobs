@@ -1,0 +1,11 @@
+{% extends "emails/base.txt" %}
+
+{% block content %}
+Application Submitted Successfully
+
+Hi {{ candidate_name }},
+
+Your application for {{ job_title }} at {{ company_name }} has been received.
+
+Track your application status on SevaJobs: {{ frontend_url }}/dashboard/seeker/applications
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h1 class="h1">Application Submitted Successfully</h1>
+<p>Hi {{ candidate_name }},</p>
+<p>Your application for <strong>{{ job_title }}</strong> at <strong>{{ company_name }}</strong> has been successfully received.</p>
+
+<div class="details-box">
+    <div class="details-row">
+        <span class="details-label">Position:</span>
+        <span class="details-value">{{ job_title }}</span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">Employer:</span>
+        <span class="details-value">{{ company_name }}</span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">Status:</span>
+        <span class="details-value"><strong style="color: #4f46e5;">Applied</strong></span>
+    </div>
+</div>
+
+<p>The recruiter is reviewing applications and will update you if your profile matches their requirements.</p>
+
+<div class="btn-container">
+    <a href="{{ frontend_url }}/dashboard/seeker/applications" class="btn">Track Application Status</a>
+</div>
+{% endblock %}

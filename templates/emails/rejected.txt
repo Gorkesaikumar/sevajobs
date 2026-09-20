@@ -1,0 +1,11 @@
+{% extends "emails/base.txt" %}
+
+{% block content %}
+Application Status Update
+
+Hi {{ candidate_name }},
+
+Thank you for applying for the position of {{ job_title }} at {{ company_name }}.
+
+After careful consideration, the hiring team has decided not to move forward with your application for this position. We encourage you to explore other job openings on SevaJobs: {{ frontend_url }}/jobs
+{% endblock %}

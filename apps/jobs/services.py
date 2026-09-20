@@ -273,16 +273,19 @@ class JobService:
             entity_type="Job",
             entity_id=job.id,
         )
-        try:
-            send_mail(
-                subject=f"[SevaJobs] {title}",
-                message=f"Hi {recruiter_user.first_name},\n\n{message}\n\n— The SevaJobs Team",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[recruiter_user.email],
-                fail_silently=True,
-            )
-        except Exception:  # pragma: no cover
-            logger.exception("Failed to email approval decision for job %s", job.id)
+        from apps.notifications.email_service import EmailService
+        EmailService.send_template_email(
+            template_name="job_approval_decision",
+            to_email=recruiter_user.email,
+            subject=f"[SevaJobs] {title}",
+            context={
+                "recruiter_name": recruiter_user.first_name,
+                "job_title": job.title,
+                "is_approved": approved,
+                "comment": comment,
+            },
+            idempotency_key=f"job_decision:{job.id}:{approved}",
+        )
             
         if approved and job.status == Job.Status.ACTIVE:
             JobService._notify_matching_seekers(job)

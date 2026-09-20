@@ -94,6 +94,23 @@ class ApplicationService:
         )
         self._record_history(application, "", S.APPLIED, applicant)
 
+        from apps.notifications.email_service import EmailService
+        company_name = (job.company.name if job and job.company else "") or "SevaJobs Employer"
+        job_title = job.title if job else staff_job.designation
+
+        # Email confirmation to Candidate
+        EmailService.send_template_email(
+            template_name="application_submitted",
+            to_email=applicant.email,
+            subject=f"Application Received: {job_title}",
+            context={
+                "candidate_name": applicant.first_name,
+                "job_title": job_title,
+                "company_name": company_name,
+            },
+            idempotency_key=f"app_cand:{application.id}",
+        )
+
         if job:
             Job.objects.filter(id=job.id).update(applications_count=F("applications_count") + 1)
             # Notify the recruiter who owns the job.
@@ -108,6 +125,21 @@ class ApplicationService:
                     entity_type="JobApplication",
                     entity_id=application.id,
                 )
+                EmailService.send_template_email(
+                    template_name="recruiter_new_application",
+                    to_email=recruiter_user.email,
+                    subject=f"New Application: {applicant.full_name} for {job_title}",
+                    context={
+                        "recruiter_name": recruiter_user.first_name,
+                        "job_title": job_title,
+                        "applicant_name": applicant.full_name,
+                        "applicant_email": applicant.email,
+                        "applicant_phone": applicant.phone,
+                        "expected_salary": expected_salary,
+                        "application_url": f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/dashboard/recruiter/applications",
+                    },
+                    idempotency_key=f"app_rec:{application.id}",
+                )
         elif staff_job:
             # Notify the staff member who owns the job.
             staff_user = staff_job.created_by
@@ -120,6 +152,21 @@ class ApplicationService:
                     message=f"{applicant.full_name} applied for {staff_job.designation}.",
                     entity_type="JobApplication",
                     entity_id=application.id,
+                )
+                EmailService.send_template_email(
+                    template_name="recruiter_new_application",
+                    to_email=staff_user.email,
+                    subject=f"New Application: {applicant.full_name} for {job_title}",
+                    context={
+                        "recruiter_name": staff_user.first_name,
+                        "job_title": job_title,
+                        "applicant_name": applicant.full_name,
+                        "applicant_email": applicant.email,
+                        "applicant_phone": applicant.phone,
+                        "expected_salary": expected_salary,
+                        "application_url": f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/staff/applications",
+                    },
+                    idempotency_key=f"app_staff:{application.id}",
                 )
             
             # Notify assigned staff members
@@ -139,7 +186,6 @@ class ApplicationService:
         # Notify admins
         from apps.accounts.models import User
         admins = User.objects.filter(role__in=["super_admin", "admin"], is_active=True)
-        job_title = job.title if job else staff_job.designation
         for admin in admins:
             self._notifications.notify(
                 recipient=admin,
@@ -494,16 +540,30 @@ class ApplicationService:
             entity_id=application.id,
             metadata=notif_metadata,
         )
-        try:
-            send_mail(
-                subject=f"[SevaJobs] {title}",
-                message=f"Hi {candidate.first_name},\n\n{message}\n\n— The SevaJobs Team",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[candidate.email],
-                fail_silently=True,
-            )
-        except Exception:  # pragma: no cover — never break the transition on email failure
-            logger.exception("Failed to send status email for application %s", application.id)
+        template_map = {
+            S.SHORTLISTED: "shortlisted",
+            S.INTERVIEW_SCHEDULED: "interview_scheduled",
+            S.SELECTED: "selected",
+            S.REJECTED: "rejected",
+            S.JOINED: "joining",
+        }
+        template_name = template_map.get(new_status, "application_submitted")
+
+        email_context = {
+            "candidate_name": candidate.first_name,
+            "job_title": job_title,
+            "company_name": company_name,
+            **notif_metadata,
+        }
+
+        from apps.notifications.email_service import EmailService
+        EmailService.send_template_email(
+            template_name=template_name,
+            to_email=candidate.email,
+            subject=f"[SevaJobs] {title}",
+            context=email_context,
+            idempotency_key=f"app_status:{application.id}:{new_status}",
+        )
 
 
     @staticmethod

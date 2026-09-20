@@ -1,36 +1,26 @@
-"""Development settings — never use in production."""
+"""Development settings for SevaJobs project."""
 
-from .base import *  # noqa: F401, F403
+from .base import *
 
 DEBUG = True
 
-INTERNAL_IPS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
 
-INSTALLED_APPS += ["debug_toolbar"]  # noqa: F405
+# Security overrides for local dev (HTTP)
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
-MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]  # noqa: F405
+# Console backend for local mail testing if SES is disabled
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 
-# Use console email in development
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
-# Relax security for local dev
+# CORS settings for development
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Log SQL queries in development
-LOGGING["loggers"]["django.db.backends"] = {  # noqa: F405
-    "handlers": ["console"],
-    "level": "DEBUG",
-    "propagate": False,
-}
+# Internal IPs for Debug Toolbar (if added)
+INTERNAL_IPS = ["127.0.0.1"]
 
-# Native Local Dev Fallbacks (No Docker required)
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",  # noqa: F405
-    }
-}
-
+# Use local memory cache for dev
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -39,5 +29,6 @@ CACHES = {
 
 # Run Celery tasks synchronously locally without needing Redis
 CELERY_TASK_ALWAYS_EAGER = True
-CELERY_TASK_STORE_EAGER_RESULT = True
-
+CELERY_TASK_STORE_EAGER_RESULT = False
+CELERY_RESULT_BACKEND = "cache"
+CELERY_CACHE_BACKEND = "memory"

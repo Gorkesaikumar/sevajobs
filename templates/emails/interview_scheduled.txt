@@ -1,0 +1,18 @@
+{% extends "emails/base.txt" %}
+
+{% block content %}
+Interview Scheduled — {{ job_title }}
+
+Hi {{ candidate_name }},
+
+An interview has been scheduled for your application for {{ job_title }} at {{ company_name }}.
+
+{% if interview_date_display %}Date: {{ interview_date_display }}{% endif %}
+{% if interview_time_display %}Time: {{ interview_time_display }}{% endif %}
+{% if interview_mode_display %}Mode: {{ interview_mode_display }}{% endif %}
+{% if interviewer_name %}Interviewer: {{ interviewer_name }}{% endif %}
+{% if meeting_link %}Meeting Link: {{ meeting_link }}{% endif %}
+{% if interview_location %}Location: {{ interview_location }}{% endif %}
+
+Please confirm your attendance in your dashboard: {{ frontend_url }}/dashboard/seeker/applications
+{% endblock %}

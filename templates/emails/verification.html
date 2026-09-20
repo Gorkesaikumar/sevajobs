@@ -1,0 +1,16 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h1 class="h1">Verify your email address</h1>
+<p>Hi {{ first_name }},</p>
+<p>Thank you for creating an account on SevaJobs. Please verify your email address to activate your account and access all features.</p>
+
+<div class="btn-container">
+    <a href="{{ verification_url }}" class="btn">Verify Email Address</a>
+</div>
+
+<p style="font-size: 14px; color: #64748b;">If the button above does not work, copy and paste the following link into your browser:</p>
+<p style="font-size: 13px; word-break: break-all; color: #4f46e5;">{{ verification_url }}</p>
+
+<p style="font-size: 13px; color: #94a3b8; margin-top: 24px;">This verification link will expire in {{ ttl_hours }} hours. If you did not create an account on SevaJobs, please ignore this email.</p>
+{% endblock %}

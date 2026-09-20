@@ -1,0 +1,28 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h1 class="h1">🎉 You've Been Shortlisted!</h1>
+<p>Hi {{ candidate_name }},</p>
+<p>Great news! Your application for <strong>{{ job_title }}</strong> at <strong>{{ company_name }}</strong> has been shortlisted by the recruiter.</p>
+
+<div class="details-box">
+    <div class="details-row">
+        <span class="details-label">Position:</span>
+        <span class="details-value"><strong>{{ job_title }}</strong></span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">Company:</span>
+        <span class="details-value">{{ company_name }}</span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">Current Status:</span>
+        <span class="details-value" style="color: #059669; font-weight: 600;">Shortlisted</span>
+    </div>
+</div>
+
+<p>The hiring team will get in touch with you soon regarding the next steps in the evaluation process.</p>
+
+<div class="btn-container">
+    <a href="{{ frontend_url }}/dashboard/seeker/applications" class="btn">View Application Details</a>
+</div>
+{% endblock %}

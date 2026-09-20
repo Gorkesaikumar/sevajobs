@@ -1,0 +1,11 @@
+{% extends "emails/base.txt" %}
+
+{% block content %}
+Welcome to SevaJobs, {{ first_name }}!
+
+We are excited to have you join India's dedicated recruitment platform.
+
+Go to your dashboard: {{ frontend_url }}/login
+
+If you need any support, reach out to us at {{ support_email }}.
+{% endblock %}

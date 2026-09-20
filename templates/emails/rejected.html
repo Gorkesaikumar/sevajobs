@@ -1,0 +1,14 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h1 class="h1">Application Status Update</h1>
+<p>Hi {{ candidate_name }},</p>
+<p>Thank you for applying for the position of <strong>{{ job_title }}</strong> at <strong>{{ company_name }}</strong>.</p>
+<p>After careful consideration of all applicants, the hiring team has decided not to move forward with your application for this specific role at this time.</p>
+
+<p>We appreciate your interest and time. New opportunities are posted on SevaJobs daily, and we encourage you to continue applying for roles that fit your background.</p>
+
+<div class="btn-container">
+    <a href="{{ frontend_url }}/jobs" class="btn">Explore Other Job Openings</a>
+</div>
+{% endblock %}

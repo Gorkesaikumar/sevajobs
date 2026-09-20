@@ -8,4 +8,5 @@ urlpatterns = [
     path("unread-count/", views.UnreadCountView.as_view(), name="unread-count"),
     path("read-all/", views.MarkAllReadView.as_view(), name="mark-all-read"),
     path("<uuid:pk>/read/", views.MarkReadView.as_view(), name="mark-read"),
+    path("ses/webhook/", views.SESNotificationWebhookView.as_view(), name="ses-webhook"),
 ]

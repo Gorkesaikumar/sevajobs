@@ -1,0 +1,14 @@
+{% extends "emails/base.txt" %}
+
+{% block content %}
+🎉 Congratulations! You Have Been Selected
+
+Hi {{ candidate_name }},
+
+We are thrilled to inform you that you have been selected for the position of {{ job_title }} at {{ company_name }}!
+
+{% if offer_package_summary %}Offered Package: {{ offer_package_summary }}{% endif %}
+{% if joining_date %}Expected Joining: {{ joining_date }}{% endif %}
+
+Review and accept your offer details: {{ frontend_url }}/dashboard/seeker/applications
+{% endblock %}

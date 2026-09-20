@@ -1,0 +1,14 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h1 class="h1">Welcome to SevaJobs, {{ first_name }}!</h1>
+<p>We are excited to have you join India's dedicated recruitment platform.</p>
+
+<p>{% if is_job_seeker %}Explore verified job openings, build your profile, and connect directly with top recruiters.{% else %}Post job openings, manage applications, and hire qualified candidates seamlessly.{% endif %}</p>
+
+<div class="btn-container">
+    <a href="{{ frontend_url }}/login" class="btn">Go to Dashboard</a>
+</div>
+
+<p>If you have any questions or need assistance setting up your account, our support team is always here to help.</p>
+{% endblock %}

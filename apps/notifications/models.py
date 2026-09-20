@@ -70,3 +70,61 @@ class Notification(BaseModel):
             self.is_read = True
             self.read_at = timezone.now()
             self.save(update_fields=["is_read", "read_at"])
+
+
+# ===========================================================================
+# Table — EmailSuppression (AWS SES Bounces & Complaints)
+# ===========================================================================
+class EmailSuppression(BaseModel):
+    """
+    Stores email addresses that experienced hard bounces or spam complaints.
+    Used to suppress future outbound transactional emails to prevent SES domain reputation damage.
+    """
+
+    class Reason(models.TextChoices):
+        BOUNCE = "bounce", "Permanent Bounce"
+        COMPLAINT = "complaint", "Spam Complaint"
+        MANUAL = "manual", "Manual Suppression"
+
+    email = models.EmailField(unique=True, db_index=True)
+    reason = models.CharField(max_length=20, choices=Reason.choices, default=Reason.BOUNCE, db_index=True)
+    bounce_type = models.CharField(max_length=50, blank=True)
+    bounce_sub_type = models.CharField(max_length=50, blank=True)
+    details = models.JSONField(default=dict, blank=True, help_text="Raw event payload from AWS SNS.")
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Email Suppression"
+        verbose_name_plural = "Email Suppressions"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.email} ({self.reason})"
+
+    @classmethod
+    def is_suppressed(cls, email: str | None) -> bool:
+        if not email or not isinstance(email, str) or not email.strip():
+            return False
+        return cls.objects.filter(email=email.strip().lower()).exists()
+
+    @classmethod
+    def suppress(
+        cls,
+        email: str | None,
+        reason: str,
+        bounce_type: str = "",
+        bounce_sub_type: str = "",
+        details: dict | None = None,
+    ) -> "EmailSuppression" | None:
+        if not email or not isinstance(email, str) or not email.strip():
+            return None
+        normalized = email.strip().lower()
+        obj, _ = cls.objects.update_or_create(
+            email=normalized,
+            defaults={
+                "reason": reason,
+                "bounce_type": bounce_type[:50],
+                "bounce_sub_type": bounce_sub_type[:50],
+                "details": details or {},
+            },
+        )
+        return obj
