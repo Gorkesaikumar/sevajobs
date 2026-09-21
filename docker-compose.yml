@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     volumes:
-      - postgres_data_local:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -77,6 +77,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data_local:
+  postgres_data:
+    name: sevajobs_postgres_data
   media_data_local:
   static_data_local:
