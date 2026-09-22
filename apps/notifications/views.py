@@ -309,3 +309,7 @@ class SESNotificationWebhookView(APIView):
             return Response({"status": "processed"})
 
         return Response({"status": "ignored"})
+
+
+from .resend_webhook import ResendWebhookView  # noqa: F401
+

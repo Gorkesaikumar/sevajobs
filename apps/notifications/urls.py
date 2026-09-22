@@ -9,4 +9,7 @@ urlpatterns = [
     path("read-all/", views.MarkAllReadView.as_view(), name="mark-all-read"),
     path("<uuid:pk>/read/", views.MarkReadView.as_view(), name="mark-read"),
     path("ses/webhook/", views.SESNotificationWebhookView.as_view(), name="ses-webhook"),
+    path("webhooks/resend/", views.ResendWebhookView.as_view(), name="resend-webhook"),
+    path("resend/webhook/", views.ResendWebhookView.as_view(), name="resend-webhook-alias"),
 ]
+

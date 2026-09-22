@@ -55,28 +55,15 @@ if SENTRY_DSN:
     )
 
 # ---------------------------------------------------------------------------
-# Email / SES Production Validation
+# Email / Resend Production Validation
 # ---------------------------------------------------------------------------
 
-if EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend":
+if EMAIL_BACKEND == "apps.notifications.backends.ResendEmailBackend":
     from django.core.exceptions import ImproperlyConfigured
 
-    if EMAIL_USE_TLS and EMAIL_USE_SSL:
+    if not RESEND_API_KEY:
         raise ImproperlyConfigured(
-            "EMAIL_USE_TLS and EMAIL_USE_SSL cannot both be True. "
-            "For Amazon SES on port 587, set EMAIL_USE_TLS=True and EMAIL_USE_SSL=False."
-        )
-    if not EMAIL_HOST:
-        raise ImproperlyConfigured(
-            "EMAIL_HOST is required in production when using SMTP EmailBackend for Amazon SES."
-        )
-    if not EMAIL_HOST_USER:
-        raise ImproperlyConfigured(
-            "EMAIL_HOST_USER (SES SMTP Username) is required in production."
-        )
-    if not EMAIL_HOST_PASSWORD:
-        raise ImproperlyConfigured(
-            "EMAIL_HOST_PASSWORD (SES SMTP Password) is required in production."
+            "RESEND_API_KEY is required in production when using ResendEmailBackend."
         )
     if not DEFAULT_FROM_EMAIL:
         raise ImproperlyConfigured(
