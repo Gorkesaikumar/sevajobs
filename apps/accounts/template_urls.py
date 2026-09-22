@@ -10,6 +10,9 @@ urlpatterns = [
     path("forgot-password/", template_views.ForgotPasswordView.as_view(), name="forgot-password"),
     path("reset-password/", template_views.ResetPasswordView.as_view(), name="reset-password-query"),
     path("reset-password/<str:token>/", template_views.ResetPasswordView.as_view(), name="reset-password"),
+    path("verify-email-required/", template_views.VerifyEmailRequiredView.as_view(), name="verify-email-required"),
+    path("resend-verification/", template_views.ResendVerificationView.as_view(), name="resend-verification"),
+    path("verify-email/", template_views.VerifyEmailView.as_view(), name="verify-email-query"),
     path("verify-email/<str:token>/", template_views.VerifyEmailView.as_view(), name="verify-email"),
     path("otp-verify/", template_views.OTPVerificationView.as_view(), name="otp-verify"),
 ]

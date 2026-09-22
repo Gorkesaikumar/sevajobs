@@ -90,12 +90,22 @@ class UserRegistrationForm(forms.ModelForm):
         return p2
 
     def save(self, commit: bool = True) -> User:
-        user = super().save(commit=False)
-        user.email = self.cleaned_data["email"]
-        user.set_password(self.cleaned_data["password1"])
-        if commit:
-            user.save()
-        return user
+        if not commit:
+            user = super().save(commit=False)
+            user.email = self.cleaned_data["email"]
+            user.set_password(self.cleaned_data["password1"])
+            return user
+
+        from .services import UserService
+        user_service = UserService()
+        return user_service.register(
+            email=self.cleaned_data["email"],
+            password=self.cleaned_data["password1"],
+            first_name=self.cleaned_data["first_name"],
+            last_name=self.cleaned_data.get("last_name", ""),
+            role=self.cleaned_data.get("role", User.Role.JOB_SEEKER),
+            phone=self.cleaned_data.get("phone") or None,
+        )
 
 
 class EmailLoginForm(AuthenticationForm):

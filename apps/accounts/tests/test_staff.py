@@ -31,7 +31,8 @@ class StaffManagementTests(APITestCase):
             first_name="John",
             last_name="Doe",
             role=User.Role.JOB_SEEKER,
-            is_active=True
+            is_active=True,
+            is_email_verified=True,
         )
         # Create a Resume for Seeker
         self.resume = Resume.objects.create(

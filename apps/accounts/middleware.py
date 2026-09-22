@@ -140,6 +140,23 @@ class RoleAccessMiddleware:
         if request.user.is_authenticated:
             role = request.user.role
             
+            # Mandatory Email Verification Guard for self-registered users
+            if not request.user.is_email_verified and role in ['job_seeker', 'recruiter']:
+                exempt_prefixes = (
+                    '/accounts/verify-email-required',
+                    '/accounts/resend-verification',
+                    '/accounts/verify-email',
+                    '/accounts/logout',
+                    '/jobseeker/logout',
+                    '/recruiter/logout',
+                    '/staff/logout',
+                    '/admin/logout',
+                )
+                if not any(path.startswith(prefix) for prefix in exempt_prefixes):
+                    if path.startswith('/dashboard') or path.startswith('/staff') or path.startswith('/accounts/profile'):
+                        request.session['pending_verification_email'] = request.user.email
+                        return redirect('accounts:verify-email-required')
+
             # 1. Admin & Super Admin Pages
             if path.startswith('/dashboard/admin/'):
                 if role not in ['super_admin', 'admin']:

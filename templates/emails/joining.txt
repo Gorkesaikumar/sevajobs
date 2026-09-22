@@ -7,5 +7,5 @@ Hi {{ candidate_name }},
 
 Congratulations on confirming your joining for {{ job_title }} at {{ company_name }}!
 
-View details: {{ frontend_url }}/dashboard/seeker/applications
+View details: {{ frontend_url }}/dashboard/seeker/applied-jobs/
 {% endblock %}

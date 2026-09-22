@@ -51,19 +51,17 @@ class UserService:
             role=role,
             phone=phone,
         )
-        logger.info("New user registered: %s (role=%s)", user.email, role)
+        masked_email = f"{user.email[0]}***@{user.email.split('@')[1]}" if "@" in user.email else "***"
+        logger.info("New user registered successfully: %s (role=%s, pk=%s)", masked_email, role, user.pk)
 
-        # Send Welcome Email asynchronously
-        EmailService.send_template_email(
-            template_name="welcome",
-            to_email=user.email,
-            subject=f"Welcome to SevaJobs, {user.first_name}!",
-            context={
-                "first_name": user.first_name,
-                "is_job_seeker": user.is_job_seeker,
-            },
-            idempotency_key=f"welcome:{user.id}",
-        )
+        # Send Verification Email asynchronously
+        logger.info("Scheduling Verification Email for user %s (%s)", user.pk, masked_email)
+        try:
+            auth_service = AuthService()
+            auth_service.send_verification_email(user)
+        except Exception:
+            logger.exception("Failed to schedule Verification Email for user %s (%s)", user.pk, masked_email)
+
         return user
 
     def update_profile(self, user: User, **fields) -> User:
@@ -106,7 +104,13 @@ class AuthService:
             used_at=timezone.now()
         )
         token = EmailVerificationToken.issue(user)
-        link = f"{FRONTEND_URL}/verify-email?token={token.token}"
+        try:
+            from django.urls import reverse
+            relative_path = reverse("accounts:verify-email", kwargs={"token": token.token})
+            base_url = getattr(settings, "FRONTEND_URL", "https://sevajobs.in").rstrip("/")
+            link = f"{base_url}{relative_path}"
+        except Exception:
+            link = f"{FRONTEND_URL}/accounts/verify-email/{token.token}/"
 
         EmailService.send_template_email(
             template_name="verification",
@@ -134,10 +138,30 @@ class AuthService:
         if token is None or not token.is_valid():
             raise ValidationError({"token": "Invalid or expired verification token."})
         user = token.user
-        if not user.is_email_verified:
+        was_unverified = not user.is_email_verified
+        if was_unverified:
             user.is_email_verified = True
             user.save(update_fields=["is_email_verified"])
         token.consume()
+
+        # Send Welcome Email upon successful verification
+        if was_unverified:
+            masked_email = f"{user.email[0]}***@{user.email.split('@')[1]}" if "@" in user.email else "***"
+            logger.info("Email verified for user %s (%s). Triggering Welcome Email.", user.pk, masked_email)
+            try:
+                EmailService.send_template_email(
+                    template_name="welcome",
+                    to_email=user.email,
+                    subject=f"Welcome to SevaJobs, {user.first_name}!",
+                    context={
+                        "first_name": user.first_name,
+                        "is_job_seeker": user.is_job_seeker,
+                    },
+                    idempotency_key=f"welcome:{user.id}",
+                )
+            except Exception:
+                logger.exception("Failed to schedule Welcome Email for user %s (%s)", user.pk, masked_email)
+
         logger.info("Email verified for %s", user.email)
         return user
 

@@ -14,5 +14,5 @@ An interview has been scheduled for your application for {{ job_title }} at {{ c
 {% if meeting_link %}Meeting Link: {{ meeting_link }}{% endif %}
 {% if interview_location %}Location: {{ interview_location }}{% endif %}
 
-Please confirm your attendance in your dashboard: {{ frontend_url }}/dashboard/seeker/applications
+Please confirm your attendance in your dashboard: {{ frontend_url }}/dashboard/seeker/interviews
 {% endblock %}

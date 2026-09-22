@@ -92,6 +92,14 @@ class EmailLoginView(TokenObtainPairView):
 
                 user = User.objects.filter(id=user_data["id"]).first()
                 if user:
+                    if not user.is_email_verified and user.role in [User.Role.JOB_SEEKER, User.Role.RECRUITER]:
+                        return Response(
+                            {
+                                "detail": "Email verification required.",
+                                "is_email_verified": False,
+                            },
+                            status=status.HTTP_403_FORBIDDEN,
+                        )
                     _users.record_login_ip(user, _client_ip(request))
         return response
 
@@ -106,7 +114,16 @@ class PhoneLoginView(APIView):
     def post(self, request):
         serializer = PhoneLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        _users.record_login_ip(serializer.user, _client_ip(request))
+        user = serializer.user
+        if not user.is_email_verified and user.role in [User.Role.JOB_SEEKER, User.Role.RECRUITER]:
+            return Response(
+                {
+                    "detail": "Email verification required.",
+                    "is_email_verified": False,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        _users.record_login_ip(user, _client_ip(request))
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 

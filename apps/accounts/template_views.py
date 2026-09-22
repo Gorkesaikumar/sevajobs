@@ -57,6 +57,11 @@ class RoleScopedLoginView(View):
                 messages.error(request, "You must be a registered job seeker to log in here.")
                 return render(request, self.template_name, {"email": email, "role_scope": self.role_scope})
 
+            if not user.is_email_verified and self.role_scope in ['job_seeker', 'recruiter']:
+                request.session['pending_verification_email'] = user.email
+                messages.warning(request, "Please verify your email address before continuing.")
+                return redirect("accounts:verify-email-required")
+
             login(request, user)
             request.session['current_role_scope'] = self.role_scope
             
@@ -168,7 +173,9 @@ class RegisterView(View):
         form = UserRegistrationForm(request.POST)
         
         if form.is_valid():
-            user = form.save()
+            from django.db import transaction
+            with transaction.atomic():
+                user = form.save()
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             role = user.role
             request.session['current_role_scope'] = role
@@ -185,11 +192,9 @@ class RegisterView(View):
                     profile.current_salary = form.cleaned_data["current_salary"]
                 profile.save()
 
-            if role == 'admin':
-                return redirect("/dashboard/admin/")
-            elif role == 'recruiter':
-                return redirect("/dashboard/recruiter/")
-            return redirect("/dashboard/seeker/")
+            request.session['pending_verification_email'] = user.email
+            messages.success(request, "Account created successfully! Please check your email to verify your account.")
+            return redirect("accounts:verify-email-required")
         else:
             for field, errors in form.errors.items():
                 for err in errors:
@@ -337,11 +342,89 @@ class ResetPasswordView(View):
         return redirect("accounts:login")
 
 
+class VerifyEmailRequiredView(View):
+    template_name = "pages/verify_email_required.html"
+
+    def get(self, request):
+        email = request.session.get("pending_verification_email", "")
+        if not email and request.user.is_authenticated:
+            email = request.user.email
+
+        masked_email = ""
+        if email and "@" in email:
+            local, domain = email.split("@", 1)
+            if len(local) <= 2:
+                masked_local = local[0] + "*"
+            else:
+                masked_local = local[0] + "*" * (len(local) - 2) + local[-1]
+            masked_email = f"{masked_local}@{domain}"
+
+        return render(request, self.template_name, {
+            "email": email,
+            "masked_email": masked_email,
+        })
+
+
+class ResendVerificationView(View):
+    @method_decorator(csrf_protect)
+    def post(self, request):
+        email = (request.POST.get("email") or request.session.get("pending_verification_email") or "").strip().lower()
+        if not email and request.user.is_authenticated:
+            email = request.user.email
+
+        if email:
+            from apps.accounts.services import AuthService
+            auth_service = AuthService()
+            auth_service.resend_verification(email)
+            messages.success(request, "If an unverified account exists for this email, a fresh verification link has been sent.")
+        else:
+            messages.error(request, "Please enter your email address to resend verification.")
+
+        return redirect("accounts:verify-email-required")
+
+
 class VerifyEmailView(View):
     template_name = "pages/verify_email.html"
 
+    def _get_token_str(self, request, token=None) -> str:
+        return (token or request.GET.get("token") or request.POST.get("token") or "").strip()
+
     def get(self, request, token=None):
-        return render(request, self.template_name, {"success": True})
+        token_str = self._get_token_str(request, token)
+        if not token_str:
+            return render(request, self.template_name, {
+                "success": False,
+                "error": "Verification token is missing. Please click the link in your email.",
+            })
+
+        from apps.accounts.services import AuthService
+        from rest_framework.exceptions import ValidationError
+        auth_service = AuthService()
+
+        try:
+            user = auth_service.verify_email(token_str)
+            messages.success(request, "Email verified successfully! You can now log in to access SevaJobs.")
+            
+            if request.user.is_authenticated:
+                if user.role == User.Role.ADMIN or user.is_superuser:
+                    return redirect("/dashboard/admin/")
+                elif user.role == User.Role.RECRUITER:
+                    return redirect("/dashboard/recruiter/")
+                elif user.role == User.Role.STAFF:
+                    return redirect("/staff/dashboard/")
+                return redirect("/dashboard/seeker/")
+            else:
+                return render(request, self.template_name, {
+                    "success": True,
+                    "user": user,
+                })
+        except (ValidationError, Exception) as exc:
+            logger.warning("Email verification failed for token %s: %s", token_str[:8] if token_str else "", exc)
+            return render(request, self.template_name, {
+                "success": False,
+                "error": "This verification link is invalid, expired, or has already been used.",
+                "token": token_str,
+            })
 
 
 class OTPVerificationView(View):

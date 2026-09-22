@@ -1,21 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Email Verified — SevaJobs{% endblock %}
+{% block title %}{% if success %}Email Verified — SevaJobs{% else %}Verification Failed — SevaJobs{% endif %}{% endblock %}
 {% block content %}
 <section class="section d-flex align-items-center" style="min-height:70vh;">
   <div class="container">
     <div class="row justify-content-center">
       <div class="col-md-6 col-lg-5">
-        <div class="sj-auth-card animate-scale-in text-center">
+        <div class="sj-auth-card animate-scale-in text-center p-4">
           {% if success %}
-            <div class="ico ico-xl ico-gradient-green mx-auto mb-3"><i class="bi bi-check-lg"></i></div>
-            <h3 class="fw-800 mb-2">Email Verified!</h3>
-            <p class="text-muted-2 mb-4">Your email has been verified successfully. You can now log in and start using all features of SevaJobs.</p>
-            <a href="{% url 'accounts:login' %}" class="btn btn-gradient btn-lg"><i class="bi bi-box-arrow-in-right me-1"></i> Go to Login</a>
+            <div class="ico ico-xl ico-gradient-green mx-auto mb-3"><i class="bi bi-check-circle-fill fs-1 text-success"></i></div>
+            <h3 class="fw-800 mb-2">Email Verified Successfully!</h3>
+            <p class="text-muted-2 mb-4">Your email address has been verified. You can now log in and access all features of SevaJobs.</p>
+            <a href="{% url 'accounts:login' %}" class="btn btn-gradient btn-lg w-100"><i class="bi bi-box-arrow-in-right me-1"></i> Continue to Sign In</a>
           {% else %}
-            <div class="ico ico-xl bg-soft-danger mx-auto mb-3"><i class="bi bi-x-lg"></i></div>
-            <h3 class="fw-800 mb-2">Verification Failed</h3>
-            <p class="text-muted-2 mb-4">The verification link may have expired or is invalid. Please request a new verification email.</p>
-            <a href="{% url 'accounts:login' %}" class="btn btn-gradient btn-lg"><i class="bi bi-arrow-left me-1"></i> Back to Login</a>
+            <div class="ico ico-xl bg-soft-danger mx-auto mb-3"><i class="bi bi-exclamation-triangle-fill fs-1 text-danger"></i></div>
+            <h3 class="fw-800 mb-2">Verification Link Invalid</h3>
+            <p class="text-muted-2 mb-4">{{ error|default:"The verification link may have expired or is invalid. Please request a new verification link." }}</p>
+            <a href="{% url 'accounts:verify-email-required' %}" class="btn btn-primary btn-lg w-100 mb-3"><i class="bi bi-envelope-at me-1"></i> Resend Verification Email</a>
+            <div>
+              <a href="{% url 'accounts:login' %}" class="text-muted fs-sm text-decoration-none"><i class="bi bi-arrow-left me-1"></i> Back to Login</a>
+            </div>
           {% endif %}
         </div>
       </div>

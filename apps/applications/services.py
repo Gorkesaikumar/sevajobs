@@ -95,7 +95,11 @@ class ApplicationService:
         self._record_history(application, "", S.APPLIED, applicant)
 
         from apps.notifications.email_service import EmailService
-        company_name = (job.company.name if job and job.company else "") or "SevaJobs Employer"
+        company_name = (
+            (job.company.name if job and job.company else "")
+            or (getattr(staff_job, "organization_name", "") if staff_job else "")
+            or "SevaJobs Employer"
+        )
         job_title = job.title if job else staff_job.designation
 
         # Email confirmation to Candidate
@@ -111,6 +115,9 @@ class ApplicationService:
             idempotency_key=f"app_cand:{application.id}",
         )
 
+        from django.urls import reverse
+        frontend_url = getattr(settings, "FRONTEND_URL", "https://sevajobs.in").rstrip("/")
+
         if job:
             Job.objects.filter(id=job.id).update(applications_count=F("applications_count") + 1)
             # Notify the recruiter who owns the job.
@@ -125,6 +132,11 @@ class ApplicationService:
                     entity_type="JobApplication",
                     entity_id=application.id,
                 )
+                try:
+                    recruiter_app_path = reverse("recruiter:applications")
+                except Exception:
+                    recruiter_app_path = "/dashboard/recruiter/applications"
+                
                 EmailService.send_template_email(
                     template_name="recruiter_new_application",
                     to_email=recruiter_user.email,
@@ -136,7 +148,7 @@ class ApplicationService:
                         "applicant_email": applicant.email,
                         "applicant_phone": applicant.phone,
                         "expected_salary": expected_salary,
-                        "application_url": f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/dashboard/recruiter/applications",
+                        "application_url": f"{frontend_url}{recruiter_app_path}",
                     },
                     idempotency_key=f"app_rec:{application.id}",
                 )
@@ -153,6 +165,11 @@ class ApplicationService:
                     entity_type="JobApplication",
                     entity_id=application.id,
                 )
+                try:
+                    staff_app_path = reverse("staff:applications")
+                except Exception:
+                    staff_app_path = "/staff/dashboard/applications"
+
                 EmailService.send_template_email(
                     template_name="recruiter_new_application",
                     to_email=staff_user.email,
@@ -164,7 +181,7 @@ class ApplicationService:
                         "applicant_email": applicant.email,
                         "applicant_phone": applicant.phone,
                         "expected_salary": expected_salary,
-                        "application_url": f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/staff/applications",
+                        "application_url": f"{frontend_url}{staff_app_path}",
                     },
                     idempotency_key=f"app_staff:{application.id}",
                 )
@@ -460,20 +477,24 @@ class ApplicationService:
         ntype = _STATUS_TO_NOTIFICATION.get(new_status, Notification.Type.STATUS_CHANGED)
 
         # Build rich metadata for notifications
+        from django.utils import timezone
+
         notif_metadata: dict = {}
         if new_status == S.INTERVIEW_SCHEDULED and application.interview_at:
             when = application.interview_at
+            if timezone.is_aware(when):
+                when = timezone.localtime(when)
             notif_metadata = {
                 "interview_date": when.strftime("%Y-%m-%d"),
                 "interview_time": when.strftime("%H:%M"),
                 "interview_date_display": when.strftime("%A, %d %B %Y"),
                 "interview_time_display": when.strftime("%I:%M %p"),
-                "interview_type": application.interview_type,
+                "interview_type": application.get_interview_type_display() if application.interview_type else "",
                 "interview_mode": application.interview_mode,
-                "interview_mode_display": application.get_interview_mode_display(),
-                "interviewer_name": application.interviewer_name,
-                "meeting_link": application.meeting_link,
-                "interview_location": application.interview_location,
+                "interview_mode_display": application.get_interview_mode_display() or "",
+                "interviewer_name": application.interviewer_name or "",
+                "meeting_link": application.meeting_link or "",
+                "interview_location": application.interview_location or "",
                 "job_title": job_title,
                 "company_name": company_name,
                 "application_id": str(application.id),
@@ -492,8 +513,15 @@ class ApplicationService:
             if offer:
                 selection_date = offer.created_at.strftime("%Y-%m-%d")
                 offer_status = offer.get_status_display()
-                offer_package = f"₹{offer.annual_ctc:,} CTC / ₹{offer.monthly_salary:,} monthly"
-                joining_date = offer.joining_date.strftime("%Y-%m-%d") if offer.joining_date else ""
+                if offer.annual_ctc and offer.monthly_salary:
+                    offer_package = f"₹{offer.annual_ctc:,} CTC / ₹{offer.monthly_salary:,} monthly"
+                elif offer.annual_ctc:
+                    offer_package = f"₹{offer.annual_ctc:,} CTC"
+                elif offer.monthly_salary:
+                    offer_package = f"₹{offer.monthly_salary:,} monthly"
+                else:
+                    offer_package = ""
+                joining_date = offer.joining_date.strftime("%d %B %Y") if offer.joining_date else ""
 
             notif_metadata = {
                 "job_title": job_title,
@@ -503,7 +531,7 @@ class ApplicationService:
                 "offer_package_summary": offer_package,
                 "joining_date": joining_date,
                 "application_id": str(application.id),
-                "has_offer": True,
+                "has_offer": bool(offer),
             }
         elif new_status == S.REJECTED:
             title = "Application Update"
@@ -511,6 +539,19 @@ class ApplicationService:
             notif_metadata = {
                 "job_title": job_title,
                 "company_name": company_name,
+                "application_id": str(application.id),
+            }
+        elif new_status == S.JOINED:
+            title = f"🎉 Joining Confirmed — {job_title}"
+            message = self._status_message(application, new_status, job_title)
+            offer = getattr(application, "offer_details", None)
+            joining_date = ""
+            if offer and offer.joining_date:
+                joining_date = offer.joining_date.strftime("%d %B %Y")
+            notif_metadata = {
+                "job_title": job_title,
+                "company_name": company_name,
+                "joining_date": joining_date,
                 "application_id": str(application.id),
             }
         elif new_status == S.SHORTLISTED:
@@ -556,13 +597,17 @@ class ApplicationService:
             **notif_metadata,
         }
 
+        idempotency_key = f"app_status:{application.id}:{new_status}"
+        if new_status == S.INTERVIEW_SCHEDULED and application.interview_at:
+            idempotency_key = f"app_status:{application.id}:{new_status}:{int(application.interview_at.timestamp())}"
+
         from apps.notifications.email_service import EmailService
         EmailService.send_template_email(
             template_name=template_name,
             to_email=candidate.email,
             subject=f"[SevaJobs] {title}",
             context=email_context,
-            idempotency_key=f"app_status:{application.id}:{new_status}",
+            idempotency_key=idempotency_key,
         )
 
 
@@ -597,12 +642,15 @@ class ApplicationService:
     @staticmethod
     def _build_interview_message(application, job_title: str, company_name: str) -> str:
         """Build a rich, multi-line message for interview_scheduled notifications."""
+        from django.utils import timezone
         when = application.interview_at
+        if when and timezone.is_aware(when):
+            when = timezone.localtime(when)
         lines = [
             f"Your interview for {job_title} at {company_name} has been scheduled.",
             "",
-            f"Date: {when.strftime('%A, %d %B %Y')}",
-            f"Time: {when.strftime('%I:%M %p')}",
+            f"Date: {when.strftime('%A, %d %B %Y') if when else 'TBD'}",
+            f"Time: {when.strftime('%I:%M %p') if when else 'TBD'}",
             f"Mode: {application.get_interview_mode_display() or 'TBD'}",
         ]
         if application.interview_type:
