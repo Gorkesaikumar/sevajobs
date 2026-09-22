@@ -16,7 +16,10 @@ class UserRepository:
 
     @staticmethod
     def get_by_email(email: str) -> Optional[User]:
-        return User.objects.filter(email__iexact=email, is_active=True).first()
+        if not email or not isinstance(email, str) or not email.strip():
+            return None
+        return User.objects.filter(email__iexact=email.strip(), is_active=True, is_deleted=False).first()
+
 
     @staticmethod
     def get_by_phone(phone: str) -> Optional[User]:

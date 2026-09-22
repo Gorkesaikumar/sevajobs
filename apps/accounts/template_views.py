@@ -253,6 +253,7 @@ class ForgotPasswordView(View):
     def post(self, request):
         from apps.accounts.middleware import get_client_ip
         from apps.accounts.services import AuthService
+        from apps.notifications.backends import _mask_email
 
         email = request.POST.get("email", "").strip().lower()
         if email:
@@ -260,7 +261,7 @@ class ForgotPasswordView(View):
                 auth_service = AuthService()
                 auth_service.request_password_reset(email, ip=get_client_ip(request))
             except Exception as exc:
-                logger.error("Error requesting password reset for %s: %s", email, exc)
+                logger.exception("Error processing password reset request for %s: %s", _mask_email(email), exc)
 
         # Always show success to prevent email enumeration
         messages.success(
@@ -268,6 +269,7 @@ class ForgotPasswordView(View):
             "If an account exists with this email, you'll receive a password reset link shortly."
         )
         return render(request, self.template_name)
+
 
 
 class ResetPasswordView(View):

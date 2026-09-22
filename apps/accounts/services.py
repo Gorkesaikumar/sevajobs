@@ -144,7 +144,12 @@ class AuthService:
     # ----- Password reset --------------------------------------------------
     @transaction.atomic
     def request_password_reset(self, email: str, ip: Optional[str] = None) -> None:
-        user = UserRepository.get_by_email(email)
+        normalized_email = (email or "").strip().lower()
+        if not normalized_email:
+            security_logger.info("Password reset requested with empty email.")
+            return
+
+        user = UserRepository.get_by_email(normalized_email)
         if user is None:
             # Do not reveal whether the email exists.
             security_logger.info("Password reset requested for unknown email.")
@@ -174,6 +179,7 @@ class AuthService:
             idempotency_key=f"pwd_reset:{token.token}",
         )
         security_logger.info("Password reset token issued for user %s", user.pk)
+
 
     @transaction.atomic
     def reset_password(self, token_str: str, new_password: str) -> User:

@@ -68,8 +68,21 @@ class PasswordResetWorkflowTests(TestCase):
         self.assertIn(expected_url, sent_email.body)
         self.assertTrue(any(expected_url in alt[0] for alt in sent_email.alternatives))
 
-    # Test B: Unknown email
+    # Test B: Case normalization
+    def test_email_case_normalization_resolves_registered_user(self):
+        url = reverse("accounts:forgot-password")
+        mixed_case_email = "REGISTERED_USER@Example.COM"
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(url, {"email": mixed_case_email})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(PasswordResetToken.objects.filter(user=self.user).count(), 1)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.email])
+
+    # Test C: Unknown email
     def test_forgot_password_unknown_email_shows_generic_success_without_token_or_email(self):
+
         url = reverse("accounts:forgot-password")
         with self.captureOnCommitCallbacks(execute=True):
             response = self.client.post(url, {"email": "unknown_user@example.com"})
