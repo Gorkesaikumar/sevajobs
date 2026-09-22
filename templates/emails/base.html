@@ -44,15 +44,12 @@
             padding: 24px 32px;
             text-align: left;
         }
-        .logo-text {
-            color: #ffffff;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            text-decoration: none;
-        }
-        .logo-accent {
-            color: #6366f1;
+        .logo-img {
+            display: block;
+            max-width: 140px;
+            height: auto;
+            border: 0;
+            border-radius: 4px;
         }
         .content {
             padding: 32px;
@@ -140,7 +137,9 @@
         <table role="presentation" class="main" align="center">
             <tr>
                 <td class="header">
-                    <a href="{{ frontend_url }}" class="logo-text">Seva<span class="logo-accent">Jobs</span></a>
+                    <a href="{{ frontend_url }}" style="text-decoration: none; display: inline-block;">
+                        <img src="{{ frontend_url }}/static/images/logo.jpg" alt="SevaJobs" width="140" class="logo-img" style="display: block; max-width: 140px; height: auto; border: 0; border-radius: 4px;">
+                    </a>
                 </td>
             </tr>
             <tr>
