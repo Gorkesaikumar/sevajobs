@@ -2253,3 +2253,53 @@ img {
   background-image: none !important;
   padding-right: 2.5rem !important;
 }
+
+/* --------------------------------------------------------------------------
+   27. WELCOME ROLE SELECTION MODAL
+   -------------------------------------------------------------------------- */
+.modal-backdrop.show {
+  opacity: 0.65;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.sj-welcome-modal .modal-content {
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-line);
+  box-shadow: var(--sj-shadow-xl);
+  transition: all var(--sj-duration-md) var(--sj-ease);
+}
+
+.sj-welcome-card {
+  background: var(--sj-surface);
+  border: 1px solid var(--sj-line);
+  border-radius: var(--sj-radius);
+  box-shadow: var(--sj-shadow-xs);
+  transition: transform var(--sj-duration) var(--sj-ease),
+              box-shadow var(--sj-duration) var(--sj-ease),
+              border-color var(--sj-duration) var(--sj-ease);
+}
+
+.sj-welcome-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sj-shadow-md);
+  border-color: var(--sj-primary-300) !important;
+}
+
+.hover-primary:hover {
+  color: var(--sj-primary-600) !important;
+}
+
+@media (max-width: 575.98px) {
+  .sj-welcome-modal .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .sj-welcome-modal .modal-body {
+    padding: 1.25rem 1rem !important;
+  }
+
+  .sj-welcome-card {
+    padding: 1.25rem 1rem !important;
+  }
+}

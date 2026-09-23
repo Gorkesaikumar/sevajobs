@@ -1,0 +1,146 @@
+{% load static %}
+<!-- ====== SEVAJOBS WELCOME ROLE SELECTION MODAL ====== -->
+<div class="modal fade sj-welcome-modal" id="welcomeRoleModal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="welcomeModalTitle" aria-describedby="welcomeModalSubtitle" data-bs-backdrop="static" data-bs-keyboard="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-xl overflow-hidden position-relative" style="border-radius: var(--sj-radius-lg, 20px);">
+      
+      <!-- Top Decor Gradient Bar -->
+      <div class="position-absolute top-0 start-0 w-100" style="height: 5px; background: var(--sj-gradient, linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)); z-index: 10;"></div>
+
+      <!-- Close Button (X) -->
+      <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3 shadow-sm bg-white p-2 rounded-circle" id="welcomeModalCloseBtn" data-bs-dismiss="modal" aria-label="Close welcome popup"></button>
+
+      <div class="modal-body p-4 p-md-5">
+        <!-- Optional Top Information Strip -->
+        <div class="text-center mb-3">
+          <span class="d-inline-flex align-items-center gap-1 px-3 py-1 rounded-pill fs-xs fw-600 bg-primary-subtle text-primary border border-primary-subtle">
+            ✨ Find your next opportunity with SevaJobs
+          </span>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-4">
+          <h2 class="fw-800 mb-1 tracking-tight display-6" id="welcomeModalTitle">
+            Welcome to <span class="text-gradient">SevaJobs</span>
+          </h2>
+          <p class="lead fw-600 text-dark mb-1 fs-6" id="welcomeModalSubtitle">
+            Connecting Talent with the Right Opportunities
+          </p>
+          <p class="text-muted-2 fs-sm mb-0">
+            Choose how you'd like to continue.
+          </p>
+        </div>
+
+        <!-- Cards Container -->
+        <div class="row g-4 justify-content-center mb-4">
+          <!-- LEFT CARD — JOB SEEKER -->
+          <div class="col-12 col-md-6">
+            <div class="sj-welcome-card h-100 p-4 rounded-4 border d-flex flex-column transition-all position-relative" id="jobSeekerCard">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="sj-welcome-icon-box rounded-3 d-flex align-items-center justify-content-center ico-gradient-primary text-white" style="width: 48px; height: 48px; font-size: 1.4rem;">
+                  <i class="bi bi-person-badge-fill"></i>
+                </div>
+                <div>
+                  <span class="badge bg-primary-subtle text-primary fw-700 px-2 py-1 mb-1 fs-xs">JOB SEEKER</span>
+                  <h4 class="fw-700 mb-0 fs-5">Looking for a Job?</h4>
+                </div>
+              </div>
+
+              <p class="text-muted-2 fs-sm mb-3">
+                Discover relevant opportunities and build your career with top institutions.
+              </p>
+
+              <ul class="list-unstyled fs-sm text-body mb-4 flex-grow-1 d-grid gap-2">
+                <li class="d-flex align-items-center gap-2">
+                  <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                  <span>Search Jobs</span>
+                </li>
+                <li class="d-flex align-items-center gap-2">
+                  <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                  <span>Get Recommended Jobs</span>
+                </li>
+                <li class="d-flex align-items-center gap-2">
+                  <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                  <span>Upload Your Resume</span>
+                </li>
+                <li class="d-flex align-items-center gap-2">
+                  <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                  <span>Track Applications</span>
+                </li>
+              </ul>
+
+              <div class="d-grid gap-2 mt-auto">
+                <a href="{% url 'core:job-search' %}" class="btn btn-primary btn-lg w-100 fw-600 rounded-3 shadow-sm" id="welcomeSeekerCta">
+                  Find Jobs <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+                <a href="{% url 'accounts:register' %}?role=job_seeker" class="text-center text-decoration-none fs-xs fw-600 text-muted hover-primary pt-1" id="welcomeSeekerRegister">
+                  Create Job Seeker Account
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT CARD — RECRUITER -->
+          <div class="col-12 col-md-6">
+            <div class="sj-welcome-card h-100 p-4 rounded-4 border d-flex flex-column transition-all position-relative" id="recruiterCard">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="sj-welcome-icon-box rounded-3 d-flex align-items-center justify-content-center ico-gradient-cool text-white" style="width: 48px; height: 48px; font-size: 1.4rem;">
+                  <i class="bi bi-buildings-fill"></i>
+                </div>
+                <div>
+                  <span class="badge bg-info-subtle text-info-emphasis fw-700 px-2 py-1 mb-1 fs-xs">RECRUITER / EMPLOYER</span>
+                  <h4 class="fw-700 mb-0 fs-5">Hiring Talent?</h4>
+                </div>
+              </div>
+
+              <p class="text-muted-2 fs-sm mb-3">
+                Find qualified candidates and manage your end-to-end hiring process.
+              </p>
+
+              <ul class="list-unstyled fs-sm text-body mb-4 flex-grow-1 d-grid gap-2">
+                <li class="d-flex align-items-center gap-2">
+                  <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                  <span>Post Jobs</span>
+                </li>
+                <li class="d-flex align-items-center gap-2">
+                  <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                  <span>Find Candidates</span>
+                </li>
+                <li class="d-flex align-items-center gap-2">
+                  <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                  <span>Review Applications</span>
+                </li>
+                <li class="d-flex align-items-center gap-2">
+                  <i class="bi bi-check-circle-fill text-success fs-6"></i>
+                  <span>Manage Interviews</span>
+                </li>
+              </ul>
+
+              <div class="d-grid gap-2 mt-auto">
+                {% if user.is_authenticated and user.is_recruiter %}
+                  <a href="{% url 'recruiter:dashboard' %}" class="btn btn-gradient btn-lg w-100 fw-600 rounded-3 shadow-sm" id="welcomeRecruiterCta">
+                    Hire Talent <i class="bi bi-arrow-right ms-1"></i>
+                  </a>
+                {% else %}
+                  <a href="{% url 'accounts:register' %}?role=recruiter" class="btn btn-gradient btn-lg w-100 fw-600 rounded-3 shadow-sm" id="welcomeRecruiterCta">
+                    Hire Talent <i class="bi bi-arrow-right ms-1"></i>
+                  </a>
+                {% endif %}
+                <a href="{% url 'accounts:register' %}?role=recruiter" class="text-center text-decoration-none fs-xs fw-600 text-muted hover-primary pt-1" id="welcomeRecruiterRegister">
+                  Create Recruiter Account
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer / Dismiss Link -->
+        <div class="text-center">
+          <button type="button" class="btn btn-link text-muted text-decoration-none fs-sm fw-600 p-0" id="welcomeMaybeLaterBtn" data-bs-dismiss="modal">
+            Maybe later
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
