@@ -1,0 +1,281 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+
+{% block title %}{{ campaign.name }} — Job Alert Campaign — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid px-0">
+  <!-- Header Bar -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="{% url 'admin-panel:job-alert-campaigns' %}" class="btn btn-sm btn-light border text-muted-2 rounded-circle" title="Back to Campaigns">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h4 class="fw-800 mb-0">{{ campaign.name }}</h4>
+        {% if campaign.status == 'completed' %}
+          <span class="badge bg-success">Completed</span>
+        {% elif campaign.status == 'processing' %}
+          <span class="badge bg-warning-subtle text-warning-emphasis">Processing</span>
+        {% elif campaign.status == 'queued' %}
+          <span class="badge bg-info-subtle text-info">Queued</span>
+        {% elif campaign.status == 'failed' or campaign.status == 'partially_failed' %}
+          <span class="badge bg-danger">{{ campaign.get_status_display }}</span>
+        {% elif campaign.status == 'cancelled' %}
+          <span class="badge bg-secondary">Cancelled</span>
+        {% else %}
+          <span class="badge bg-light text-dark border">{{ campaign.get_status_display }}</span>
+        {% endif %}
+        <span class="badge bg-light text-dark border fs-xs">{{ campaign.get_matching_strategy_display }}</span>
+      </div>
+      <p class="text-muted-2 fs-sm mb-0 mt-1">
+        Subject: <strong class="text-dark">{{ campaign.subject }}</strong> &bull; 
+        Created by {{ campaign.created_by.get_full_name|default:campaign.created_by.email }} on {{ campaign.created_at|date:"M d, Y H:i" }}
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <a href="{% url 'admin-panel:bulk-job-alerts' %}" class="btn btn-primary btn-sm fw-semibold">
+        <i class="bi bi-plus-circle me-1"></i> New Job Alert
+      </a>
+      {% if campaign.failed_count > 0 and campaign.status != 'queued' and campaign.status != 'processing' %}
+        <form method="post" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="retry_failed">
+          <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold" title="Retry all eligible failed deliveries">
+            <i class="bi bi-arrow-repeat me-1"></i> Retry Failed ({{ campaign.failed_count }})
+          </button>
+        </form>
+      {% endif %}
+      {% if campaign.status == 'queued' or campaign.status == 'processing' %}
+        <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel this campaign? Pending deliveries will be halted.');">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="cancel">
+          <button type="submit" class="btn btn-outline-secondary btn-sm fw-semibold">
+            <i class="bi bi-x-circle me-1"></i> Cancel Campaign
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Metric KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-lg">
+      <div class="sj-card p-3 text-center h-100">
+        <div class="fw-800 text-dark" style="font-size:1.5rem;">{{ campaign.total_recipients }}</div>
+        <div class="fs-xs text-muted-2">Total Targeted</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg">
+      <div class="sj-card p-3 text-center h-100">
+        <div class="fw-800 text-primary" style="font-size:1.5rem;">{{ campaign.sent_count }}</div>
+        <div class="fs-xs text-muted-2">Sent</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg">
+      <div class="sj-card p-3 text-center h-100 border-start border-3 border-success">
+        <div class="fw-800 text-success" style="font-size:1.5rem;">{{ campaign.delivered_count }}</div>
+        <div class="fs-xs text-success fw-semibold">Delivered</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg">
+      <div class="sj-card p-3 text-center h-100 border-start border-3 border-danger">
+        <div class="fw-800 text-danger" style="font-size:1.5rem;">{{ campaign.failed_count }}</div>
+        <div class="fs-xs text-danger fw-semibold">Failed</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg">
+      <div class="sj-card p-3 text-center h-100">
+        <div class="fw-800 text-warning-emphasis" style="font-size:1.5rem;">{{ campaign.suppressed_count }}</div>
+        <div class="fs-xs text-muted-2">Suppressed</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg">
+      <div class="sj-card p-3 text-center h-100">
+        <div class="fw-800 text-info" style="font-size:1.5rem;">{{ campaign.pending_count }}</div>
+        <div class="fs-xs text-muted-2">Pending / Queued</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Form for Recipients -->
+  <div class="sj-card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h5 class="fw-800 mb-1 text-dark">
+          <i class="bi bi-people text-primary me-2"></i>Campaign Recipients &amp; Delivery Log
+        </h5>
+        <p class="fs-xs text-muted-2 mb-0">Detailed delivery status, timestamps, and matched vacancy snapshots per candidate.</p>
+      </div>
+      <form method="get" class="d-flex gap-2 flex-wrap">
+        <select name="status" class="form-select form-select-sm w-auto">
+          <option value="">All Statuses</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="queued" {% if status_filter == 'queued' %}selected{% endif %}>Queued</option>
+          <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+          <option value="delivered" {% if status_filter == 'delivered' %}selected{% endif %}>Delivered</option>
+          <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+          <option value="suppressed" {% if status_filter == 'suppressed' %}selected{% endif %}>Suppressed</option>
+          <option value="skipped" {% if status_filter == 'skipped' %}selected{% endif %}>Skipped</option>
+        </select>
+        <input type="text" name="q" class="form-control form-control-sm" placeholder="Search candidate..." value="{{ search_query }}">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+        {% if search_query or status_filter %}
+          <a href="{% url 'admin-panel:job-alert-campaign-detail' campaign.id %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">Clear</a>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Recipients Table -->
+    <div class="table-responsive">
+      <table class="table table-hover sj-table align-middle mb-0">
+        <thead class="table-light fs-xs text-uppercase">
+          <tr>
+            <th>Candidate</th>
+            <th>Profession &amp; Subject</th>
+            <th>Location</th>
+            <th>Matched Vacancies</th>
+            <th>Status</th>
+            <th>Attempt</th>
+            <th>Sent / Delivered</th>
+            <th>Audit Detail</th>
+          </tr>
+        </thead>
+        <tbody class="fs-sm">
+          {% for r in page_obj %}
+          <tr>
+            <td>
+              <div class="fw-bold text-dark">{{ r.recipient_name|default:r.email }}</div>
+              <div class="fs-xs text-muted-2">{{ r.email }}</div>
+            </td>
+            <td>
+              <div class="fw-semibold text-dark">{{ r.profession|default:"Teacher" }}</div>
+              <div class="fs-xs text-muted-2">{{ r.subject|default:"General" }}</div>
+            </td>
+            <td class="fs-xs text-muted-2">{{ r.location|default:"Any" }}</td>
+            <td>
+              <span class="badge bg-primary-subtle text-primary fw-bold">
+                {{ r.matched_job_count }} Vacanc{{ r.matched_job_count|pluralize:"y,ies" }}
+              </span>
+            </td>
+            <td>
+              {% if r.status == 'delivered' %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle-fill me-1"></i>Delivered</span>
+              {% elif r.status == 'sent' %}
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-send-fill me-1"></i>Sent</span>
+              {% elif r.status == 'failed' %}
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle" title="{{ r.last_error }}"><i class="bi bi-x-circle-fill me-1"></i>Failed</span>
+              {% elif r.status == 'suppressed' %}
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle"><i class="bi bi-shield-x me-1"></i>Suppressed</span>
+              {% elif r.status == 'skipped' %}
+                <span class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-skip-forward me-1"></i>Skipped</span>
+              {% elif r.status == 'queued' %}
+                <span class="badge bg-info-subtle text-info border"><i class="bi bi-clock me-1"></i>Queued</span>
+              {% else %}
+                <span class="badge bg-light text-dark border">{{ r.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="fs-xs text-muted-2">{{ r.attempt_count }}/3</span>
+            </td>
+            <td class="fs-xs text-muted-2">
+              {% if r.delivered_at %}
+                {{ r.delivered_at|date:"M d, H:i" }}
+              {% elif r.sent_at %}
+                {{ r.sent_at|date:"M d, H:i" }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              <button type="button" class="btn btn-light btn-sm py-0 px-2 fs-xs text-primary" data-bs-toggle="modal" data-bs-target="#recipientDetailModal{{ r.id }}">
+                <i class="bi bi-info-circle me-1"></i> Inspect
+              </button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">No recipient delivery records found matching your filters.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Previous</a>
+        </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Next</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block dashboard_modals %}
+{% for r in page_obj %}
+<!-- Modal: Recipient Delivery Snapshot -->
+<div class="modal fade" id="recipientDetailModal{{ r.id }}" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header border-bottom bg-white py-3">
+        <div>
+          <h5 class="modal-title fw-800 text-dark">{{ r.recipient_name }} ({{ r.email }})</h5>
+          <p class="fs-xs text-muted-2 mb-0">Delivery Record • Status: {{ r.get_status_display }}</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4 bg-white">
+        <!-- Status & Timing -->
+        <div class="row g-2 mb-3 fs-xs">
+          <div class="col-6"><strong>Queued At:</strong> {{ r.queued_at|default:"-" }}</div>
+          <div class="col-6"><strong>Sent At:</strong> {{ r.sent_at|default:"-" }}</div>
+          <div class="col-6"><strong>Delivered At:</strong> {{ r.delivered_at|default:"-" }}</div>
+          <div class="col-6"><strong>Provider ID:</strong> <code>{{ r.provider_message_id|default:"-" }}</code></div>
+        </div>
+
+        {% if r.last_error %}
+        <div class="alert alert-danger p-2 fs-xs rounded-3 mb-3">
+          <strong>Error Message:</strong> {{ r.last_error }}
+        </div>
+        {% endif %}
+
+        <div class="fw-bold fs-xs text-uppercase text-muted-2 mb-2">Matched Vacancies Snapshot ({{ r.matched_job_count }})</div>
+        <div class="d-flex flex-column gap-2">
+          {% for j in r.matched_jobs_data %}
+          <div class="card border rounded-3 p-2 bg-light fs-xs">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="fw-bold text-dark">{{ j.title }}</div>
+                <div class="text-muted-2">{{ j.organization }} • 📍 {{ j.location }} • 💰 {{ j.salary_display }}</div>
+              </div>
+              <a href="{{ j.url }}" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2 fs-xs">View</a>
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-muted fs-xs">No matched vacancies recorded in this snapshot.</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="modal-footer border-top bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

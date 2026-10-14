@@ -29,6 +29,15 @@
     <!-- Header Action Buttons -->
     <div class="d-flex align-items-center flex-wrap gap-2">
       {% if is_staff %}
+        {% if request.session.current_role_scope == 'admin' or user.is_superuser or user.role == 'admin' or user.role == 'super_admin' %}
+          <a href="{% url 'admin-panel:requirement-bulk-email' requirement.pk %}" class="btn btn-outline-primary btn-sm fw-600 rounded-3 shadow-sm">
+            <i class="bi bi-envelope-at me-1"></i> Bulk Email
+          </a>
+        {% else %}
+          <a href="{% url 'jobs:requirement-bulk-email' requirement.pk %}" class="btn btn-outline-primary btn-sm fw-600 rounded-3 shadow-sm">
+            <i class="bi bi-envelope-at me-1"></i> Bulk Email
+          </a>
+        {% endif %}
         <button type="button" class="btn btn-outline-dark btn-sm fw-600 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#assignRequirementModal">
           <i class="bi bi-person-plus me-1"></i> {% if requirement.assigned_staff %}Reassign{% else %}Assign Employee{% endif %}
         </button>
@@ -51,8 +60,8 @@
           </button>
         </form>
       {% else %}
-        <a href="{% url 'jobs:recruiter-job-detail' requirement.converted_job.id %}" class="btn btn-success btn-sm fw-700 rounded-3 shadow-sm">
-          <i class="bi bi-check-circle me-1"></i> View Converted Job
+        <a href="{{ requirement.converted_job.get_absolute_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm fw-700 rounded-3 shadow-sm">
+          <i class="bi bi-box-arrow-up-right me-1"></i> View Converted Job
         </a>
       {% endif %}
     </div>
@@ -127,7 +136,9 @@
         {% if requirement.converted_job %}
         <div class="d-flex align-items-center justify-content-between">
           <span class="text-muted">Linked Job:</span>
-          <span class="fw-600 text-success">Draft Job Created</span>
+          <a href="{{ requirement.converted_job.get_absolute_url }}" target="_blank" rel="noopener noreferrer" class="fw-600 text-success text-decoration-none">
+            {{ requirement.converted_job.title }} <i class="bi bi-box-arrow-up-right fs-xs ms-1"></i>
+          </a>
         </div>
         {% endif %}
       </div>
@@ -172,12 +183,12 @@
             
             <div class="d-flex align-items-start justify-content-between mb-3">
               <div>
-                <h5 class="fw-700 mb-1 text-dark">{{ m.candidate.get_full_name|default:m.candidate.email }}</h5>
+                <h5 class="fw-700 mb-1 text-dark">{{ m.candidate_display_name }}</h5>
                 <div class="fs-xs text-muted">
-                  {{ m.candidate.job_seeker_profile.qualification|default:requirement.qualification }} • 
-                  {{ m.candidate.job_seeker_profile.experience_years|default:m.requirement.experience_range }} Years Exp
+                  {{ m.candidate_qualification }} • 
+                  {{ m.candidate_experience }}
                 </div>
-                <div class="fs-xs text-muted"><i class="bi bi-geo-alt me-1"></i>{{ m.candidate.job_seeker_profile.current_city|default:requirement.location }}</div>
+                <div class="fs-xs text-muted"><i class="bi bi-geo-alt me-1"></i>{{ m.candidate_location }}</div>
               </div>
 
               <div class="text-end">
@@ -365,7 +376,7 @@
             <div class="fw-700 text-dark">{{ log.get_event_type_display }}</div>
             <div class="text-muted fs-xs mb-1">{{ log.description }}</div>
             <div class="fs-xs text-muted-2">
-              By: {{ log.actor.get_full_name|default:log.actor.email|default:"System" }} • {{ log.created_at|naturaltime }}
+              By: {% if log.actor %}{{ log.actor.get_full_name|default:log.actor.email }}{% else %}{{ log.actor_name|default:"System" }}{% endif %} • {{ log.created_at|naturaltime }}
             </div>
           </div>
           {% empty %}
@@ -394,7 +405,7 @@
         {% for note in internal_notes %}
         <div class="card border-0 shadow-sm p-3 rounded-4 bg-white mb-2 fs-sm">
           <div class="d-flex align-items-center justify-content-between mb-1">
-            <div class="fw-700 text-dark">{{ note.author.get_full_name|default:note.author.email }}</div>
+            <div class="fw-700 text-dark">{% if note.author %}{{ note.author.get_full_name|default:note.author.email }}{% else %}{{ note.author_name|default:"Staff Member" }}{% endif %}</div>
             <div class="fs-xs text-muted">{{ note.created_at|naturaltime }}</div>
           </div>
           <div class="text-muted-2">{{ note.body }}</div>
@@ -474,7 +485,7 @@
           <div class="modal-body fs-sm">
             <p class="mb-3 text-muted">Are you sure you want to mark this candidate as <strong>Joined</strong>?</p>
             <div class="p-3 bg-light rounded-3 mb-3">
-              <div class="fw-700 text-dark mb-1">{{ m.candidate.get_full_name|default:m.candidate.email }}</div>
+              <div class="fw-700 text-dark mb-1">{{ m.candidate_display_name }}</div>
               <div class="fs-xs text-muted">{{ requirement.subject }} ({{ requirement.teaching_grade }}) • {{ requirement.institution_name }}</div>
             </div>
             <div class="alert alert-info py-2 fs-xs mb-0">
@@ -504,7 +515,7 @@
           <div class="modal-body fs-sm">
             <div class="mb-3">
               <label class="form-label fw-600 text-muted fs-xs text-uppercase mb-1">Candidate</label>
-              <input type="text" class="form-control fw-700 bg-light" value="{{ m.candidate.get_full_name|default:m.candidate.email }}" readonly>
+              <input type="text" class="form-control fw-700 bg-light" value="{{ m.candidate_display_name }}" readonly>
             </div>
             <div class="mb-3">
               <label class="form-label fw-600 text-muted fs-xs text-uppercase mb-1">Rejection Reason *</label>

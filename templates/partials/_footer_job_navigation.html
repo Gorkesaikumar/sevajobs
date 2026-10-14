@@ -1,0 +1,68 @@
+{# SevaJobs Global Footer SEO Job Discovery Navigation #}
+<div class="sj-footer-seo py-4 mb-4 border-bottom" style="border-color: rgba(255,255,255,0.1) !important;" aria-label="SEO Job Discovery Navigation">
+  <div class="row g-4">
+    <!-- Column 1: Jobs by Subject -->
+    <div class="col-12 col-sm-6 col-lg-3">
+      <h6 class="text-white fw-bold fs-xs text-uppercase mb-3" style="letter-spacing: .06em;">
+        <i class="bi bi-book me-1 text-primary-soft"></i> Jobs by Subject
+      </h6>
+      <ul class="list-unstyled d-grid gap-1 mb-0" style="font-size: 0.85rem;">
+        {% for subj in seo_navigation.subjects %}
+          <li>
+            <a href="{{ subj.url }}" class="text-secondary text-decoration-none d-inline-block py-1 hover-white">
+              {{ subj.name }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Column 2: Jobs by City -->
+    <div class="col-12 col-sm-6 col-lg-3">
+      <h6 class="text-white fw-bold fs-xs text-uppercase mb-3" style="letter-spacing: .06em;">
+        <i class="bi bi-geo-alt me-1 text-primary-soft"></i> Jobs by City
+      </h6>
+      <ul class="list-unstyled d-grid gap-1 mb-0" style="font-size: 0.85rem;">
+        {% for city in seo_navigation.cities %}
+          <li>
+            <a href="{{ city.url }}" class="text-secondary text-decoration-none d-inline-block py-1 hover-white">
+              Teaching Jobs in {{ city.name }}{% if city.is_locality %} <span class="badge bg-secondary text-light ms-1" style="font-size: 0.65rem;">Locality</span>{% endif %}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Column 3: Jobs by Level -->
+    <div class="col-12 col-sm-6 col-lg-3">
+      <h6 class="text-white fw-bold fs-xs text-uppercase mb-3" style="letter-spacing: .06em;">
+        <i class="bi bi-mortarboard me-1 text-primary-soft"></i> Jobs by Level
+      </h6>
+      <ul class="list-unstyled d-grid gap-1 mb-0" style="font-size: 0.85rem;">
+        {% for level in seo_navigation.levels %}
+          <li>
+            <a href="{{ level.url }}" class="text-secondary text-decoration-none d-inline-block py-1 hover-white">
+              {{ level.name }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Column 4: Jobs by State -->
+    <div class="col-12 col-sm-6 col-lg-3">
+      <h6 class="text-white fw-bold fs-xs text-uppercase mb-3" style="letter-spacing: .06em;">
+        <i class="bi bi-map me-1 text-primary-soft"></i> Jobs by State
+      </h6>
+      <ul class="list-unstyled d-grid gap-1 mb-0" style="font-size: 0.85rem;">
+        {% for state in seo_navigation.states %}
+          <li>
+            <a href="{{ state.url }}" class="text-secondary text-decoration-none d-inline-block py-1 hover-white">
+              Teaching Jobs in {{ state.name }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>

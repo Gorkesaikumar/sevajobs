@@ -1,0 +1,508 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}Walk-in Management — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<!-- ====== PAGE HEADER ====== -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+  <div>
+    <h4 class="fw-800 mb-1 text-dark">
+      <i class="bi bi-calendar2-check text-primary me-2"></i>Walk-in Management
+    </h4>
+    <p class="text-muted-2 fs-sm mb-0">
+      Create, publish, and manage verified on-campus walk-in interview vacancies and dispatch urgent alerts.
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'admin-panel:bulk-job-alerts' %}?alert_type=walkin_alert" class="btn btn-outline-primary btn-sm fw-bold">
+      <i class="bi bi-broadcast me-1"></i> Bulk Walk-in Alerts
+    </a>
+    <a href="{% url 'admin-panel:walk-in-create' %}" class="btn btn-primary btn-sm fw-bold">
+      <i class="bi bi-plus-circle me-1"></i> + Create Walk-in
+    </a>
+  </div>
+</div>
+
+<!-- ====== METRICS SUMMARY CARDS ====== -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="sj-card p-3 text-center h-100 border">
+      <div class="fw-800 text-primary" style="font-size:1.6rem;">{{ metrics.total }}</div>
+      <div class="fs-xs text-muted-2 fw-semibold text-uppercase">Total Walk-ins</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sj-card p-3 text-center h-100 border">
+      <div class="fw-800 text-success" style="font-size:1.6rem;">{{ metrics.published }}</div>
+      <div class="fs-xs text-muted-2 fw-semibold text-uppercase">Published &amp; Active</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sj-card p-3 text-center h-100 border">
+      <div class="fw-800 text-info" style="font-size:1.6rem;">{{ metrics.upcoming }}</div>
+      <div class="fs-xs text-muted-2 fw-semibold text-uppercase">Happening / Upcoming</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sj-card p-3 text-center h-100 border">
+      <div class="fw-800 text-warning-emphasis" style="font-size:1.6rem;">{{ metrics.drafts }}</div>
+      <div class="fs-xs text-muted-2 fw-semibold text-uppercase">Drafts / Inactive</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SEARCH & FILTER BAR ====== -->
+<form class="sj-card p-3 mb-4 border" method="get" action="{% url 'admin-panel:walk-ins' %}">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-4">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Search Walk-ins</label>
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+        <input type="text" class="form-control border-start-0" name="q"
+               placeholder="Role, School, Location, Venue, Subject..." value="{{ search_query }}">
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Lifecycle Status</label>
+      <select class="form-select form-select-sm" name="status">
+        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+        <option value="published" {% if status_filter == 'published' %}selected{% endif %}>Published &amp; Active</option>
+        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed (Past)</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label fs-xs text-muted-2 mb-1 fw-bold">Event Timing</label>
+      <select class="form-select form-select-sm" name="date">
+        <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Dates</option>
+        <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Happening Today</option>
+        <option value="upcoming" {% if date_filter == 'upcoming' %}selected{% endif %}>Upcoming Drives</option>
+        <option value="past" {% if date_filter == 'past' %}selected{% endif %}>Past Events</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm flex-grow-1 fw-bold">
+        <i class="bi bi-funnel-fill me-1"></i> Filter
+      </button>
+      {% if search_query or status_filter != 'all' or date_filter != 'all' %}
+      <a href="{% url 'admin-panel:walk-ins' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+        <i class="bi bi-x-lg"></i>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+<!-- ====== WALK-IN VACANCIES TABLE ====== -->
+<div class="sj-card overflow-hidden border">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light fs-xs text-uppercase text-muted-2">
+        <tr>
+          <th style="min-width: 220px;">Role &amp; Specialization</th>
+          <th style="min-width: 180px;">School / Organization</th>
+          <th style="min-width: 170px;">Date &amp; Reporting Time</th>
+          <th style="min-width: 180px;">Venue &amp; Location</th>
+          <th style="min-width: 120px;">Status</th>
+          <th style="min-width: 130px;">Matching Candidates</th>
+          <th style="min-width: 110px;">Created</th>
+          <th class="text-end" style="min-width: 170px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="fs-sm">
+        {% for job in walkins %}
+        <tr>
+          <!-- 1. Role & Subject -->
+          <td>
+            <div class="fw-bold text-dark">{{ job.title }}</div>
+            <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+              {% if job.metadata.subject %}
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-xxs">
+                  <i class="bi bi-book me-1"></i>{{ job.metadata.subject }}
+                </span>
+              {% endif %}
+              <span class="badge bg-light text-dark border fs-xxs">
+                {{ job.vacancies }} {% if job.vacancies == 1 %}Open Position{% else %}Open Positions{% endif %}
+              </span>
+            </div>
+          </td>
+
+          <!-- 2. School / Organization -->
+          <td>
+            <div class="fw-semibold text-dark">
+              <i class="bi bi-buildings text-muted me-1"></i>{{ job.company.name|default:"Direct Institution" }}
+            </div>
+            {% if job.company.city %}
+              <div class="fs-xs text-muted-2">{{ job.company.city }}</div>
+            {% endif %}
+          </td>
+
+          <!-- 3. Walk-in Date & Time -->
+          <td>
+            <div class="fw-bold text-dark">
+              <i class="bi bi-calendar-event text-primary me-1"></i>
+              {% if job.walkin_start_date %}
+                {{ job.walkin_start_date|date:"M d, Y" }}
+                {% if job.walkin_end_date and job.walkin_end_date != job.walkin_start_date %}
+                  <span class="text-muted fw-normal">to</span> {{ job.walkin_end_date|date:"M d, Y" }}
+                {% endif %}
+              {% else %}
+                <span class="text-muted">Flexible / Ongoing</span>
+              {% endif %}
+            </div>
+
+            <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+              {% if job.date_timing_badge == 'today' %}
+                <span class="badge bg-success text-white fs-xxs fw-bold animate-pulse">
+                  <i class="bi bi-clock-fill me-1"></i>Happening Today
+                </span>
+              {% elif job.date_timing_badge == 'upcoming' %}
+                <span class="badge bg-info-subtle text-info border border-info-subtle fs-xxs fw-semibold">
+                  Upcoming
+                </span>
+              {% elif job.date_timing_badge == 'past' %}
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fs-xxs">
+                  Past Event
+                </span>
+              {% endif %}
+
+              {% if job.walkin_time %}
+                <span class="fs-xxs text-muted-2">
+                  <i class="bi bi-clock me-1"></i>{{ job.walkin_time }}
+                </span>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- 4. Venue & Location -->
+          <td>
+            <div class="text-dark fw-500" title="{{ job.walkin_venue }}">
+              <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ job.walkin_venue|default:job.location|truncatechars:45 }}
+            </div>
+            <div class="fs-xs text-muted-2 mt-1">
+              {{ job.location }}
+            </div>
+          </td>
+
+          <!-- 5. Status Badge -->
+          <td>
+            {% if job.computed_badge == 'published' %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">
+                <i class="bi bi-broadcast me-1"></i>Published
+              </span>
+            {% elif job.computed_badge == 'draft' %}
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                <i class="bi bi-pencil-square me-1"></i>Draft
+              </span>
+            {% elif job.computed_badge == 'cancelled' %}
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                <i class="bi bi-slash-circle me-1"></i>Cancelled
+              </span>
+            {% elif job.computed_badge == 'completed' %}
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                <i class="bi bi-check2-circle me-1"></i>Completed
+              </span>
+            {% endif %}
+          </td>
+
+          <!-- 6. Matching Candidates -->
+          <td>
+            <div class="d-flex align-items-center">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-xs py-1 px-2 fw-bold"
+                    title="{{ job.match_count }} eligible job seekers currently match this role">
+                <i class="bi bi-people-fill me-1"></i>{{ job.match_count }} Candidates
+              </span>
+            </div>
+          </td>
+
+          <!-- 7. Created Date -->
+          <td>
+            <div class="fs-xs text-muted-2">{{ job.created_at|date:"M d, Y" }}</div>
+          </td>
+
+          <!-- 8. Actions -->
+          <td class="text-end">
+            <div class="d-flex justify-content-end align-items-center gap-1">
+              <!-- Send Walk-in Alert CTA Button -->
+              {% if job.computed_badge == 'published' %}
+                <a href="{% url 'admin-panel:bulk-job-alerts' %}?alert_type=walkin_alert&walkin_id={{ job.id }}"
+                   class="btn btn-sm btn-primary py-1 px-2 fw-bold text-nowrap"
+                   title="Send Walk-in Alert directly to matching candidates">
+                  <i class="bi bi-send-fill me-1"></i>Send Alert
+                </a>
+              {% endif %}
+
+              <!-- Quick View Modal Trigger -->
+              <button type="button" class="btn btn-light btn-sm text-primary btn-icon rounded-circle btn-view-walkin"
+                      data-job-id="{{ job.id }}" title="View Walk-in Details">
+                <i class="bi bi-eye"></i>
+              </button>
+
+              <!-- Edit Walk-in -->
+              <a href="{% url 'admin-panel:walk-in-edit' job_id=job.id %}"
+                 class="btn btn-light btn-sm text-warning-emphasis btn-icon rounded-circle"
+                 title="Edit Walk-in Details">
+                <i class="bi bi-pencil"></i>
+              </a>
+
+              <!-- Status Transition Dropdown -->
+              <div class="dropdown d-inline-block">
+                <button class="btn btn-light btn-sm btn-icon rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm fs-xs">
+                  <li>
+                    <h6 class="dropdown-header text-uppercase fs-xxs">Lifecycle Controls</h6>
+                  </li>
+                  {% if job.computed_badge == 'draft' %}
+                    <li>
+                      <form action="{% url 'admin-panel:walk-in-action' job_id=job.id %}" method="post" class="m-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="publish">
+                        <button type="submit" class="dropdown-item text-success fw-semibold">
+                          <i class="bi bi-broadcast me-2"></i>Publish Walk-in
+                        </button>
+                      </form>
+                    </li>
+                  {% elif job.computed_badge == 'published' %}
+                    <li>
+                      <form action="{% url 'admin-panel:walk-in-action' job_id=job.id %}" method="post" class="m-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="unpublish">
+                        <button type="submit" class="dropdown-item text-warning-emphasis">
+                          <i class="bi bi-pause-circle me-2"></i>Unpublish (Move to Draft)
+                        </button>
+                      </form>
+                    </li>
+                  {% endif %}
+
+                  {% if job.computed_badge != 'cancelled' %}
+                    <li>
+                      <form action="{% url 'admin-panel:walk-in-action' job_id=job.id %}" method="post" class="m-0"
+                            onsubmit="return confirm('Are you sure you want to cancel this walk-in event? It will be marked as cancelled.');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="cancel">
+                        <button type="submit" class="dropdown-item text-danger">
+                          <i class="bi bi-x-circle me-2"></i>Cancel Walk-in Event
+                        </button>
+                      </form>
+                    </li>
+                  {% endif %}
+
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a class="dropdown-item text-muted" href="/jobs/{{ job.slug }}/" target="_blank">
+                      <i class="bi bi-box-arrow-up-right me-2"></i>View Public Job Page
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5 text-muted">
+            <div class="py-4">
+              <i class="bi bi-calendar2-x fs-1 text-muted-2 d-block mb-3"></i>
+              <h5 class="fw-bold text-dark">No Walk-in Vacancies Found</h5>
+              <p class="fs-sm text-muted-2 mb-3">
+                {% if search_query or status_filter != 'all' or date_filter != 'all' %}
+                  No walk-ins match your active filter criteria. Try clearing filters.
+                {% else %}
+                  You have not created any walk-in interview vacancies yet.
+                {% endif %}
+              </p>
+              {% if search_query or status_filter != 'all' or date_filter != 'all' %}
+                <a href="{% url 'admin-panel:walk-ins' %}" class="btn btn-outline-secondary btn-sm me-2">Clear Filters</a>
+              {% endif %}
+              <a href="{% url 'admin-panel:walk-in-create' %}" class="btn btn-primary btn-sm fw-bold">
+                <i class="bi bi-plus-circle me-1"></i> + Create Walk-in Vacancy
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== PAGINATION ====== -->
+  {% if page_obj.has_other_pages %}
+  <div class="d-flex justify-content-between align-items-center p-3 border-top flex-wrap gap-2">
+    <div class="fs-xs text-muted-2">
+      Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} walk-in vacancies
+    </div>
+    <ul class="pagination pagination-sm mb-0">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&status={{ status_filter }}&date={{ date_filter }}">Previous</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+      {% endif %}
+
+      {% for p in page_obj.paginator.page_range %}
+        {% if p == page_obj.number %}
+          <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+        {% elif p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ p }}&q={{ search_query }}&status={{ status_filter }}&date={{ date_filter }}">{{ p }}</a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&status={{ status_filter }}&date={{ date_filter }}">Next</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Next</span></li>
+      {% endif %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block dashboard_modals %}
+<!-- ====== QUICK VIEW MODAL ====== -->
+<div class="modal fade" id="walkinDetailModal" tabindex="-1" aria-labelledby="walkinDetailModalLabel" aria-hidden="true" style="z-index: 1065;">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg" style="background-color: #ffffff;">
+      <div class="modal-header bg-white border-bottom pb-3">
+        <h5 class="modal-title fw-bold text-dark" id="walkinDetailModalLabel">
+          <i class="bi bi-geo-alt-fill text-danger me-2"></i>Walk-in Interview Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4" style="background-color: #ffffff;">
+        <div id="modalLoading" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="fs-sm text-muted mt-2">Loading walk-in details...</p>
+        </div>
+        <div id="modalContent" style="display:none;">
+          <div class="d-flex justify-content-between align-items-start mb-3 border-bottom pb-3">
+            <div>
+              <h4 class="fw-800 text-dark mb-1" id="mTitle">Role Title</h4>
+              <div class="fs-sm text-muted-2" id="mOrg">Organization Name</div>
+            </div>
+            <div id="mBadge"></div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-3">
+                <div class="fs-xs text-muted-2 text-uppercase fw-bold mb-1"><i class="bi bi-calendar-event text-primary me-1"></i>Date &amp; Time</div>
+                <div class="fw-bold text-dark fs-sm" id="mDates">Dates</div>
+                <div class="fs-xs text-muted-2" id="mTime">Time</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-3">
+                <div class="fs-xs text-muted-2 text-uppercase fw-bold mb-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Reporting Venue</div>
+                <div class="fw-bold text-dark fs-sm" id="mVenue">Venue Address</div>
+                <div class="fs-xs text-muted-2" id="mLoc">City / Region</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="fs-xs text-uppercase fw-bold text-muted-2 mb-1">
+              <i class="bi bi-file-earmark-check text-success me-1"></i>Attendance Instructions &amp; Document Checklist
+            </label>
+            <div class="p-3 bg-light rounded-3 fs-sm text-dark border" id="mInstructions" style="white-space: pre-line;"></div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <div class="fs-xs text-muted-2 fw-bold text-uppercase">Compensation</div>
+              <div class="fs-sm fw-semibold text-dark" id="mSalary">Competitive</div>
+            </div>
+            <div class="col-md-4">
+              <div class="fs-xs text-muted-2 fw-bold text-uppercase">Experience Bracket</div>
+              <div class="fs-sm fw-semibold text-dark" id="mExp">1 - 3 Yrs</div>
+            </div>
+            <div class="col-md-4">
+              <div class="fs-xs text-muted-2 fw-bold text-uppercase">Direct Contact</div>
+              <div class="fs-sm fw-semibold text-dark" id="mContact">HR Desk</div>
+            </div>
+          </div>
+
+          <div class="alert alert-info border-0 p-3 rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-0">
+            <div>
+              <div class="fw-bold fs-sm"><i class="bi bi-people-fill me-1"></i>Matching Candidates in Database</div>
+              <div class="fs-xs text-muted-2"><span class="fw-bold" id="mMatchCount">0</span> job seekers match this walk-in's subject, location, and role.</div>
+            </div>
+            <a href="#" id="mAlertBtn" class="btn btn-primary btn-sm fw-bold">
+              <i class="bi bi-broadcast me-1"></i> Launch Walk-in Alert Campaign
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer bg-light border-top">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <a href="#" id="mEditBtn" class="btn btn-warning btn-sm fw-bold">
+          <i class="bi bi-pencil me-1"></i> Edit Walk-in
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block dashboard_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const modalEl = document.getElementById("walkinDetailModal");
+  if (!modalEl) return;
+  const modal = new bootstrap.Modal(modalEl);
+
+  document.querySelectorAll(".btn-view-walkin").forEach(btn => {
+    btn.addEventListener("click", async function (e) {
+      e.preventDefault();
+      const jobId = this.getAttribute("data-job-id");
+      if (!jobId) return;
+
+      document.getElementById("modalLoading").style.display = "block";
+      document.getElementById("modalContent").style.display = "none";
+      modal.show();
+
+      try {
+        const resp = await fetch(`/dashboard/admin/walk-ins/${jobId}/`);
+        const data = await resp.json();
+        if (data.status === "success" && data.walkin) {
+          const w = data.walkin;
+          document.getElementById("mTitle").textContent = w.title;
+          document.getElementById("mOrg").textContent = w.organization + (w.subject ? ` • Specialization: ${w.subject}` : "");
+          document.getElementById("mDates").textContent = w.dates || "Flexible";
+          document.getElementById("mTime").textContent = w.time || "Reporting Window Not Specified";
+          document.getElementById("mVenue").textContent = w.venue || "Campus Premises";
+          document.getElementById("mLoc").textContent = w.location || "India";
+          document.getElementById("mInstructions").textContent = w.instructions || "Carry updated resume and original qualification certificates.";
+          document.getElementById("mSalary").textContent = w.salary || "Competitive";
+          document.getElementById("mExp").textContent = w.experience || "Any Experience";
+          document.getElementById("mContact").textContent = (w.contact_person || "") + (w.contact_phone ? ` (${w.contact_phone})` : "HR Office");
+          document.getElementById("mMatchCount").textContent = w.match_count;
+          document.getElementById("mAlertBtn").href = w.alert_url;
+          document.getElementById("mEditBtn").href = `/dashboard/admin/walk-ins/${w.id}/edit/`;
+
+          const badgeEl = document.getElementById("mBadge");
+          if (w.is_published) {
+            badgeEl.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-broadcast me-1"></i>Published</span>';
+          } else {
+            badgeEl.innerHTML = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle"><i class="bi bi-pencil-square me-1"></i>Draft</span>';
+          }
+
+          document.getElementById("modalLoading").style.display = "none";
+          document.getElementById("modalContent").style.display = "block";
+        }
+      } catch (err) {
+        document.getElementById("modalLoading").innerHTML = '<p class="text-danger fs-sm">Failed to load walk-in details. Please try again.</p>';
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -609,4 +609,359 @@ class RequirementCandidateInterviewView(LoginRequiredMixin, View):
         return redirect(f"{redirect_url}#candidate-matches")
 
 
+class RequirementBulkEmailView(LoginRequiredMixin, View):
+    """
+    Dedicated view for composing and launching bulk email campaigns
+    scoped to an InstitutionRequirement.
+    Supports live audience calculation, personalization preview, test sending,
+    and asynchronous Celery execution.
+    """
+
+    def dispatch(self, request, pk, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
+        self.requirement = get_object_or_404(InstitutionRequirement, pk=pk)
+
+        # Permission check: admin, staff, or superuser
+        is_admin_or_staff = (
+            request.user.is_superuser
+            or request.user.is_staff
+            or getattr(request.user, "role", "") in ["admin", "super_admin", "staff"]
+        )
+        if not is_admin_or_staff:
+            return HttpResponseForbidden("You do not have permission to manage bulk email campaigns.")
+        return super().dispatch(request, pk, *args, **kwargs)
+
+    def get_layout_context(self, request):
+        scope = request.session.get("current_role_scope")
+        is_admin_user = (scope == "admin") or request.user.is_superuser or getattr(request.user, "role", "") in ["admin", "super_admin"]
+        if is_admin_user:
+            layout_template = getattr(request, "layout_template", "dashboard/admin/_layout.html")
+            sidebar_section = getattr(request, "sidebar_section", "admin_requirements")
+            back_url = reverse("admin-panel:requirement-detail", kwargs={"pk": self.requirement.pk})
+        else:
+            layout_template = getattr(request, "layout_template", "dashboard/recruiter/_layout.html")
+            sidebar_section = getattr(request, "sidebar_section", "requirements-list")
+            back_url = reverse("jobs:requirement-detail", kwargs={"pk": self.requirement.pk})
+        return layout_template, sidebar_section, back_url
+
+    def get(self, request, pk, *args, **kwargs):
+        import json
+        from apps.notifications.requirement_recipient_service import RequirementRecipientService
+        from apps.notifications.quota_service import DailyEmailQuotaService
+        from apps.notifications.campaign_service import CampaignService
+        from apps.notifications.models import RecruitmentEmailTemplate
+
+        status_counts = RequirementRecipientService.get_status_counts(str(self.requirement.id))
+        all_candidates = RequirementRecipientService.get_eligible_candidates(str(self.requirement.id), selected_statuses=["all"])
+        past_campaigns = self.requirement.email_campaigns.select_related("created_by").order_by("-created_at")[:10]
+        quota_status = DailyEmailQuotaService.get_quota_status()
+
+        # Build templates map keyed by status
+        templates_qs = RecruitmentEmailTemplate.objects.filter(is_active=True).order_by("-is_default", "name")
+        templates_by_status = {}
+        for tmpl in templates_qs:
+            if tmpl.status_key not in templates_by_status or tmpl.is_default:
+                templates_by_status[tmpl.status_key] = {
+                    "id": str(tmpl.id),
+                    "name": tmpl.name,
+                    "status_key": tmpl.status_key,
+                    "subject": tmpl.subject,
+                    "body_html": tmpl.body_html,
+                    "body_plain": tmpl.body_plain,
+                    "is_default": tmpl.is_default,
+                    "version": tmpl.version,
+                }
+        for key in ["shortlisted", "interviewing", "selected", "joined", "rejected", "general"]:
+            if key not in templates_by_status:
+                templates_by_status[key] = CampaignService.get_template_for_status(key)
+
+        layout_template, sidebar_section, back_url = self.get_layout_context(request)
+
+        context = {
+            "requirement": self.requirement,
+            "status_counts": status_counts,
+            "candidates": all_candidates,
+            "past_campaigns": past_campaigns,
+            "quota_status": quota_status,
+            "templates_by_status": templates_by_status,
+            "templates_json": json.dumps(templates_by_status),
+            "layout_template": layout_template,
+            "sidebar_section": sidebar_section,
+            "back_to_requirement_url": back_url,
+        }
+        return render(request, "dashboard/recruiter/requirement_bulk_email.html", context)
+
+    def post(self, request, pk, *args, **kwargs):
+        from django.conf import settings
+        from django.utils.html import strip_tags
+        from apps.notifications.requirement_recipient_service import RequirementRecipientService
+        from apps.notifications.campaign_service import CampaignService
+        from apps.notifications.unsubscribe_service import UnsubscribeService
+
+        action = request.POST.get("action", "").strip()
+
+        # 1. AJAX: Recipient Count Calculation
+        if action == "calculate_count":
+            statuses = request.POST.getlist("statuses[]") or request.POST.getlist("statuses")
+            cand_ids = request.POST.getlist("candidate_ids[]") or request.POST.getlist("candidate_ids")
+            eligible = RequirementRecipientService.get_eligible_candidates(
+                requirement_id=str(self.requirement.id),
+                selected_statuses=statuses or ["all"],
+                candidate_ids=cand_ids if cand_ids else None,
+            )
+            return JsonResponse({"status": "success", "count": len(eligible)})
+
+        # 2. AJAX: Live Personalization Preview
+        elif action == "preview":
+            subject = request.POST.get("subject", "").strip()
+            body_html = request.POST.get("body_html", "").strip()
+            sample_email = "candidate@example.com"
+            unsubscribe_url = UnsubscribeService.build_unsubscribe_url(sample_email)
+
+            sample_ctx = {
+                "candidate_name": "Sample Candidate",
+                "requirement_title": self.requirement.subject,
+                "school_name": self.requirement.institution_name,
+                "location": self.requirement.location,
+                "candidate_status": "Shortlisted (Preview)",
+                "support_email": getattr(settings, "RESEND_FROM_EMAIL", "noreply@sevajobs.in"),
+                "unsubscribe_url": unsubscribe_url,
+            }
+            rendered_subject = CampaignService.render_content(
+                body_template=CampaignService.sanitize_subject(subject) or "Preview",
+                context=sample_ctx,
+            )
+            rendered_body = CampaignService.render_content(body_template=body_html, context=sample_ctx)
+            site_url = request.build_absolute_uri('/')[:-1]
+            wrapped_html = CampaignService.wrap_in_base_email(
+                rendered_body_html=rendered_body,
+                subject=rendered_subject,
+                unsubscribe_url=unsubscribe_url,
+                frontend_url=site_url,
+            )
+            plain_text = strip_tags(rendered_body)
+
+            return JsonResponse({
+                "status": "success",
+                "subject": rendered_subject,
+                "html": wrapped_html,
+                "plain": plain_text,
+            })
+
+        # 3. AJAX: Send Test Email
+        elif action in ("send_test", "send_test_email"):
+            test_email = request.POST.get("test_email", "").strip()
+            subject = request.POST.get("subject", "").strip()
+            body_html = request.POST.get("body_html", "").strip()
+
+            if not test_email or "@" not in test_email:
+                return JsonResponse({"status": "error", "message": "Please enter a valid test email address."}, status=400)
+            if not subject:
+                return JsonResponse({"status": "error", "message": "Email subject is required."}, status=400)
+            if not body_html.strip():
+                return JsonResponse({"status": "error", "message": "Email body content is required."}, status=400)
+
+            try:
+                CampaignService.send_test_email(
+                    admin_user=request.user,
+                    test_email=test_email,
+                    subject=subject,
+                    body_html=body_html,
+                    requirement=self.requirement,
+                )
+                return JsonResponse({"status": "success", "message": f"Test email sent successfully to {test_email}."})
+            except Exception as e:
+                logger.exception("Test email delivery failed: %s", e)
+                return JsonResponse({"status": "error", "message": f"Failed to send test email: {str(e)}"}, status=500)
+
+        # 4. AJAX: Load Template for Status
+        elif action == "load_template":
+            status_key = request.POST.get("status_key", "general").strip()
+            try:
+                tmpl_data = CampaignService.get_template_for_status(status_key)
+                return JsonResponse({"status": "success", "template": tmpl_data})
+            except Exception as e:
+                logger.exception("Error loading template for %s: %s", status_key, e)
+                return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+        # 5. AJAX: Save as Template
+        elif action == "save_template":
+            status_key = request.POST.get("status_key", "general").strip()
+            name = request.POST.get("name", "").strip()
+            subject = request.POST.get("subject", "").strip()
+            body_html = request.POST.get("body_html", "").strip()
+            set_as_default = request.POST.get("set_as_default") in ("true", "1", "on", True)
+
+            if not subject:
+                return JsonResponse({"status": "error", "message": "Subject is required to save template."}, status=400)
+            if not body_html.strip():
+                return JsonResponse({"status": "error", "message": "Email body is required to save template."}, status=400)
+
+            try:
+                tmpl = CampaignService.save_as_template(
+                    status_key=status_key,
+                    name=name or f"Template for {status_key.title()}",
+                    subject=subject,
+                    body_html=body_html,
+                    user=request.user,
+                    set_as_default=set_as_default,
+                )
+                return JsonResponse({
+                    "status": "success",
+                    "message": f"Template '{tmpl.name}' saved successfully.",
+                    "template": {
+                        "id": str(tmpl.id),
+                        "name": tmpl.name,
+                        "status_key": tmpl.status_key,
+                        "subject": tmpl.subject,
+                        "body_html": tmpl.body_html,
+                        "is_default": tmpl.is_default,
+                    }
+                })
+            except Exception as e:
+                logger.exception("Error saving template: %s", e)
+                return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+        # 6. AJAX: Reset to Default Template
+        elif action == "reset_template":
+            status_key = request.POST.get("status_key", "general").strip()
+            try:
+                tmpl_data = CampaignService.reset_to_default_template(status_key)
+                return JsonResponse({
+                    "status": "success",
+                    "message": f"Reset template for {status_key.title()} to default.",
+                    "template": tmpl_data,
+                })
+            except Exception as e:
+                logger.exception("Error resetting template for %s: %s", status_key, e)
+                return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+        # 7. Action: Send Campaign / Launch
+        elif action in ("send_campaign", "create_draft"):
+            campaign_name = request.POST.get("campaign_name", "").strip()
+            subject = request.POST.get("subject", "").strip()
+            body_html = request.POST.get("body_html", "").strip()
+            statuses = request.POST.getlist("statuses[]") or request.POST.getlist("statuses")
+            cand_ids = request.POST.getlist("candidate_ids[]") or request.POST.getlist("candidate_ids")
+
+            if not subject:
+                messages.error(request, "Subject line is required.")
+                return redirect(reverse("jobs:requirement-bulk-email", kwargs={"pk": self.requirement.pk}))
+            if not body_html.strip():
+                messages.error(request, "Email message body is required.")
+                return redirect(reverse("jobs:requirement-bulk-email", kwargs={"pk": self.requirement.pk}))
+
+            try:
+                campaign = CampaignService.create_campaign(
+                    requirement=self.requirement,
+                    created_by=request.user,
+                    name=campaign_name or f"Campaign: {self.requirement.subject}",
+                    subject=subject,
+                    body_html=body_html,
+                    selected_statuses=statuses or ["all"],
+                    candidate_ids=cand_ids if cand_ids else None,
+                )
+
+                if action == "send_campaign":
+                    if campaign.total_recipients == 0:
+                        messages.warning(request, "No eligible recipients found matching the selected criteria.")
+                        return redirect(reverse("jobs:requirement-bulk-email", kwargs={"pk": self.requirement.pk}))
+
+                    CampaignService.launch_campaign(str(campaign.id))
+                    messages.success(request, f"Bulk email campaign '{campaign.name}' queued successfully with {campaign.total_recipients} recipients.")
+                else:
+                    messages.info(request, f"Campaign draft '{campaign.name}' saved successfully.")
+
+                detail_url = reverse("jobs:requirement-campaign-detail", kwargs={"pk": self.requirement.pk, "campaign_id": campaign.id})
+                if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                    return JsonResponse({"status": "success", "campaign_id": str(campaign.id), "redirect_url": detail_url})
+                return redirect(detail_url)
+
+            except Exception as e:
+                logger.exception("Campaign creation/launch error: %s", e)
+                if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                    return JsonResponse({"status": "error", "message": str(e)}, status=500)
+                messages.error(request, f"Campaign failed: {str(e)}")
+                return redirect(reverse("jobs:requirement-bulk-email", kwargs={"pk": self.requirement.pk}))
+
+        return JsonResponse({"status": "error", "message": "Unknown action."}, status=400)
+
+
+class RequirementCampaignDetailView(LoginRequiredMixin, View):
+    """
+    Campaign tracking view displaying progress, recipient breakdown, and live status.
+    """
+
+    def get(self, request, pk, campaign_id, *args, **kwargs):
+        from apps.notifications.models import EmailCampaign
+        from apps.notifications.quota_service import DailyEmailQuotaService
+        from django.core.paginator import Paginator
+
+        requirement = get_object_or_404(InstitutionRequirement, pk=pk)
+        campaign = get_object_or_404(EmailCampaign.objects.select_related("requirement", "created_by"), pk=campaign_id)
+
+        # AJAX progress polling
+        if request.headers.get("x-requested-with") == "XMLHttpRequest" or request.GET.get("format") == "json":
+            campaign.refresh_from_db()
+            return JsonResponse({
+                "status": campaign.status,
+                "status_display": campaign.get_status_display(),
+                "total": campaign.total_recipients,
+                "pending": campaign.pending_count,
+                "sent": campaign.sent_count,
+                "delivered": campaign.delivered_count,
+                "failed": campaign.failed_count,
+                "suppressed": campaign.suppressed_count,
+                "is_finished": campaign.status in [EmailCampaign.Status.COMPLETED, EmailCampaign.Status.PARTIALLY_FAILED, EmailCampaign.Status.FAILED, EmailCampaign.Status.CANCELLED],
+            })
+
+        scope = request.session.get("current_role_scope")
+        is_admin_user = (scope == "admin") or request.user.is_superuser or getattr(request.user, "role", "") in ["admin", "super_admin"]
+        if is_admin_user:
+            layout_template = getattr(request, "layout_template", "dashboard/admin/_layout.html")
+            sidebar_section = getattr(request, "sidebar_section", "admin_requirements")
+        else:
+            layout_template = getattr(request, "layout_template", "dashboard/recruiter/_layout.html")
+            sidebar_section = getattr(request, "sidebar_section", "requirements-list")
+
+        recipients_list = campaign.recipients.select_related("candidate", "match").order_by("-created_at")
+        paginator = Paginator(recipients_list, 50)
+        page_obj = paginator.get_page(request.GET.get("page", 1))
+
+        quota_status = DailyEmailQuotaService.get_quota_status()
+
+        context = {
+            "requirement": requirement,
+            "campaign": campaign,
+            "page_obj": page_obj,
+            "quota_status": quota_status,
+            "layout_template": layout_template,
+            "sidebar_section": sidebar_section,
+        }
+        return render(request, "dashboard/recruiter/requirement_campaign_detail.html", context)
+
+    def post(self, request, pk, campaign_id, *args, **kwargs):
+        from apps.notifications.campaign_service import CampaignService
+        action = request.POST.get("action", "").strip()
+        if action == "cancel":
+            CampaignService.cancel_campaign(campaign_id, actor=request.user)
+            messages.warning(request, "Campaign has been cancelled. Remaining queued messages will not be sent.")
+        elif action == "retry_failed":
+            try:
+                retried = CampaignService.retry_failed_recipients(campaign_id, actor=request.user)
+                if retried > 0:
+                    messages.success(request, f"{retried} failed recipient(s) re-queued for delivery.")
+                else:
+                    messages.info(request, "No eligible failed recipients found to retry (or maximum retry attempts reached).")
+            except ValueError as e:
+                messages.error(request, str(e))
+            except Exception as e:
+                logger.exception("Failed to retry campaign recipients: %s", e)
+                messages.error(request, f"Retry failed: {e}")
+        return redirect(reverse("jobs:requirement-campaign-detail", kwargs={"pk": pk, "campaign_id": campaign_id}))
+
+
+
 

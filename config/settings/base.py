@@ -6,6 +6,7 @@ All environments inherit from this module.
 from pathlib import Path
 from datetime import timedelta
 from decouple import config, Csv
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -26,6 +27,7 @@ DJANGO_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
+    "django.contrib.sitemaps",
 ]
 
 THIRD_PARTY_APPS = [
@@ -288,6 +290,11 @@ SERVER_EMAIL = config("SERVER_EMAIL", default="SevaJobs <noreply@sevajobs.in>")
 # Public URL of the frontend, used to build verification / reset links.
 FRONTEND_URL = config("FRONTEND_URL", default="https://sevajobs.in")
 
+# Bulk Email Daily Quota & Thresholds
+BULK_EMAIL_DAILY_LIMIT = config("BULK_EMAIL_DAILY_LIMIT", default=100, cast=int)
+BULK_EMAIL_DAILY_TARGET = config("BULK_EMAIL_DAILY_TARGET", default=90, cast=int)
+BULK_EMAIL_DAILY_WARNING_THRESHOLD = config("BULK_EMAIL_DAILY_WARNING_THRESHOLD", default=80, cast=int)
+
 # ---------------------------------------------------------------------------
 # Celery
 # ---------------------------------------------------------------------------
@@ -310,6 +317,10 @@ CELERY_BEAT_SCHEDULE = {
     "jobs.expire_due_jobs": {
         "task": "jobs.expire_due_jobs",
         "schedule": 3600.0,  # hourly
+    },
+    "notifications.send_daily_job_alerts_digest": {
+        "task": "notifications.send_daily_job_alerts_digest",
+        "schedule": crontab(hour=10, minute=0),  # 10:00 AM daily (Asia/Kolkata)
     },
 }
 

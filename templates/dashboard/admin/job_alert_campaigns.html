@@ -1,0 +1,154 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+
+{% block title %}Job Alert Campaigns — Admin — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid px-0">
+  <!-- Header Bar -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'admin-panel:users' %}" class="btn btn-sm btn-light border text-muted-2 rounded-circle" title="Back to Users">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h4 class="fw-800 mb-0">Job Alert Campaigns</h4>
+      </div>
+      <p class="text-muted-2 fs-sm mb-0 mt-1">Audit log and delivery analytics for all bulk job alerts dispatched to job seekers.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <a href="{% url 'admin-panel:email-quota' %}" class="btn btn-outline-info btn-sm fw-semibold">
+        <i class="bi bi-speedometer2 me-1"></i> Quota: {{ quota_status.remaining }} remaining
+      </a>
+      <a href="{% url 'admin-panel:bulk-job-alerts' %}" class="btn btn-primary btn-sm fw-semibold">
+        <i class="bi bi-plus-circle me-1"></i> Create Job Alert Campaign
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters & Search -->
+  <div class="sj-card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h5 class="fw-800 mb-0 text-dark">
+        <i class="bi bi-clock-history text-primary me-2"></i>All Campaigns ({{ page_obj.paginator.count }})
+      </h5>
+      <form method="get" class="d-flex gap-2 flex-wrap">
+        <select name="status" class="form-select form-select-sm w-auto">
+          <option value="">All Statuses</option>
+          <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+          <option value="queued" {% if status_filter == 'queued' %}selected{% endif %}>Queued</option>
+          <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>Processing</option>
+          <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+          <option value="partially_failed" {% if status_filter == 'partially_failed' %}selected{% endif %}>Partially Failed</option>
+          <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+          <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+        <input type="text" name="q" class="form-control form-control-sm" placeholder="Search campaign..." value="{{ search_query }}">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+        {% if search_query or status_filter %}
+          <a href="{% url 'admin-panel:job-alert-campaigns' %}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">Clear</a>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Campaigns Table -->
+    <div class="table-responsive">
+      <table class="table table-hover sj-table align-middle mb-0">
+        <thead class="table-light fs-xs text-uppercase">
+          <tr>
+            <th>Campaign Name &amp; Subject</th>
+            <th>Strategy</th>
+            <th>Recipients</th>
+            <th>Sent</th>
+            <th>Delivered</th>
+            <th>Failed</th>
+            <th>Status</th>
+            <th>Created By</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody class="fs-sm">
+          {% for c in page_obj %}
+          <tr>
+            <td>
+              <div class="fw-bold text-dark">{{ c.name }}</div>
+              <div class="fs-xs text-muted-2 text-truncate" style="max-width: 240px;">{{ c.subject }}</div>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border">{{ c.get_matching_strategy_display }}</span>
+            </td>
+            <td><span class="badge bg-light text-dark border">{{ c.total_recipients }}</span></td>
+            <td><span class="badge bg-primary-subtle text-primary">{{ c.sent_count }}</span></td>
+            <td><span class="badge bg-success-subtle text-success">{{ c.delivered_count }}</span></td>
+            <td>
+              {% if c.failed_count > 0 %}
+                <span class="badge bg-danger-subtle text-danger">{{ c.failed_count }}</span>
+              {% else %}
+                <span class="text-muted fs-xs">0</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if c.status == 'completed' %}
+                <span class="badge bg-success">Completed</span>
+              {% elif c.status == 'processing' %}
+                <span class="badge bg-warning-subtle text-warning-emphasis">Processing</span>
+              {% elif c.status == 'queued' %}
+                <span class="badge bg-info-subtle text-info">Queued</span>
+              {% elif c.status == 'failed' or c.status == 'partially_failed' %}
+                <span class="badge bg-danger">{{ c.get_status_display }}</span>
+              {% elif c.status == 'cancelled' %}
+                <span class="badge bg-secondary">Cancelled</span>
+              {% elif c.status == 'draft' %}
+                <span class="badge bg-light text-dark border">Draft</span>
+              {% else %}
+                <span class="badge bg-light text-dark border">{{ c.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td class="fs-xs text-muted-2">
+              {{ c.created_by.get_full_name|default:c.created_by.email }}
+            </td>
+            <td class="fs-xs text-muted-2">
+              {{ c.created_at|date:"M d, Y H:i" }}
+            </td>
+            <td>
+              <a href="{% url 'admin-panel:job-alert-campaign-detail' c.id %}" class="btn btn-outline-primary btn-sm py-1 px-2 fs-xs rounded-2">
+                <i class="bi bi-eye me-1"></i> Details
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="10" class="text-center text-muted py-5">
+              <i class="bi bi-envelope-x fs-1 text-muted-2 d-block mb-2"></i>
+              No job alert campaigns found. Click "Create Job Alert Campaign" to launch your first broadcast.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Previous</a>
+        </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Next</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

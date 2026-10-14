@@ -312,4 +312,176 @@ class SESNotificationWebhookView(APIView):
 
 
 from .resend_webhook import ResendWebhookView  # noqa: F401
+from django.views import View
+from django.shortcuts import render
+from .unsubscribe_service import UnsubscribeService
+
+
+class UnsubscribeView(View):
+    """
+    Public endpoint for recipient self-service unsubscription.
+    Verifies cryptographic TimestampSigner token before suppressing the email address.
+    """
+
+    def get(self, request, *args, **kwargs):
+        token = request.GET.get("token", "").strip()
+        if not token:
+            return render(request, "pages/unsubscribe.html", {"error": "Missing or invalid unsubscribe token."})
+
+        email = UnsubscribeService.verify_token(token)
+        if not email:
+            return render(request, "pages/unsubscribe.html", {"error": "The unsubscribe link is invalid or has expired."})
+
+        return render(
+            request,
+            "pages/unsubscribe.html",
+            {
+                "email": email,
+                "masked_email": _mask_email_str(email),
+                "token": token,
+            },
+        )
+
+    def post(self, request, *args, **kwargs):
+        token = request.POST.get("token", "").strip()
+        if not token:
+            return render(request, "pages/unsubscribe.html", {"error": "Invalid form submission."})
+
+        email = UnsubscribeService.verify_token(token)
+        if not email:
+            return render(request, "pages/unsubscribe.html", {"error": "The unsubscribe token is invalid or has expired."})
+
+        client_ip = request.META.get("HTTP_X_FORWARDED_FOR") or request.META.get("REMOTE_ADDR")
+        UnsubscribeService.unsubscribe_email(email, details={"ip": client_ip, "user_agent": request.META.get("HTTP_USER_AGENT", "")[:255]})
+
+        return render(
+            request,
+            "pages/unsubscribe.html",
+            {
+                "success": True,
+                "masked_email": _mask_email_str(email),
+            },
+        )
+
+
+class JobAlertPreferencesView(View):
+    """
+    Candidate self-service Job Alert notification preferences.
+    Token-authenticated (signed via JobAlertPreferenceService) or authenticated candidate.
+    Allows candidate to toggle Job Alerts on/off without affecting core account credentials.
+    """
+
+    def get(self, request, *args, **kwargs):
+        from .unsubscribe_service import JobAlertPreferenceService
+        token = request.GET.get("token", "").strip()
+        email = None
+        if token:
+            email = JobAlertPreferenceService.verify_token(token)
+        elif request.user.is_authenticated and hasattr(request.user, "job_seeker_profile"):
+            email = request.user.email
+
+        if not email:
+            return render(
+                request,
+                "pages/job_alert_preferences.html",
+                {"error": "Missing, invalid, or expired preferences link."},
+            )
+
+        from apps.accounts.models import User
+        user = User.objects.filter(email__iexact=email).first()
+        profile = getattr(user, "job_seeker_profile", None) if user else None
+        alerts_enabled = profile.job_alerts_enabled if profile else True
+
+        return render(
+            request,
+            "pages/job_alert_preferences.html",
+            {
+                "email": email,
+                "masked_email": _mask_email_str(email),
+                "token": token,
+                "alerts_enabled": alerts_enabled,
+                "user_name": user.get_full_name() if user else "",
+            },
+        )
+
+    def post(self, request, *args, **kwargs):
+        from .unsubscribe_service import JobAlertPreferenceService
+        token = request.POST.get("token", "").strip()
+        email = None
+        if token:
+            email = JobAlertPreferenceService.verify_token(token)
+        elif request.user.is_authenticated and hasattr(request.user, "job_seeker_profile"):
+            email = request.user.email
+
+        if not email:
+            return render(
+                request,
+                "pages/job_alert_preferences.html",
+                {"error": "The session or token is invalid or has expired."},
+            )
+
+        action = request.POST.get("action", "")
+        if action == "enable":
+            enabled = True
+        elif action == "disable":
+            enabled = False
+        else:
+            enabled = request.POST.get("alerts_enabled") in ["1", "true", "on", "yes"]
+
+        JobAlertPreferenceService.update_preference(email, enabled)
+
+        return render(
+            request,
+            "pages/job_alert_preferences.html",
+            {
+                "success": True,
+                "email": email,
+                "masked_email": _mask_email_str(email),
+                "token": token,
+                "alerts_enabled": enabled,
+            },
+        )
+
+
+def _mask_email_str(email: str) -> str:
+    if not email or "@" not in email:
+        return "***"
+    name, domain = email.split("@", 1)
+    if len(name) <= 2:
+        masked = name[0] + "*"
+    else:
+        masked = name[0] + "*" * (len(name) - 2) + name[-1]
+    return f"{masked}@{domain}"
+
+
+class EmailQuotaStatusView(View):
+    """
+    Authenticated JSON endpoint for real-time daily quota polling.
+    Accessible only to staff, admin, and superusers.
+    """
+
+    def get(self, request, *args, **kwargs):
+        from django.http import JsonResponse
+        if not request.user.is_authenticated:
+            return JsonResponse({"detail": "Authentication credentials were not provided."}, status=401)
+
+        is_admin_or_staff = (
+            request.user.is_superuser
+            or request.user.is_staff
+            or getattr(request.user, "role", "") in ["admin", "super_admin", "staff"]
+        )
+        if not is_admin_or_staff:
+            return JsonResponse({"detail": "Permission denied."}, status=403)
+
+        from .quota_service import DailyEmailQuotaService
+        status_data = DailyEmailQuotaService.get_quota_status()
+        resp_data = {
+            "status": "success",
+            "health": status_data.get("status"),
+            **status_data,
+        }
+        resp_data["status"] = "success"
+        return JsonResponse(resp_data)
+
+
 

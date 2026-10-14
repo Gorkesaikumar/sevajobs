@@ -9,6 +9,7 @@
   <meta name="author" content="SevaJobs">
   <meta name="theme-color" content="#4f46e5">
   <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">

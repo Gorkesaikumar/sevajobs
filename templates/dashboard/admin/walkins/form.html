@@ -1,0 +1,448 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+{% block title %}{% if is_edit %}Edit Walk-in — {{ job.title }}{% else %}Create Walk-in Vacancy{% endif %} — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<!-- ====== BREADCRUMBS & HEADER ====== -->
+<div class="mb-4">
+  <a href="{% url 'admin-panel:walk-ins' %}" class="btn btn-link text-decoration-none p-0 mb-2 fs-sm text-muted-2">
+    <i class="bi bi-arrow-left me-1"></i> Back to Walk-in Management
+  </a>
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h4 class="fw-800 mb-1 text-dark">
+        {% if is_edit %}
+          <i class="bi bi-pencil-square text-warning-emphasis me-2"></i>Edit Walk-in: {{ job.title }}
+        {% else %}
+          <i class="bi bi-plus-circle text-primary me-2"></i>Create Walk-in Vacancy
+        {% endif %}
+      </h4>
+      <p class="text-muted-2 fs-sm mb-0">
+        Quickly post verified on-campus walk-in interview details. Published vacancies immediately appear in Bulk Job Alerts.
+      </p>
+    </div>
+    {% if is_edit and job.is_published %}
+      <a href="{% url 'admin-panel:bulk-job-alerts' %}?alert_type=walkin_alert&walkin_id={{ job.id }}" class="btn btn-outline-primary btn-sm fw-bold">
+        <i class="bi bi-broadcast me-1"></i> Launch Walk-in Alert Campaign
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ====== FORM CONTAINER ====== -->
+<form method="post" class="needs-validation" id="walkinForm" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger mb-4 shadow-sm">
+      <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Please correct the following errors:</div>
+      <ul class="mb-0 ps-3">
+        {% for error in form.non_field_errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <!-- ==================== LEFT COLUMN: PRIMARY WALK-IN DETAILS ==================== -->
+    <div class="col-12 col-lg-8">
+      <!-- 1. Job Role & Organization Card -->
+      <div class="sj-card p-4 mb-4 border">
+        <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary">
+          <i class="bi bi-briefcase me-2"></i>Role &amp; Academic Institution
+        </h5>
+
+        <div class="row g-3">
+          <!-- Role Title -->
+          <div class="col-12 col-md-8">
+            <label for="id_title" class="form-label fw-semibold fs-sm text-dark">
+              Job / Role Title <span class="text-danger">*</span>
+            </label>
+            <input type="text" class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                   id="id_title" name="title"
+                   placeholder="e.g. PGT English Teacher, Mathematics Faculty, Principal"
+                   value="{{ form.title.value|default:'' }}" required>
+            {% if form.title.errors %}
+              <div class="invalid-feedback">{% for e in form.title.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+            <div class="fs-xs text-muted-2 mt-1">Designation or academic role for which candidates are walking in.</div>
+          </div>
+
+          <!-- Academic Subject -->
+          <div class="col-12 col-md-4">
+            <label for="id_subject" class="form-label fw-semibold fs-sm text-dark">
+              Subject / Specialization
+            </label>
+            <input type="text" class="form-control {% if form.subject.errors %}is-invalid{% endif %}"
+                   id="id_subject" name="subject"
+                   placeholder="e.g. English, Maths, Physics"
+                   value="{{ form.subject.value|default:'' }}">
+            {% if form.subject.errors %}
+              <div class="invalid-feedback">{% for e in form.subject.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+            <div class="fs-xs text-muted-2 mt-1">Used for accurate candidate profile matching.</div>
+          </div>
+
+          <!-- Organization Selector -->
+          <div class="col-12 col-md-6">
+            <label for="id_company_select" class="form-label fw-semibold fs-sm text-dark">
+              Registered School / College
+            </label>
+            <select class="form-select {% if form.company.errors %}is-invalid{% endif %}"
+                    id="id_company_select" name="company">
+              <option value="">-- Select Registered School/College --</option>
+              {% for c in companies %}
+                <option value="{{ c.id }}"
+                        data-location="{{ c.location|default:c.city|default:'' }}"
+                        data-address="{{ c.address|default:'' }}"
+                        data-phone="{{ c.contact_person_mobile|default:c.phone|default:'' }}"
+                        data-contact="{{ c.contact_person_name|default:'' }}"
+                        {% if form.company.value|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                  {{ c.name }} {% if c.city %}({{ c.city }}){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+            {% if form.company.errors %}
+              <div class="invalid-feedback">{% for e in form.company.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+            <div class="fs-xs text-muted-2 mt-1">Choose from verified institutions in the system.</div>
+          </div>
+
+          <!-- Or Custom Institution Name -->
+          <div class="col-12 col-md-6">
+            <label for="id_custom_org_input" class="form-label fw-semibold fs-sm text-dark">
+              Or New School / Organization Name
+            </label>
+            <input type="text" class="form-control {% if form.custom_organization_name.errors %}is-invalid{% endif %}"
+                   id="id_custom_org_input" name="custom_organization_name"
+                   placeholder="e.g. Oxford Public School, Coimbatore"
+                   value="{{ form.custom_organization_name.value|default:'' }}">
+            {% if form.custom_organization_name.errors %}
+              <div class="invalid-feedback">{% for e in form.custom_organization_name.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+            <div class="fs-xs text-muted-2 mt-1">Type name if institution is not in dropdown.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Date, Time & Venue Card -->
+      <div class="sj-card p-4 mb-4 border">
+        <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary">
+          <i class="bi bi-calendar-event me-2"></i>Event Timing &amp; Campus Venue
+        </h5>
+
+        <div class="row g-3">
+          <!-- Start Date -->
+          <div class="col-12 col-md-4">
+            <label for="id_walkin_start_date" class="form-label fw-semibold fs-sm text-dark">
+              Walk-in Date (Start) <span class="text-danger">*</span>
+            </label>
+            <input type="date" class="form-control {% if form.walkin_start_date.errors %}is-invalid{% endif %}"
+                   id="id_walkin_start_date" name="walkin_start_date"
+                   value="{{ form.walkin_start_date.value|date:'Y-m-d'|default:form.walkin_start_date.value|default:'' }}" required>
+            {% if form.walkin_start_date.errors %}
+              <div class="invalid-feedback">{% for e in form.walkin_start_date.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+            <div class="fs-xs text-muted-2 mt-1">Date when walk-in begins.</div>
+          </div>
+
+          <!-- End Date -->
+          <div class="col-12 col-md-4">
+            <label for="id_walkin_end_date" class="form-label fw-semibold fs-sm text-dark">
+              End Date <span class="text-muted fw-normal fs-xs">(if multi-day drive)</span>
+            </label>
+            <input type="date" class="form-control {% if form.walkin_end_date.errors %}is-invalid{% endif %}"
+                   id="id_walkin_end_date" name="walkin_end_date"
+                   value="{{ form.walkin_end_date.value|date:'Y-m-d'|default:form.walkin_end_date.value|default:'' }}">
+            {% if form.walkin_end_date.errors %}
+              <div class="invalid-feedback">{% for e in form.walkin_end_date.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+            <div class="fs-xs text-muted-2 mt-1">Optional. Defaults to start date if 1-day drive.</div>
+          </div>
+
+          <!-- Reporting Time Window -->
+          <div class="col-12 col-md-4">
+            <label for="id_walkin_time" class="form-label fw-semibold fs-sm text-dark">
+              Reporting Time Window <span class="text-danger">*</span>
+            </label>
+            <input type="text" class="form-control {% if form.walkin_time.errors %}is-invalid{% endif %}"
+                   id="id_walkin_time" name="walkin_time"
+                   placeholder="e.g. 9:30 AM - 1:00 PM"
+                   value="{{ form.walkin_time.value|default:'9:30 AM - 1:00 PM' }}" required>
+            {% if form.walkin_time.errors %}
+              <div class="invalid-feedback">{% for e in form.walkin_time.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+            <!-- Quick Time Presets -->
+            <div class="d-flex gap-1 mt-1 flex-wrap">
+              <button type="button" class="btn btn-outline-secondary btn-xxs py-0 px-1 preset-time" data-val="9:30 AM - 1:00 PM">9:30 AM - 1:00 PM</button>
+              <button type="button" class="btn btn-outline-secondary btn-xxs py-0 px-1 preset-time" data-val="10:00 AM - 3:00 PM">10:00 AM - 3:00 PM</button>
+              <button type="button" class="btn btn-outline-secondary btn-xxs py-0 px-1 preset-time" data-val="10:00 AM - 4:00 PM">10:00 AM - 4:00 PM</button>
+            </div>
+          </div>
+
+          <!-- Reporting Venue Address -->
+          <div class="col-12">
+            <label for="id_walkin_venue" class="form-label fw-semibold fs-sm text-dark">
+              Reporting Venue / Campus Address <span class="text-danger">*</span>
+            </label>
+            <textarea class="form-control {% if form.walkin_venue.errors %}is-invalid{% endif %}"
+                      id="id_walkin_venue" name="walkin_venue" rows="2"
+                      placeholder="e.g. Campus Administrative Block, Room 102, Main Campus, Trichy Road, Coimbatore - 641018"
+                      required>{{ form.walkin_venue.value|default:'' }}</textarea>
+            {% if form.walkin_venue.errors %}
+              <div class="invalid-feedback">{% for e in form.walkin_venue.errors %}{{ e }}{% endfor %}</div>
+            {% endif %}
+            <div class="fs-xs text-muted-2 mt-1">Exact physical venue where candidates should report on campus.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Attendance Instructions & Document Checklist Card -->
+      <div class="sj-card p-4 mb-4 border">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3 flex-wrap gap-2">
+          <h5 class="fw-bold mb-0 text-primary">
+            <i class="bi bi-file-earmark-check me-2"></i>Attendance &amp; Physical Document Checklist
+          </h5>
+          <div class="d-flex gap-1">
+            <button type="button" class="btn btn-outline-primary btn-xxs py-1 px-2" id="btnPresetTeaching">
+              <i class="bi bi-magic me-1"></i>Teaching Checklist
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-xxs py-1 px-2" id="btnPresetCollege">
+              College Faculty Checklist
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_walkin_contact_instructions" class="form-label fw-semibold fs-sm text-dark">
+            Physical Documents &amp; Instructions to Candidates
+          </label>
+          <textarea class="form-control {% if form.walkin_contact_instructions.errors %}is-invalid{% endif %}"
+                    id="id_walkin_contact_instructions" name="walkin_contact_instructions" rows="4"
+                    placeholder="Carry 2 copies of updated CV, original certificates, marksheets, valid photo ID, and 2 passport photos. Candidates can attend directly without prior online application.">{{ form.walkin_contact_instructions.value|default:'Carry 2 copies of updated CV, original certificates, marksheets, valid photo ID, and 2 passport photos. Candidates can attend directly without prior online application.' }}</textarea>
+          {% if form.walkin_contact_instructions.errors %}
+            <div class="invalid-feedback">{% for e in form.walkin_contact_instructions.errors %}{{ e }}{% endfor %}</div>
+          {% endif %}
+          <div class="fs-xs text-muted-2 mt-1">This text is directly injected into candidate emails and notification cards.</div>
+        </div>
+
+        <!-- Optional Short Description -->
+        <div>
+          <label for="id_description" class="form-label fw-semibold fs-sm text-dark">
+            Role Summary &amp; Eligibility Criteria <span class="text-muted fw-normal fs-xs">(Optional)</span>
+          </label>
+          <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                    id="id_description" name="description" rows="3"
+                    placeholder="Leave blank to automatically generate a standard vacancy description from role, school, venue, and instructions.">{{ form.description.value|default:'' }}</textarea>
+          {% if form.description.errors %}
+            <div class="invalid-feedback">{% for e in form.description.errors %}{{ e }}{% endfor %}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== RIGHT COLUMN: SECONDARY SETTINGS & PUBLISH ACTIONS ==================== -->
+    <div class="col-12 col-lg-4">
+      <!-- 4. Action Card (Sticky) -->
+      <div class="sj-card p-4 mb-4 border shadow-sm sticky-top" style="top: 20px; z-index: 10;">
+        <h5 class="fw-bold mb-3 text-dark">
+          <i class="bi bi-send-check text-success me-2"></i>Publishing Actions
+        </h5>
+
+        <div class="alert alert-light border fs-xs text-muted-2 rounded-3 mb-3 p-3">
+          <div class="fw-bold text-dark mb-1"><i class="bi bi-info-circle text-primary me-1"></i>Publishing Rules:</div>
+          <ul class="mb-0 ps-3">
+            <li><strong>Save &amp; Publish:</strong> Immediately activates vacancy on the public job board and populates Bulk Job Alerts.</li>
+            <li><strong>Save as Draft:</strong> Saves without publishing. Can be reviewed and published anytime.</li>
+          </ul>
+        </div>
+
+        <!-- Save & Publish CTA Button -->
+        <button type="submit" name="action" value="publish" class="btn btn-primary w-100 fw-bold py-2 mb-2 shadow-sm">
+          <i class="bi bi-broadcast me-2"></i>{% if is_edit %}Save &amp; Publish Changes{% else %}Save &amp; Publish Walk-in{% endif %}
+        </button>
+
+        <!-- Save as Draft Button -->
+        <button type="submit" name="action" value="draft" class="btn btn-outline-secondary w-100 fw-semibold py-2 mb-2">
+          <i class="bi bi-file-earmark me-2"></i>Save as Draft
+        </button>
+
+        <a href="{% url 'admin-panel:walk-ins' %}" class="btn btn-link text-muted-2 text-decoration-none w-100 btn-sm text-center">
+          Cancel &amp; Return to List
+        </a>
+      </div>
+
+      <!-- 5. Location & Contact Details Card -->
+      <div class="sj-card p-4 mb-4 border">
+        <h6 class="fw-bold border-bottom pb-2 mb-3 text-primary">
+          <i class="bi bi-geo me-2"></i>Location &amp; Administrative Contact
+        </h6>
+
+        <div class="mb-3">
+          <label for="id_location" class="form-label fw-semibold fs-sm text-dark">City / District / Region</label>
+          <input type="text" class="form-control {% if form.location.errors %}is-invalid{% endif %}"
+                 id="id_location" name="location"
+                 placeholder="e.g. Coimbatore, Tamil Nadu"
+                 value="{{ form.location.value|default:'' }}">
+          {% if form.location.errors %}
+            <div class="invalid-feedback">{% for e in form.location.errors %}{{ e }}{% endfor %}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label for="id_contact_person" class="form-label fw-semibold fs-sm text-dark">Contact Person / Desk</label>
+          <input type="text" class="form-control {% if form.contact_person.errors %}is-invalid{% endif %}"
+                 id="id_contact_person" name="contact_person"
+                 placeholder="e.g. HR Desk / Principal Office"
+                 value="{{ form.contact_person.value|default:'' }}">
+        </div>
+
+        <div class="mb-0">
+          <label for="id_contact_phone" class="form-label fw-semibold fs-sm text-dark">Contact Phone / WhatsApp</label>
+          <input type="text" class="form-control {% if form.contact_phone.errors %}is-invalid{% endif %}"
+                 id="id_contact_phone" name="contact_phone"
+                 placeholder="e.g. 9876543210"
+                 value="{{ form.contact_phone.value|default:'' }}">
+        </div>
+      </div>
+
+      <!-- 6. Compensation & Experience Card -->
+      <div class="sj-card p-4 border">
+        <h6 class="fw-bold border-bottom pb-2 mb-3 text-primary">
+          <i class="bi bi-cash-stack me-2"></i>Vacancies &amp; Compensation
+        </h6>
+
+        <div class="mb-3">
+          <label for="id_vacancies" class="form-label fw-semibold fs-sm text-dark">Number of Openings</label>
+          <input type="number" class="form-control {% if form.vacancies.errors %}is-invalid{% endif %}"
+                 id="id_vacancies" name="vacancies" min="1"
+                 value="{{ form.vacancies.value|default:1 }}">
+        </div>
+
+        <!-- Experience Bracket -->
+        <div class="mb-3">
+          <label for="id_experience_level" class="form-label fw-semibold fs-sm text-dark">Experience Level</label>
+          <select class="form-select form-select-sm" id="id_experience_level" name="experience_level">
+            {% for code, label in form.fields.experience_level.choices %}
+              <option value="{{ code }}" {% if form.experience_level.value == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Min & Max Experience Years -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label for="id_min_experience_years" class="form-label fw-semibold fs-xs text-dark">Min Exp (Yrs)</label>
+            <input type="number" class="form-control form-control-sm"
+                   id="id_min_experience_years" name="min_experience_years" min="0"
+                   value="{{ form.min_experience_years.value|default:0 }}">
+          </div>
+          <div class="col-6">
+            <label for="id_max_experience_years" class="form-label fw-semibold fs-xs text-dark">Max Exp (Yrs)</label>
+            <input type="number" class="form-control form-control-sm"
+                   id="id_max_experience_years" name="max_experience_years" min="0" placeholder="Any"
+                   value="{{ form.max_experience_years.value|default:'' }}">
+          </div>
+        </div>
+
+        <!-- Salary Min & Max -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label for="id_salary_min" class="form-label fw-semibold fs-xs text-dark">Min Salary (₹)</label>
+            <input type="number" class="form-control form-control-sm"
+                   id="id_salary_min" name="salary_min" min="0" placeholder="e.g. 25000"
+                   value="{{ form.salary_min.value|default:'' }}">
+          </div>
+          <div class="col-6">
+            <label for="id_salary_max" class="form-label fw-semibold fs-xs text-dark">Max Salary (₹)</label>
+            <input type="number" class="form-control form-control-sm"
+                   id="id_salary_max" name="salary_max" min="0" placeholder="e.g. 40000"
+                   value="{{ form.salary_max.value|default:'' }}">
+          </div>
+        </div>
+
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" id="id_salary_is_disclosed" name="salary_is_disclosed"
+                 {% if form.salary_is_disclosed.value != False %}checked{% endif %}>
+          <label class="form-check-label fs-xs fw-semibold text-dark" for="id_salary_is_disclosed">
+            Disclose salary in alerts &amp; public board
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- ====== CLIENT-SIDE ENHANCEMENTS SCRIPT ====== -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const companySelect = document.getElementById("id_company_select");
+  const customOrgInput = document.getElementById("id_custom_org_input");
+  const venueTextarea = document.getElementById("id_walkin_venue");
+  const locationInput = document.getElementById("id_location");
+  const contactPersonInput = document.getElementById("id_contact_person");
+  const contactPhoneInput = document.getElementById("id_contact_phone");
+  const instructionsTextarea = document.getElementById("id_walkin_contact_instructions");
+
+  // 1. Autofill Venue, Location, and Contact info when existing company is selected
+  if (companySelect) {
+    companySelect.addEventListener("change", function () {
+      const opt = companySelect.options[companySelect.selectedIndex];
+      if (opt && opt.value) {
+        if (customOrgInput) customOrgInput.value = "";
+        const loc = opt.getAttribute("data-location");
+        const addr = opt.getAttribute("data-address");
+        const phone = opt.getAttribute("data-phone");
+        const contact = opt.getAttribute("data-contact");
+
+        if (loc && locationInput && !locationInput.value) locationInput.value = loc;
+        if (addr && venueTextarea && !venueTextarea.value) venueTextarea.value = addr;
+        if (phone && contactPhoneInput && !contactPhoneInput.value) contactPhoneInput.value = phone;
+        if (contact && contactPersonInput && !contactPersonInput.value) contactPersonInput.value = contact;
+      }
+    });
+  }
+
+  // 2. Clear company select when custom org is typed
+  if (customOrgInput) {
+    customOrgInput.addEventListener("input", function () {
+      if (this.value.trim().length > 0 && companySelect) {
+        companySelect.value = "";
+      }
+    });
+  }
+
+  // 3. Quick Time Presets
+  document.querySelectorAll(".preset-time").forEach(btn => {
+    btn.addEventListener("click", function () {
+      const val = this.getAttribute("data-val");
+      const timeInput = document.getElementById("id_walkin_time");
+      if (timeInput && val) timeInput.value = val;
+    });
+  });
+
+  // 4. Document Checklist Quick-Insert Presets
+  const btnPresetTeaching = document.getElementById("btnPresetTeaching");
+  if (btnPresetTeaching && instructionsTextarea) {
+    btnPresetTeaching.addEventListener("click", function () {
+      instructionsTextarea.value = "Carry 2 updated hard copies of your CV, original B.Ed/Degree certificates, consolidated marksheets, valid government photo ID (Aadhaar/PAN), and 2 recent passport-size photographs.\nCandidates can attend directly on campus without submitting a prior online application.";
+    });
+  }
+
+  const btnPresetCollege = document.getElementById("btnPresetCollege");
+  if (btnPresetCollege && instructionsTextarea) {
+    btnPresetCollege.addEventListener("click", function () {
+      instructionsTextarea.value = "Please bring 2 copies of your detailed Curriculum Vitae, original Master's/Ph.D/NET/SET certificates, list of research publications, photo ID, and passport photos.\nReport directly to the Administrative Block for registration and subject demo.";
+    });
+  }
+
+  // 5. Default today's date if empty
+  const startDateInput = document.getElementById("id_walkin_start_date");
+  if (startDateInput && !startDateInput.value) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    startDateInput.value = todayStr;
+  }
+});
+</script>
+{% endblock %}

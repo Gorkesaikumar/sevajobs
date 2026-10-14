@@ -72,18 +72,41 @@ class RoleBasedCookieInterceptorMiddleware:
         elif path.startswith('/staff/dashboard') or path.startswith('/staff/login') or path.startswith('/staff/logout'):
             expected_cookie = 'sessionid_staff'
         else:
-            # On public pages, check if any role-specific session cookie exists.
-            # This ensures the navbar and 'apply' buttons recognize the logged-in user.
-            if 'sessionid_seeker' in request.COOKIES:
-                expected_cookie = 'sessionid_seeker'
-            elif 'sessionid_recruiter' in request.COOKIES:
-                expected_cookie = 'sessionid_recruiter'
-            elif 'sessionid_admin' in request.COOKIES:
+            # Check referer first for AJAX/API requests made from within a specific dashboard
+            referer = request.META.get('HTTP_REFERER', '').lower()
+            if '/dashboard/admin' in referer and 'sessionid_admin' in request.COOKIES:
                 expected_cookie = 'sessionid_admin'
-            elif 'sessionid_staff' in request.COOKIES:
+            elif '/dashboard/recruiter' in referer and 'sessionid_recruiter' in request.COOKIES:
+                expected_cookie = 'sessionid_recruiter'
+            elif '/staff' in referer and 'sessionid_staff' in request.COOKIES:
                 expected_cookie = 'sessionid_staff'
+            elif '/dashboard/seeker' in referer and 'sessionid_seeker' in request.COOKIES:
+                expected_cookie = 'sessionid_seeker'
+            elif path.startswith('/api/v1/jobs/requirements') or path.startswith('/api/v1/notifications/quota'):
+                # Admin/staff features under /api/v1/
+                if 'sessionid_admin' in request.COOKIES:
+                    expected_cookie = 'sessionid_admin'
+                elif 'sessionid_staff' in request.COOKIES:
+                    expected_cookie = 'sessionid_staff'
+                elif 'sessionid_recruiter' in request.COOKIES:
+                    expected_cookie = 'sessionid_recruiter'
+                elif 'sessionid_seeker' in request.COOKIES:
+                    expected_cookie = 'sessionid_seeker'
+                else:
+                    expected_cookie = settings.SESSION_COOKIE_NAME
             else:
-                expected_cookie = settings.SESSION_COOKIE_NAME
+                # On public pages, check if any role-specific session cookie exists.
+                # This ensures the navbar and 'apply' buttons recognize the logged-in user.
+                if 'sessionid_seeker' in request.COOKIES:
+                    expected_cookie = 'sessionid_seeker'
+                elif 'sessionid_recruiter' in request.COOKIES:
+                    expected_cookie = 'sessionid_recruiter'
+                elif 'sessionid_admin' in request.COOKIES:
+                    expected_cookie = 'sessionid_admin'
+                elif 'sessionid_staff' in request.COOKIES:
+                    expected_cookie = 'sessionid_staff'
+                else:
+                    expected_cookie = settings.SESSION_COOKIE_NAME
 
         default_cookie_name = settings.SESSION_COOKIE_NAME
 

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Job Alert Preferences - SevaJobs{% endblock %}
+
+{% block content %}
+<div class="container py-5 my-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 text-center bg-white">
+        
+        {% if error %}
+          <div class="mb-4">
+            <span class="badge bg-danger-subtle text-danger p-3 rounded-circle">
+              <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+            </span>
+          </div>
+          <h2 class="fw-bold text-dark mb-2">Invalid or Expired Link</h2>
+          <p class="text-muted mb-4">
+            {{ error }}
+          </p>
+          <a href="/" class="btn btn-outline-secondary fw-600 px-4 py-2 rounded-3">Return to Home</a>
+
+        {% elif success %}
+          <div class="mb-4">
+            <span class="badge bg-success-subtle text-success p-3 rounded-circle">
+              <i class="bi bi-check-circle-fill fs-1"></i>
+            </span>
+          </div>
+          <h2 class="fw-bold text-dark mb-2">Preferences Updated</h2>
+          <p class="text-muted mb-4">
+            Job alert notifications for <strong>{{ masked_email }}</strong> are now 
+            {% if alerts_enabled %}
+              <strong class="text-success">enabled</strong>. You will receive notifications when new vacancies matching your professional profile become available.
+            {% else %}
+              <strong class="text-danger">paused</strong>. You will not receive automated matching job alert emails.
+            {% endif %}
+          </p>
+          <div class="d-grid gap-2">
+            <a href="{% url 'notifications:job-alert-preferences' %}?token={{ token }}" class="btn btn-outline-primary fw-600 py-2 rounded-3">
+              Change Preferences Again
+            </a>
+            <a href="/" class="btn btn-light border fw-600 py-2 rounded-3 text-muted">Return to SevaJobs Home</a>
+          </div>
+
+        {% else %}
+          <div class="mb-4">
+            <span class="badge bg-primary-subtle text-primary p-3 rounded-circle">
+              <i class="bi bi-bell-fill fs-1"></i>
+            </span>
+          </div>
+          <h2 class="fw-bold text-dark mb-2">Job Alert Preferences</h2>
+          <p class="text-muted mb-4">
+            Manage matching vacancy emails for <strong>{{ masked_email }}</strong>.
+          </p>
+
+          <div class="p-3 mb-4 rounded-3 text-start border {% if alerts_enabled %}border-success-subtle bg-success-subtle{% else %}border-warning-subtle bg-warning-subtle{% endif %}">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <strong>Status:</strong> 
+                {% if alerts_enabled %}
+                  <span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Active</span>
+                {% else %}
+                  <span class="text-warning-emphasis fw-bold"><i class="bi bi-pause-circle-fill me-1"></i>Paused</span>
+                {% endif %}
+              </div>
+              <small class="text-muted">Personalized job alerts</small>
+            </div>
+            <p class="small text-muted mb-0 mt-2">
+              {% if alerts_enabled %}
+                You are currently eligible to receive notifications whenever teaching and staff jobs match your subject, role, and location.
+              {% else %}
+                Job alert emails are currently paused for your profile. You will not be included in bulk job alerts.
+              {% endif %}
+            </p>
+          </div>
+
+          <form method="post" action="{% url 'notifications:job-alert-preferences' %}">
+            {% csrf_token %}
+            <input type="hidden" name="token" value="{{ token }}">
+            
+            <div class="d-grid gap-2">
+              {% if alerts_enabled %}
+                <button type="submit" name="action" value="disable" class="btn btn-outline-danger fw-600 py-2 rounded-3">
+                  <i class="bi bi-bell-slash me-1"></i> Pause Matching Job Alerts
+                </button>
+              {% else %}
+                <button type="submit" name="action" value="enable" class="btn btn-success fw-600 py-2 rounded-3">
+                  <i class="bi bi-bell me-1"></i> Re-enable Matching Job Alerts
+                </button>
+              {% endif %}
+              <a href="/" class="btn btn-light border fw-600 py-2 rounded-3 text-muted">Keep Current Settings</a>
+            </div>
+          </form>
+
+          <hr class="my-4">
+          <p class="small text-muted mb-0">
+            Looking to completely stop all campaign communications? 
+            <a href="{% url 'notifications:email-unsubscribe' %}?token={{ token }}" class="text-danger text-decoration-none">Unsubscribe from all campaigns</a>
+          </p>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

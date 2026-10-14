@@ -8,6 +8,33 @@ from django.http import JsonResponse
 from apps.accounts import template_views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
+from django.contrib.sitemaps.views import sitemap
+from django.http import HttpResponse
+from apps.jobs.sitemaps import (
+    JobSubjectSitemap, JobCitySitemap, JobStateSitemap, JobStaticSitemap, JobDetailSitemap
+)
+
+sitemaps = {
+    "static": JobStaticSitemap,
+    "subjects": JobSubjectSitemap,
+    "cities": JobCitySitemap,
+    "states": JobStateSitemap,
+    "jobs": JobDetailSitemap,
+}
+
+def robots_txt(request):
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /admin/",
+        "Disallow: /django-admin/",
+        "Disallow: /dashboard/",
+        "Disallow: /staff/",
+        "Disallow: /api/",
+        f"Sitemap: {request.scheme}://{request.get_host()}/sitemap.xml",
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
+
 def health_check(request):
     try:
         from django.db import connection
@@ -23,6 +50,10 @@ def health_check(request):
         return JsonResponse({"status": "error", "message": str(e)}, status=503)
 
 urlpatterns = [
+    # SEO & Crawlers
+    path("robots.txt", robots_txt, name="robots-txt"),
+    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="django.contrib.sitemaps.views.sitemap"),
+
     # Health Check
     path("health/", health_check, name="health_check"),
 

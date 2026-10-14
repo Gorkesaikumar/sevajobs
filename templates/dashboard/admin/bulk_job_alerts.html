@@ -1,0 +1,1622 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+
+{% block title %}Bulk Job Alerts — Admin — SevaJobs{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  #matchedJobsModal {
+    z-index: 1065 !important;
+  }
+  .modal-backdrop {
+    z-index: 1050 !important;
+  }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid px-0">
+  <!-- Header Bar -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'admin-panel:users' %}" class="btn btn-sm btn-light border text-muted-2 rounded-circle" title="Back to Users">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h4 class="fw-800 mb-0">Bulk Job Alerts</h4>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Admin Campaign</span>
+      </div>
+      <p class="text-muted-2 fs-sm mb-0 mt-1">Identify verified job seekers by professional profile and send personalized notifications about matching available vacancies.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <a href="{% url 'admin-panel:job-alert-campaigns' %}" class="btn btn-outline-secondary btn-sm fw-semibold">
+        <i class="bi bi-clock-history me-1"></i> Campaign History
+      </a>
+      <a href="{% url 'admin-panel:email-quota' %}" class="btn btn-outline-info btn-sm fw-semibold">
+        <i class="bi bi-speedometer2 me-1"></i> Daily Quota: {{ quota_status.remaining }} remaining
+      </a>
+    </div>
+  </div>
+
+  <!-- Quota Warning Banner if Exhausted or Close -->
+  {% if quota_status.remaining == 0 %}
+  <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-3">
+    <i class="bi bi-exclamation-octagon-fill fs-3 text-danger"></i>
+    <div>
+      <div class="fw-bold">Daily Email Quota Exhausted</div>
+      <div class="fs-sm">Today's limit of {{ quota_status.daily_limit }} emails has been reached. You can save this campaign as a draft or schedule it for tomorrow.</div>
+    </div>
+  </div>
+  {% elif quota_status.remaining < 20 %}
+  <div class="alert alert-warning border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-3">
+    <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
+    <div>
+      <div class="fw-bold">Low Daily Email Quota Warning</div>
+      <div class="fs-sm">Only <strong>{{ quota_status.remaining }}</strong> emails remaining today. Campaigns exceeding this count will be rejected by the quota controller.</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Alert Type Selector Card -->
+  <div class="sj-card p-3 mb-4 border rounded-4 bg-white shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h6 class="fw-800 mb-0 text-dark">
+          <i class="bi bi-bell-fill text-primary me-2"></i>Select Alert Notification Type
+        </h6>
+        <p class="fs-xs text-muted-2 mb-0">Choose from the five authorized recruitment alert workflows.</p>
+      </div>
+
+      <!-- Schedule Control Status for Daily Digest -->
+      <div class="d-flex align-items-center gap-2 p-2 bg-light border rounded-3" id="scheduleControlBox">
+        <div class="fs-xs text-muted-2">
+          <i class="bi bi-clock me-1"></i>Daily 10:00 AM IST Schedule:
+        </div>
+        <span class="badge {% if is_schedule_enabled %}bg-success-subtle text-success border border-success-subtle{% else %}bg-secondary-subtle text-secondary border border-secondary-subtle{% endif %}" id="scheduleStatusBadge">
+          {% if is_schedule_enabled %}● ACTIVE{% else %}○ PAUSED{% endif %}
+        </span>
+        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 fs-xs" id="btnToggleSchedule" title="Pause or Resume persistent 10 AM Celery Beat Schedule">
+          {% if is_schedule_enabled %}<i class="bi bi-pause-fill"></i> Pause Schedule{% else %}<i class="bi bi-play-fill"></i> Resume Schedule{% endif %}
+        </button>
+      </div>
+    </div>
+
+    <!-- 5 Alert Type Radio Tiles -->
+    <div class="row g-2" id="alertTypeSelectorGrid">
+      <!-- Type 1: Daily Digest -->
+      <div class="col-12 col-md">
+        <label class="card h-100 p-3 border rounded-3 cursor-pointer alert-type-card active border-primary bg-primary-subtle" data-type="daily_digest">
+          <input type="radio" name="alert_type" value="daily_digest" class="d-none" checked>
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="fw-bold text-dark fs-sm"><i class="bi bi-clock-history text-primary me-1"></i> Daily Digest</span>
+            <span class="badge bg-primary text-white fs-2xs">10 AM IST</span>
+          </div>
+          <div class="fs-xs text-muted-2" style="font-size: 11px;">Profile-matched vacancies digest (max 5/candidate)</div>
+        </label>
+      </div>
+
+      <!-- Type 2: Interview Alert -->
+      <div class="col-12 col-md">
+        <label class="card h-100 p-3 border rounded-3 cursor-pointer alert-type-card" data-type="interview_alert">
+          <input type="radio" name="alert_type" value="interview_alert" class="d-none">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="fw-bold text-dark fs-sm"><i class="bi bi-calendar-check text-info me-1"></i> Interview Alert</span>
+            <span class="badge bg-danger text-white fs-2xs">Priority 1</span>
+          </div>
+          <div class="fs-xs text-muted-2" style="font-size: 11px;">Personal update for shortlisted or scheduled candidates</div>
+        </label>
+      </div>
+
+      <!-- Type 3: Walk-in Alert -->
+      <div class="col-12 col-md">
+        <label class="card h-100 p-3 border rounded-3 cursor-pointer alert-type-card" data-type="walkin_alert">
+          <input type="radio" name="alert_type" value="walkin_alert" class="d-none">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="fw-bold text-dark fs-sm"><i class="bi bi-geo-alt-fill text-warning me-1"></i> Walk-in Alert</span>
+            <span class="badge bg-warning text-dark fs-2xs">Priority 2</span>
+          </div>
+          <div class="fs-xs text-muted-2" style="font-size: 11px;">Urgent same-day interviews without prior application</div>
+        </label>
+      </div>
+
+      <!-- Type 4: Employer Alert -->
+      <div class="col-12 col-md">
+        <label class="card h-100 p-3 border rounded-3 cursor-pointer alert-type-card" data-type="employer_alert">
+          <input type="radio" name="alert_type" value="employer_alert" class="d-none">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="fw-bold text-dark fs-sm"><i class="bi bi-briefcase-fill text-success me-1"></i> Employer Alert</span>
+            <span class="badge bg-success text-white fs-2xs">Priority 3</span>
+          </div>
+          <div class="fs-xs text-muted-2" style="font-size: 11px;">Outreach to Schools & Recruiters to Post Jobs / Requirements</div>
+        </label>
+      </div>
+
+      <!-- Type 5: VIP Requirement -->
+      <div class="col-12 col-md">
+        <label class="card h-100 p-3 border rounded-3 cursor-pointer alert-type-card" data-type="requirement_alert">
+          <input type="radio" name="alert_type" value="requirement_alert" class="d-none">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="fw-bold text-dark fs-sm"><i class="bi bi-stars text-primary me-1"></i> VIP Requirement</span>
+            <span class="badge bg-primary text-white fs-2xs">Priority 4</span>
+          </div>
+          <div class="fs-xs text-muted-2" style="font-size: 11px;">Fast-track opening from approved institutional requirement</div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Multi-Step Nav Tabs -->
+  <ul class="nav nav-pills nav-fill bg-white p-2 rounded-4 shadow-sm border mb-4 gap-2" id="jobAlertWizardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active fw-bold fs-sm py-2 px-3 text-start d-flex align-items-center gap-2" id="step1-tab" data-bs-toggle="pill" data-bs-target="#step1" type="button" role="tab">
+        <span class="badge bg-primary rounded-circle px-2 py-1">1</span>
+        <span>Target Audience</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-bold fs-sm py-2 px-3 text-start d-flex align-items-center gap-2" id="step2-tab" data-bs-toggle="pill" data-bs-target="#step2" type="button" role="tab">
+        <span class="badge bg-secondary rounded-circle px-2 py-1">2</span>
+        <span id="step2TabLabel">Matching Vacancies</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-bold fs-sm py-2 px-3 text-start d-flex align-items-center gap-2" id="step3-tab" data-bs-toggle="pill" data-bs-target="#step3" type="button" role="tab">
+        <span class="badge bg-secondary rounded-circle px-2 py-1">3</span>
+        <span>Review Recipients</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-bold fs-sm py-2 px-3 text-start d-flex align-items-center gap-2" id="step4-tab" data-bs-toggle="pill" data-bs-target="#step4" type="button" role="tab">
+        <span class="badge bg-secondary rounded-circle px-2 py-1">4</span>
+        <span>Compose &amp; Dispatch</span>
+      </button>
+    </li>
+  </ul>
+
+  <!-- Wizard Content Container -->
+  <div class="tab-content" id="jobAlertWizardContent">
+
+    <!-- ==================== STEP 1: TARGET AUDIENCE ==================== -->
+    <div class="tab-pane fade show active" id="step1" role="tabpanel">
+      <div class="row g-4">
+        <!-- Filter Controls -->
+        <div class="col-12 col-lg-5">
+          <div class="sj-card p-4 h-100">
+            <h5 class="fw-800 mb-3 text-dark">
+              <i class="bi bi-funnel-fill text-primary me-2"></i>Target Audience Filters
+            </h5>
+            <p class="fs-xs text-muted-2 mb-4" id="audienceFilterHint">Filters operate on verified job seekers (<code class="text-primary">role="job_seeker"</code>). Recruiters and administrators are strictly excluded.</p>
+
+            <form id="audienceFilterForm">
+              <!-- Type 3: Walk-in Picker Group -->
+              <div class="mb-3" id="walkinJobPickerGroup" style="display:none;">
+                <label class="form-label fs-xs fw-bold text-uppercase text-danger"><i class="bi bi-geo-alt-fill me-1"></i>Select Approved Walk-in Vacancy</label>
+                <select class="form-select form-select-sm border-danger" id="selectWalkinJob">
+                  <option value="">-- Choose Walk-in Vacancy --</option>
+                  {% for w in walkin_vacancies %}
+                  <option value="{{ w.id }}">{{ w.title }} — {{ w.organization }} — {{ w.location }} — {{ w.dates_and_time }}</option>
+                  {% endfor %}
+                </select>
+                <div class="fs-xs text-muted-2 mt-1">Walk-in date, venue, and attendance notes are automatically linked.</div>
+              </div>
+
+              <!-- Type 5: Requirement Picker Group -->
+              <div class="mb-3" id="requirementPickerGroup" style="display:none;">
+                <label class="form-label fs-xs fw-bold text-uppercase text-primary"><i class="bi bi-stars me-1"></i>Select Approved Requirement</label>
+                <select class="form-select form-select-sm border-primary" id="selectRequirement">
+                  <option value="">-- Choose Approved Requirement --</option>
+                  {% for r in active_requirements %}
+                  <option value="{{ r.id }}">{{ r.subject }} ({{ r.grade }}) at {{ r.institution_name }} ({{ r.positions_count }} open)</option>
+                  {% endfor %}
+                </select>
+                <div class="fs-xs text-muted-2 mt-1">Immediate priority outreach for approved school requirements.</div>
+              </div>
+
+              <!-- Type 2: Interview Status Group -->
+              <div class="mb-3" id="interviewStatusPickerGroup" style="display:none;">
+                <label class="form-label fs-xs fw-bold text-uppercase text-info"><i class="bi bi-calendar-check me-1"></i>Candidate Recruitment Status</label>
+                <select class="form-select form-select-sm border-info" id="selectInterviewStatus">
+                  <option value="">All Relevant (Shortlisted &amp; Scheduled)</option>
+                  <option value="shortlisted">Shortlisted Candidates Only</option>
+                  <option value="interview_scheduled">Interview Scheduled Candidates Only</option>
+                </select>
+              </div>
+
+              <!-- Type 4: Employer Role Filter -->
+              <div class="mb-3" id="employerFilterGroup" style="display:none;">
+                <div class="alert alert-info border-0 p-3 mb-3 fs-xs rounded-3">
+                  <i class="bi bi-info-circle-fill me-1"></i> <strong>Employer Outreach Mode:</strong> Filters verified recruiters, schools, colleges, and company accounts. Job seekers are strictly excluded.
+                </div>
+                <label class="form-label fs-xs fw-bold text-uppercase text-muted-2">Institution / Employer Role</label>
+                <select class="form-select form-select-sm" id="selectEmployerRole">
+                  <option value="All">All Employer Types</option>
+                  <option value="school">Schools</option>
+                  <option value="college">Colleges / Universities</option>
+                  <option value="recruiter">Recruitment Agencies</option>
+                  <option value="company">EdTech &amp; Educational Companies</option>
+                </select>
+              </div>
+
+              <!-- Candidate Filters Container (Hidden in Employer Alert Mode) -->
+              <div id="candidateFilterFields">
+                <!-- Subject Filter -->
+                <div class="mb-3">
+                  <label class="form-label fs-xs fw-bold text-uppercase text-muted-2">Subject / Specialization</label>
+                  <select class="form-select form-select-sm" id="filterSubject" name="subject">
+                    <option value="">All Subjects (Any)</option>
+                    {% for s in all_subjects %}
+                    <option value="{{ s }}">{{ s }}</option>
+                    {% endfor %}
+                  </select>
+                  <div class="fs-xs text-muted-2 mt-1">Matches candidate's registered academic subject.</div>
+                </div>
+
+                <!-- Profession / Role -->
+                <div class="mb-3">
+                  <label class="form-label fs-xs fw-bold text-uppercase text-muted-2">Profession / Designation</label>
+                  <select class="form-select form-select-sm" id="filterProfession" name="profession">
+                    <option value="">All Professions (Any)</option>
+                    {% for p in all_professions %}
+                    <option value="{{ p }}">{{ p }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <!-- Experience Range -->
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label fs-xs fw-bold text-uppercase text-muted-2">Min Experience (Yrs)</label>
+                    <input type="number" class="form-control form-control-sm" id="filterExpMin" name="experience_min" min="0" max="40" step="0.5" placeholder="0">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fs-xs fw-bold text-uppercase text-muted-2">Max Experience (Yrs)</label>
+                    <input type="number" class="form-control form-control-sm" id="filterExpMax" name="experience_max" min="0" max="40" step="0.5" placeholder="Any">
+                  </div>
+                </div>
+
+                <!-- Expected Salary Range -->
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label fs-xs fw-bold text-uppercase text-muted-2">Min Salary (₹/mo)</label>
+                    <input type="number" class="form-control form-control-sm" id="filterSalaryMin" name="salary_min" min="0" step="1000" placeholder="e.g. 15000">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fs-xs fw-bold text-uppercase text-muted-2">Max Salary (₹/mo)</label>
+                    <input type="number" class="form-control form-control-sm" id="filterSalaryMax" name="salary_max" min="0" step="1000" placeholder="e.g. 50000">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Preferred Location (Shared across all modes) -->
+              <div class="mb-3">
+                <label class="form-label fs-xs fw-bold text-uppercase text-muted-2">Location</label>
+                <input type="text" class="form-control form-control-sm" id="filterLocation" name="location" placeholder="e.g. Chennai, Coimbatore, Madurai (or leave blank for any)">
+              </div>
+
+              <!-- Eligibility Checkboxes -->
+              <div class="mb-4 pt-2 border-top">
+                <div class="form-check form-switch mb-2" id="alertsOnlySwitchContainer">
+                  <input class="form-check-input" type="checkbox" id="filterAlertsOnly" name="alerts_enabled_only" checked>
+                  <label class="form-check-label fs-xs fw-semibold" for="filterAlertsOnly">Only with Alerts Enabled</label>
+                </div>
+                <div class="form-check form-switch mb-2">
+                  <input class="form-check-input" type="checkbox" id="filterActiveOnly" name="active_only" checked>
+                  <label class="form-check-label fs-xs fw-semibold" for="filterActiveOnly">Active Accounts Only (<code class="text-dark">is_active=True</code>)</label>
+                </div>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                  <label class="fs-xs fw-semibold text-muted-2 text-nowrap">Deduplication Window:</label>
+                  <select class="form-select form-select-sm w-auto" id="filterDedupWindow" name="dedup_window_days">
+                    <option value="14" selected>14 Days (Default)</option>
+                    <option value="7">7 Days</option>
+                    <option value="30">30 Days</option>
+                    <option value="0">Disabled (0 Days)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-primary btn-sm w-100 fw-bold py-2" id="btnEvaluateAudience">
+                <i class="bi bi-arrow-repeat me-1" id="evalSpinner" style="display:none;"></i>
+                <i class="bi bi-people-fill me-1" id="evalIcon"></i> Calculate Target Audience
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Live Audience Insights -->
+        <div class="col-12 col-lg-7">
+          <div class="sj-card p-4 h-100 d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-800 mb-0 text-dark">
+                  <i class="bi bi-graph-up text-success me-2"></i>Live Audience Evaluation
+                </h5>
+                <span class="badge bg-light text-dark border fs-xs" id="evalTimestamp">Querying database...</span>
+              </div>
+              <p class="fs-xs text-muted-2 mb-4">Metrics reflect actual database records, suppression lists, active vacancies, and deduplication rules.</p>
+
+              <!-- Metric Grid -->
+              <div class="row g-3 mb-4">
+                <div class="col-6 col-sm-4">
+                  <div class="card border-0 bg-light p-3 rounded-3 text-center">
+                    <div class="fs-3 fw-800 text-dark" id="statTotalFound">-</div>
+                    <div class="fs-xs text-muted-2" id="statTotalFoundLabel">Total Job Seekers</div>
+                  </div>
+                </div>
+                <div class="col-6 col-sm-4">
+                  <div class="card border-0 bg-light p-3 rounded-3 text-center">
+                    <div class="fs-3 fw-800 text-primary" id="statValidEmail">-</div>
+                    <div class="fs-xs text-muted-2" id="statValidEmailLabel">Valid Email</div>
+                  </div>
+                </div>
+                <div class="col-6 col-sm-4">
+                  <div class="card border-0 bg-success-subtle p-3 rounded-3 text-center border border-success-subtle">
+                    <div class="fs-3 fw-800 text-success" id="statEligible">-</div>
+                    <div class="fs-xs text-success fw-semibold" id="statEligibleLabel">With Matching Jobs</div>
+                  </div>
+                </div>
+                <div class="col-6 col-sm-4">
+                  <div class="card border-0 bg-warning-subtle p-3 rounded-3 text-center border border-warning-subtle">
+                    <div class="fs-3 fw-800 text-warning-emphasis" id="statNoJobs">-</div>
+                    <div class="fs-xs text-warning-emphasis fw-semibold" id="statNoJobsLabel">No Matching Jobs</div>
+                  </div>
+                </div>
+                <div class="col-6 col-sm-4">
+                  <div class="card border-0 bg-danger-subtle p-3 rounded-3 text-center border border-danger-subtle">
+                    <div class="fs-3 fw-800 text-danger" id="statExcluded">-</div>
+                    <div class="fs-xs text-danger fw-semibold" id="statExcludedLabel">Excluded / Suppressed</div>
+                  </div>
+                </div>
+                <div class="col-6 col-sm-4">
+                  <div class="card border-0 bg-info-subtle p-3 rounded-3 text-center border border-info-subtle">
+                    <div class="fs-3 fw-800 text-info" id="statQuotaRemaining">{{ quota_status.remaining }}</div>
+                    <div class="fs-xs text-info fw-semibold" id="statQuotaRemainingLabel">Daily Quota Left</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Eligibility Criteria Explanation -->
+              <div class="alert alert-light border fs-xs text-muted-2 rounded-3 mb-0" id="eligibilityGuardsContainer">
+                <div class="fw-bold text-dark mb-1"><i class="bi bi-shield-check text-success me-1"></i>Automated Eligibility Guards:</div>
+                <ul class="mb-0 ps-3" id="eligibilityGuardsList">
+                  <li><strong>Subject Conflict Guard:</strong> An English teacher will never receive Mathematics or Physics job alerts.</li>
+                  <li><strong>Deduplication Guard:</strong> Candidates who received an alert for a vacancy in the last 14 days are skipped for that job.</li>
+                  <li><strong>Suppression Guard:</strong> Bounced, complained, or unsubscribed addresses are excluded immediately.</li>
+                  <li><strong>Active Vacancy Guard:</strong> Only approved, currently published vacancies with future deadlines are matched.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Next Step Button -->
+            <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+              <button type="button" class="btn btn-primary fw-bold px-4" id="btnGoToStep2">
+                Continue to Vacancy Matching <i class="bi bi-arrow-right ms-1"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== STEP 2: SELECT MATCHING VACANCIES ==================== -->
+    <div class="tab-pane fade" id="step2" role="tabpanel">
+      <div class="sj-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h5 class="fw-800 mb-1 text-dark">
+              <i class="bi bi-briefcase-fill text-primary me-2"></i>Select Matching Strategy
+            </h5>
+            <p class="fs-xs text-muted-2 mb-0">Choose whether each candidate receives dynamically matched vacancies based on their profile, or specific approved vacancies.</p>
+          </div>
+          <span class="badge bg-light text-dark border fs-xs">
+            <i class="bi bi-check2-circle text-success me-1"></i>Real Vacancies Only
+          </span>
+        </div>
+
+        <!-- Type 1: Daily Digest Strategy & Vacancies Container -->
+        <div id="step2DailyDigestContainer">
+          <!-- Strategy Selector Radios -->
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6">
+              <label class="card border p-3 rounded-3 h-100 cursor-pointer strategy-card selected" id="strategyAutoCard">
+                <div class="d-flex align-items-start gap-3">
+                  <input class="form-check-input mt-1" type="radio" name="matching_strategy" id="strategyAuto" value="auto" checked>
+                  <div>
+                    <div class="fw-bold text-dark mb-1">
+                      <i class="bi bi-magic text-primary me-1"></i> Automated Profile-Based Matching (Recommended)
+                    </div>
+                    <div class="fs-xs text-muted-2">
+                      The system matches each candidate against all active vacancies in the database using their subject, profession, location, and experience. Each candidate receives a personalized bundle of top-matching vacancies.
+                    </div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="card border p-3 rounded-3 h-100 cursor-pointer strategy-card" id="strategySpecificCard">
+                <div class="d-flex align-items-start gap-3">
+                  <input class="form-check-input mt-1" type="radio" name="matching_strategy" id="strategySpecific" value="specific_jobs">
+                  <div>
+                    <div class="fw-bold text-dark mb-1">
+                      <i class="bi bi-card-checklist text-primary me-1"></i> Specific Approved Vacancies
+                    </div>
+                    <div class="fs-xs text-muted-2">
+                      Choose one or more specific published vacancies below. Candidates matching the selected vacancies' subject and criteria will receive alerts for only those chosen positions.
+                    </div>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Vacancy Picker Table (Shown when Specific Vacancies is picked) -->
+          <div id="specificVacanciesContainer" style="display:none;" class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-bold fs-xs text-uppercase text-muted-2">Available Approved Vacancies ({{ active_vacancies|length }})</span>
+              <span class="fs-xs text-muted-2"><span id="selectedJobsCount">0</span> selected</span>
+            </div>
+            <div class="table-responsive border rounded-3" style="max-height: 320px; overflow-y: auto;">
+              <table class="table table-hover sj-table align-middle mb-0">
+                <thead class="table-light fs-xs sticky-top">
+                  <tr>
+                    <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="selectAllVacancies"></th>
+                    <th>Job Title &amp; Organization</th>
+                    <th>Subject</th>
+                    <th>Location</th>
+                    <th>Salary</th>
+                    <th>Deadline</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody class="fs-sm">
+                  {% for j in active_vacancies %}
+                  <tr>
+                    <td><input class="form-check-input vacancy-checkbox" type="checkbox" value="{{ j.id }}" name="specific_job_ids"></td>
+                    <td>
+                      <div class="fw-bold text-dark">{{ j.title }}</div>
+                      <div class="fs-xs text-muted-2">{{ j.organization }} &bull; <span class="badge bg-light text-dark border">{{ j.source_type }}</span></div>
+                    </td>
+                    <td><span class="badge bg-primary-subtle text-primary">{{ j.subject|default:"General" }}</span></td>
+                    <td class="fs-xs text-muted-2">{{ j.location|default:"Tamil Nadu" }}</td>
+                    <td class="fs-xs text-muted-2">{{ j.salary_display }}</td>
+                    <td class="fs-xs text-muted-2">{{ j.deadline|default:"Ongoing" }}</td>
+                    <td>
+                      <a href="{{ j.url }}" target="_blank" class="btn btn-light btn-sm rounded-circle" title="View Public Job">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                      </a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="7" class="text-center text-muted py-4">No active approved vacancies found.</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Type 2: Interview Workflow Overview -->
+        <div id="step2InterviewContainer" style="display:none;" class="mb-4">
+          <div class="alert alert-info border-0 rounded-3 p-4 mb-0">
+            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-calendar-check-fill text-info me-2"></i>Personalized Candidate Interview Notification Mode</h6>
+            <p class="fs-xs text-muted-2 mb-3">This workflow queries genuine candidate records from the ATS pipeline with confirmed status of <strong>Shortlisted</strong> or <strong>Interview Scheduled</strong>. Each candidate receives an individual update with specific details.</p>
+            <div class="row g-3 fs-xs">
+              <div class="col-md-6">
+                <div class="card p-3 border bg-white rounded-3 h-100">
+                  <div class="fw-bold text-dark mb-1">Confirmed Interview Data</div>
+                  <div class="text-muted-2">Only interviews with confirmed dates, times, and venue/meeting links stored in the database are transmitted. Placeholder or speculative slots are never sent.</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card p-3 border bg-white rounded-3 h-100">
+                  <div class="fw-bold text-dark mb-1">Strict Personal Privacy</div>
+                  <div class="text-muted-2">Each notification is sent strictly to the individual applicant concerned without disclosing details to other candidates.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Type 3: Walk-in Event Details -->
+        <div id="step2WalkinContainer" style="display:none;" class="mb-4">
+          <div class="alert alert-warning border-0 rounded-3 p-4 mb-0 bg-warning-subtle">
+            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-geo-alt-fill text-warning me-2"></i>Urgent Walk-in Interview Notification Mode</h6>
+            <p class="fs-xs text-dark mb-3">Alerts educators about immediate walk-in opportunities happening today or upcoming dates. Direct attendance instructions without prior application are clearly communicated.</p>
+            <div class="card p-3 border bg-white rounded-3 mb-2 fs-xs">
+              <div class="fw-bold text-dark mb-1">Walk-in Requirements Checklist:</div>
+              <ul class="mb-0 ps-3 text-muted-2">
+                <li>Educators are instructed to carry 2 hard copies of updated CV, original credential certificates, and ID proof.</li>
+                <li>Exact venue, reporting time, and institution contact instructions are included automatically.</li>
+                <li>Only matching educators within the institution's subject and geographic proximity are targeted.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Type 4: Employer Outreach Actions -->
+        <div id="step2EmployerContainer" style="display:none;" class="mb-4">
+          <div class="alert alert-success border-0 rounded-3 p-4 mb-0 bg-success-subtle">
+            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-briefcase-fill text-success me-2"></i>Employer Fast-Track Hiring Workflow Promotion</h6>
+            <p class="fs-xs text-dark mb-3">Directs verified academic institutions and employers to SevaJobs recruitment self-serve workflows. Job seekers are strictly filtered out.</p>
+            <div class="row g-3 fs-xs">
+              <div class="col-md-6">
+                <div class="card p-3 border bg-white rounded-3 h-100">
+                  <div class="fw-bold text-dark mb-1"><i class="bi bi-plus-circle text-primary me-1"></i> Action 1: Post a Teaching Job</div>
+                  <div class="text-muted-2">Promotes standard faculty vacancy publication on SevaJobs with direct application tracking.</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card p-3 border bg-white rounded-3 h-100">
+                  <div class="fw-bold text-dark mb-1"><i class="bi bi-lightning-charge text-success me-1"></i> Action 2: Fast Requirement (&lt;30s)</div>
+                  <div class="text-muted-2">Promotes urgent school staff requirement submissions for immediate candidate matching.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Type 5: VIP Requirement Details -->
+        <div id="step2RequirementContainer" style="display:none;" class="mb-4">
+          <div class="alert alert-primary border-0 rounded-3 p-4 mb-0 bg-primary-subtle">
+            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-stars text-primary me-2"></i>VIP Institutional Requirement Priority Dispatch</h6>
+            <p class="fs-xs text-dark mb-3">Delivers exclusive teaching opportunity notifications to verified educators when an institutional requirement achieves approved status.</p>
+            <div class="card p-3 border bg-white rounded-3 fs-xs text-muted-2">
+              <div class="fw-bold text-dark mb-1">Priority Matching Protocol:</div>
+              <div>Educators matching the required subject, teaching grade, location, and minimum experience receive high-priority delivery encouraging immediate review and response.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nav Buttons -->
+        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+          <button type="button" class="btn btn-outline-secondary fw-semibold px-4" id="btnBackToStep1">
+            <i class="bi bi-arrow-left me-1"></i> Back to Filters
+          </button>
+          <button type="button" class="btn btn-primary fw-bold px-4" id="btnGoToStep3">
+            Review Candidate Recipients <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== STEP 3: REVIEW RECIPIENTS & JOBS ==================== -->
+    <div class="tab-pane fade" id="step3" role="tabpanel">
+      <div class="sj-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h5 class="fw-800 mb-1 text-dark">
+              <i class="bi bi-person-check-fill text-primary me-2"></i>Review Candidates &amp; Matched Vacancies
+            </h5>
+            <p class="fs-xs text-muted-2 mb-0">Review candidates eligible to receive this broadcast. You may exclude individual candidates by unchecking them before composing.</p>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-success-subtle text-success fs-sm py-2 px-3 border border-success-subtle">
+              <span id="selectedCandidateCount">0</span> Candidates Selected
+            </span>
+          </div>
+        </div>
+
+        <!-- Audience Review Table -->
+        <div class="table-responsive border rounded-3 mb-4" style="max-height: 440px; overflow-y: auto;">
+          <table class="table table-hover sj-table align-middle mb-0" id="candidateReviewTable">
+            <thead class="table-light fs-xs sticky-top" id="candidateReviewThead">
+              <tr>
+                <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="selectAllCandidates" checked></th>
+                <th>Candidate</th>
+                <th>Profession &amp; Subject</th>
+                <th>Preferred Location</th>
+                <th>Experience</th>
+                <th>Matched Vacancies</th>
+                <th>Eligibility Status</th>
+                <th>Matched Jobs</th>
+              </tr>
+            </thead>
+            <tbody class="fs-sm" id="candidateReviewTbody">
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                  <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                  Calculating eligible audience...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Nav Buttons -->
+        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+          <button type="button" class="btn btn-outline-secondary fw-semibold px-4" id="btnBackToStep2">
+            <i class="bi bi-arrow-left me-1"></i> Back to Vacancy Selection
+          </button>
+          <button type="button" class="btn btn-primary fw-bold px-4" id="btnGoToStep4">
+            Proceed to Compose Email <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== STEP 4: COMPOSE & DISPATCH ==================== -->
+    <div class="tab-pane fade" id="step4" role="tabpanel">
+      <div class="row g-4">
+        <!-- Composer Form -->
+        <div class="col-12 col-lg-7">
+          <div class="sj-card p-4">
+            <h5 class="fw-800 mb-3 text-dark">
+              <i class="bi bi-envelope-paper-fill text-primary me-2"></i>Compose Job Alert Email
+            </h5>
+
+            <form id="campaignComposeForm">
+              <!-- Campaign Name -->
+              <div class="mb-3">
+                <label class="form-label fs-xs fw-bold text-uppercase text-muted-2">Campaign Name (Internal Reference)</label>
+                <input type="text" class="form-control" id="campaignName" placeholder="e.g. English Teachers Weekly Job Alerts - Chennai" value="Bulk Job Alerts ({{ "now"|date:"M d, Y" }})">
+              </div>
+
+              <!-- Subject Line -->
+              <div class="mb-3">
+                <label class="form-label fs-xs fw-bold text-uppercase text-muted-2">Email Subject Line</label>
+                <input type="text" class="form-control" id="campaignSubject" value="{{ default_template.subject }}">
+                <div class="fs-xs text-muted-2 mt-1">Supports merge tags like <code class="text-primary">&#123;&#123; candidate_name &#125;&#125;</code> and <code class="text-primary">&#123;&#123; candidate_subject &#125;&#125;</code>.</div>
+              </div>
+
+              <!-- HTML Message Body -->
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label fs-xs fw-bold text-uppercase text-muted-2 mb-0">Email Message Body (HTML)</label>
+                  <button type="button" class="btn btn-link btn-sm text-primary p-0 fs-xs" id="btnResetTemplate">Reset to Default Template</button>
+                </div>
+                <textarea class="form-control font-monospace fs-xs" id="campaignBodyHtml" rows="12" style="font-family: Consolas, monospace; line-height: 1.4;">{{ default_template.body_html }}</textarea>
+                <div class="fs-xs text-muted-2 mt-2">
+                  <i class="bi bi-info-circle text-primary me-1"></i> Personalization tags (candidate name, profession, subject, and matching job cards) are automatically populated. Preference and unsubscription links are automatically included in the email footer.
+                </div>
+              </div>
+
+              <!-- Test Send Sub-Card -->
+              <div class="card border rounded-3 p-3 bg-light mb-4">
+                <div class="fw-bold fs-sm text-dark mb-1">
+                  <i class="bi bi-send-check text-success me-1"></i> Send Test Email Before Launching
+                </div>
+                <p class="fs-xs text-muted-2 mb-2">Delivers a real sample preview to an admin email address without affecting campaign recipients or daily quota.</p>
+                <div class="input-group input-group-sm">
+                  <input type="email" class="form-control" id="testEmailAddress" placeholder="Enter administrator email..." value="{{ request.user.email }}">
+                  <button class="btn btn-outline-primary fw-semibold" type="button" id="btnSendTestEmail">
+                    <i class="bi bi-send me-1" id="testSendIcon"></i>
+                    <span class="spinner-border spinner-border-sm me-1" id="testSendSpinner" style="display:none;"></span>
+                    Send Test Email
+                  </button>
+                </div>
+                <div id="testEmailFeedback" class="fs-xs mt-2" style="display:none;"></div>
+              </div>
+
+              <!-- Final Launch Buttons -->
+              <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-secondary fw-semibold px-4" id="btnBackToStep3">
+                  <i class="bi bi-arrow-left me-1"></i> Back to Review
+                </button>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-outline-primary fw-semibold px-3" id="btnSaveDraft">
+                    <i class="bi bi-save me-1"></i> Save as Draft
+                  </button>
+                  <button type="button" class="btn btn-success fw-bold px-4" id="btnLaunchCampaign">
+                    <i class="bi bi-rocket-takeoff-fill me-1" id="launchIcon"></i>
+                    <span class="spinner-border spinner-border-sm me-1" id="launchSpinner" style="display:none;"></span>
+                    Launch Job Alerts (<span id="btnLaunchCount">0</span>)
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Live Preview Panel -->
+        <div class="col-12 col-lg-5">
+          <div class="sj-card p-4 h-100 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="fw-800 mb-0 text-dark">
+                <i class="bi bi-eye-fill text-info me-2"></i>Live Candidate Preview
+              </h5>
+              <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2 fs-xs rounded-2" id="btnRefreshPreview">
+                <i class="bi bi-arrow-repeat me-1" id="refreshPreviewIcon"></i>
+                <span class="spinner-border spinner-border-sm me-1" id="refreshPreviewSpinner" style="display:none;"></span>
+                Refresh Preview
+              </button>
+            </div>
+            <p class="fs-xs text-muted-2 mb-3">Visualizes how the email appears in the recipient's inbox with substituted profile merge tags and vacancy cards.</p>
+
+            <!-- Preview Frame Container -->
+            <div class="card border rounded-3 overflow-hidden flex-grow-1" style="min-height: 420px; background-color: #f1f5f9;">
+              <div class="bg-white px-3 py-2 border-bottom fs-xs d-flex align-items-center justify-content-between">
+                <div>
+                  <span class="text-muted-2">Subject:</span> <strong id="previewSubjectDisplay" class="text-dark">{{ default_template.subject }}</strong>
+                </div>
+                <span class="badge bg-light text-dark border">Sample Candidate</span>
+              </div>
+              <iframe id="emailPreviewFrame" class="w-100 h-100 border-0" style="min-height: 480px;" title="Email Preview"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block dashboard_modals %}
+<!-- Modal: Matched Vacancies Detail -->
+<div class="modal fade" id="matchedJobsModal" tabindex="-1" aria-labelledby="modalCandidateName" aria-hidden="true" style="z-index: 1065;">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header border-bottom bg-white py-3">
+        <div>
+          <h5 class="modal-title fw-800 text-dark" id="modalCandidateName">Candidate Matched Vacancies</h5>
+          <p class="fs-xs text-muted-2 mb-0" id="modalCandidateMeta">-</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4 bg-white">
+        <div id="modalVacanciesList" class="d-flex flex-column gap-3">
+          <!-- Dynamic vacancy cards inserted here -->
+        </div>
+      </div>
+      <div class="modal-footer border-top bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm fw-semibold rounded-3" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block dashboard_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const CSRF_TOKEN = "{{ csrf_token }}";
+  const BULK_ALERTS_URL = "{% url 'admin-panel:bulk-job-alerts' %}";
+  const FIVE_TEMPLATES = {{ five_templates_json|safe }};
+
+  let currentAlertType = "daily_digest";
+  let evaluatedCandidates = [];
+  let selectedCandidateIds = new Set();
+  let selectedVacancyIds = new Set();
+
+  // ── 1. Schedule Pause / Resume Toggle ──
+  const btnToggleSchedule = document.getElementById("btnToggleSchedule");
+  const scheduleStatusBadge = document.getElementById("scheduleStatusBadge");
+  if (btnToggleSchedule) {
+    btnToggleSchedule.addEventListener("click", async function () {
+      btnToggleSchedule.disabled = true;
+      try {
+        const resp = await fetch(BULK_ALERTS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
+          body: JSON.stringify({ action: "toggle_schedule" }),
+        });
+        const data = await resp.json();
+        if (data.status === "success") {
+          if (data.is_enabled) {
+            scheduleStatusBadge.className = "badge bg-success-subtle text-success border border-success-subtle";
+            scheduleStatusBadge.textContent = "● ACTIVE";
+            btnToggleSchedule.innerHTML = '<i class="bi bi-pause-fill"></i> Pause Schedule';
+          } else {
+            scheduleStatusBadge.className = "badge bg-secondary-subtle text-secondary border border-secondary-subtle";
+            scheduleStatusBadge.textContent = "○ PAUSED";
+            btnToggleSchedule.innerHTML = '<i class="bi bi-play-fill"></i> Resume Schedule';
+          }
+        }
+      } catch (err) {
+        console.error("Failed to toggle schedule:", err);
+      } finally {
+        btnToggleSchedule.disabled = false;
+      }
+    });
+  }
+
+  // ── 2. Alert Type Selector Cards ──
+  const alertTypeCards = document.querySelectorAll(".alert-type-card");
+  const walkinJobPickerGroup = document.getElementById("walkinJobPickerGroup");
+  const requirementPickerGroup = document.getElementById("requirementPickerGroup");
+  const interviewStatusPickerGroup = document.getElementById("interviewStatusPickerGroup");
+  const employerFilterGroup = document.getElementById("employerFilterGroup");
+  const candidateFilterFields = document.getElementById("candidateFilterFields");
+  const alertsOnlySwitchContainer = document.getElementById("alertsOnlySwitchContainer");
+  const step2TabLabel = document.getElementById("step2TabLabel");
+  const audienceFilterHint = document.getElementById("audienceFilterHint");
+
+  const step2DailyDigestContainer = document.getElementById("step2DailyDigestContainer");
+  const step2InterviewContainer = document.getElementById("step2InterviewContainer");
+  const step2WalkinContainer = document.getElementById("step2WalkinContainer");
+  const step2EmployerContainer = document.getElementById("step2EmployerContainer");
+  const step2RequirementContainer = document.getElementById("step2RequirementContainer");
+
+  const selectWalkinJob = document.getElementById("selectWalkinJob");
+  const selectRequirement = document.getElementById("selectRequirement");
+  const selectInterviewStatus = document.getElementById("selectInterviewStatus");
+  const selectEmployerRole = document.getElementById("selectEmployerRole");
+
+  function setAlertType(newType) {
+    currentAlertType = newType;
+
+    // Update card styling
+    alertTypeCards.forEach(card => {
+      const isSelected = card.getAttribute("data-type") === newType;
+      const radio = card.querySelector("input[name='alert_type']");
+      if (radio) radio.checked = isSelected;
+      if (isSelected) {
+        card.classList.add("border-primary", "bg-primary-subtle", "active");
+      } else {
+        card.classList.remove("border-primary", "bg-primary-subtle", "active");
+      }
+    });
+
+    // Step 1 Pickers visibility
+    if (walkinJobPickerGroup) walkinJobPickerGroup.style.display = (newType === "walkin_alert") ? "block" : "none";
+    if (requirementPickerGroup) requirementPickerGroup.style.display = (newType === "requirement_alert") ? "block" : "none";
+    if (interviewStatusPickerGroup) interviewStatusPickerGroup.style.display = (newType === "interview_alert") ? "block" : "none";
+    if (employerFilterGroup) employerFilterGroup.style.display = (newType === "employer_alert") ? "block" : "none";
+    if (candidateFilterFields) candidateFilterFields.style.display = (newType === "employer_alert") ? "none" : "block";
+    if (alertsOnlySwitchContainer) alertsOnlySwitchContainer.style.display = (newType === "employer_alert") ? "none" : "block";
+
+    // Step 2 Container visibility
+    if (step2DailyDigestContainer) step2DailyDigestContainer.style.display = (newType === "daily_digest") ? "block" : "none";
+    if (step2InterviewContainer) step2InterviewContainer.style.display = (newType === "interview_alert") ? "block" : "none";
+    if (step2WalkinContainer) step2WalkinContainer.style.display = (newType === "walkin_alert") ? "block" : "none";
+    if (step2EmployerContainer) step2EmployerContainer.style.display = (newType === "employer_alert") ? "block" : "none";
+    if (step2RequirementContainer) step2RequirementContainer.style.display = (newType === "requirement_alert") ? "block" : "none";
+
+    // Step 2 Tab Label
+    if (step2TabLabel) {
+      if (newType === "daily_digest") step2TabLabel.textContent = "Matching Vacancies";
+      else if (newType === "interview_alert") step2TabLabel.textContent = "Interview Workflow";
+      else if (newType === "walkin_alert") step2TabLabel.textContent = "Walk-in Vacancy";
+      else if (newType === "employer_alert") step2TabLabel.textContent = "Employer Outreach";
+      else if (newType === "requirement_alert") step2TabLabel.textContent = "VIP Requirement";
+    }
+
+    if (audienceFilterHint) {
+      if (newType === "employer_alert") {
+        audienceFilterHint.innerHTML = 'Filters operate on verified recruiters, schools, colleges, and employer accounts. Job seekers are strictly excluded.';
+      } else {
+        audienceFilterHint.innerHTML = 'Filters operate on verified job seekers (<code class="text-primary">role="job_seeker"</code>). Recruiters and administrators are strictly excluded.';
+      }
+    }
+
+    // Dynamic Step 1 Live Audience Evaluation Card Labels & Guards
+    const statTotalFoundLabel = document.getElementById("statTotalFoundLabel");
+    const statValidEmailLabel = document.getElementById("statValidEmailLabel");
+    const statEligibleLabel = document.getElementById("statEligibleLabel");
+    const statNoJobsLabel = document.getElementById("statNoJobsLabel");
+    const statExcludedLabel = document.getElementById("statExcludedLabel");
+    const statQuotaRemainingLabel = document.getElementById("statQuotaRemainingLabel");
+    const btnGoToStep2 = document.getElementById("btnGoToStep2");
+    const guardsEl = document.getElementById("eligibilityGuardsList");
+
+    if (newType === "walkin_alert") {
+      if (statTotalFoundLabel) statTotalFoundLabel.textContent = "Total Job Seekers";
+      if (statValidEmailLabel) statValidEmailLabel.textContent = "Valid Email";
+      if (statEligibleLabel) statEligibleLabel.textContent = "Eligible Candidates";
+      if (statNoJobsLabel) statNoJobsLabel.textContent = "Matching Profiles";
+      if (statExcludedLabel) statExcludedLabel.textContent = "Excluded / Suppressed";
+      if (statQuotaRemainingLabel) statQuotaRemainingLabel.textContent = "Daily Quota Left";
+      if (btnGoToStep2) btnGoToStep2.innerHTML = 'Continue to Walk-in Review <i class="bi bi-arrow-right ms-1"></i>';
+      if (guardsEl) {
+        guardsEl.innerHTML = `
+          <li><strong>Direct Walk-in Announcement:</strong> Candidates qualify based directly on their profile (subject & role) without requiring separate public job matches.</li>
+          <li><strong>Subject Alignment Guard:</strong> English educators receive English walk-ins; cross-subject mismatch is prevented.</li>
+          <li><strong>Deduplication Guard:</strong> Candidates who already received this walk-in announcement recently are skipped.</li>
+          <li><strong>Suppression &amp; Opt-out Guard:</strong> Unsubscribed or bounced addresses are excluded immediately.</li>
+        `;
+      }
+    } else if (newType === "employer_alert") {
+      if (statTotalFoundLabel) statTotalFoundLabel.textContent = "Total Employers";
+      if (statValidEmailLabel) statValidEmailLabel.textContent = "Valid Email";
+      if (statEligibleLabel) statEligibleLabel.textContent = "Eligible Accounts";
+      if (statNoJobsLabel) statNoJobsLabel.textContent = "Excluded Accounts";
+      if (statExcludedLabel) statExcludedLabel.textContent = "Excluded / Suppressed";
+      if (statQuotaRemainingLabel) statQuotaRemainingLabel.textContent = "Daily Quota Left";
+      if (btnGoToStep2) btnGoToStep2.innerHTML = 'Continue to Outreach Review <i class="bi bi-arrow-right ms-1"></i>';
+      if (guardsEl) {
+        guardsEl.innerHTML = `
+          <li><strong>Verified Employer Guard:</strong> Only verified recruiter and institution accounts are targeted; job seekers are strictly excluded.</li>
+          <li><strong>Suppression Guard:</strong> Unsubscribed or bounced addresses are excluded immediately.</li>
+        `;
+      }
+    } else if (newType === "interview_alert") {
+      if (statTotalFoundLabel) statTotalFoundLabel.textContent = "Total Candidates";
+      if (statValidEmailLabel) statValidEmailLabel.textContent = "Valid Email";
+      if (statEligibleLabel) statEligibleLabel.textContent = "Eligible Candidates";
+      if (statNoJobsLabel) statNoJobsLabel.textContent = "Matching Profiles";
+      if (statExcludedLabel) statExcludedLabel.textContent = "Excluded / Suppressed";
+      if (statQuotaRemainingLabel) statQuotaRemainingLabel.textContent = "Daily Quota Left";
+      if (btnGoToStep2) btnGoToStep2.innerHTML = 'Continue to Interview Review <i class="bi bi-arrow-right ms-1"></i>';
+    } else if (newType === "requirement_alert") {
+      if (statTotalFoundLabel) statTotalFoundLabel.textContent = "Total Candidates";
+      if (statValidEmailLabel) statValidEmailLabel.textContent = "Valid Email";
+      if (statEligibleLabel) statEligibleLabel.textContent = "Eligible Candidates";
+      if (statNoJobsLabel) statNoJobsLabel.textContent = "Matching Profiles";
+      if (statExcludedLabel) statExcludedLabel.textContent = "Excluded / Suppressed";
+      if (statQuotaRemainingLabel) statQuotaRemainingLabel.textContent = "Daily Quota Left";
+      if (btnGoToStep2) btnGoToStep2.innerHTML = 'Continue to Requirement Review <i class="bi bi-arrow-right ms-1"></i>';
+    } else {
+      if (statTotalFoundLabel) statTotalFoundLabel.textContent = "Total Job Seekers";
+      if (statValidEmailLabel) statValidEmailLabel.textContent = "Valid Email";
+      if (statEligibleLabel) statEligibleLabel.textContent = "With Matching Jobs";
+      if (statNoJobsLabel) statNoJobsLabel.textContent = "No Matching Jobs";
+      if (statExcludedLabel) statExcludedLabel.textContent = "Excluded / Suppressed";
+      if (statQuotaRemainingLabel) statQuotaRemainingLabel.textContent = "Daily Quota Left";
+      if (btnGoToStep2) btnGoToStep2.innerHTML = 'Continue to Vacancy Matching <i class="bi bi-arrow-right ms-1"></i>';
+      if (guardsEl) {
+        guardsEl.innerHTML = `
+          <li><strong>Subject Conflict Guard:</strong> An English teacher will never receive Mathematics or Physics job alerts.</li>
+          <li><strong>Deduplication Guard:</strong> Candidates who received an alert for a vacancy in the last 14 days are skipped for that job.</li>
+          <li><strong>Suppression Guard:</strong> Bounced, complained, or unsubscribed addresses are excluded immediately.</li>
+          <li><strong>Active Vacancy Guard:</strong> Only approved, currently published vacancies with future deadlines are matched.</li>
+        `;
+      }
+    }
+
+    // Apply template defaults for the chosen alert type
+    const tpl = FIVE_TEMPLATES[newType];
+    if (tpl) {
+      const nowStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const campaignNameEl = document.getElementById("campaignName");
+      if (campaignNameEl) campaignNameEl.value = `${tpl.name} (${nowStr})`;
+      const campaignSubjectEl = document.getElementById("campaignSubject");
+      if (campaignSubjectEl) campaignSubjectEl.value = tpl.subject;
+      const campaignBodyEl = document.getElementById("campaignBodyHtml");
+      if (campaignBodyEl) campaignBodyEl.value = tpl.body_html;
+      const previewSubjectDisplay = document.getElementById("previewSubjectDisplay");
+      if (previewSubjectDisplay) previewSubjectDisplay.textContent = tpl.subject;
+    }
+
+    // Recalculate audience for this alert type
+    calculateAudience();
+  }
+
+  alertTypeCards.forEach(card => {
+    card.addEventListener("click", function () {
+      const type = card.getAttribute("data-type");
+      if (type && type !== currentAlertType) {
+        setAlertType(type);
+      }
+    });
+  });
+
+  // Re-calculate when contextual dropdowns change
+  if (selectWalkinJob) selectWalkinJob.addEventListener("change", calculateAudience);
+  if (selectRequirement) selectRequirement.addEventListener("change", calculateAudience);
+  if (selectInterviewStatus) selectInterviewStatus.addEventListener("change", calculateAudience);
+  if (selectEmployerRole) selectEmployerRole.addEventListener("change", calculateAudience);
+
+  // ── 3. Strategy Radio Switcher ──
+  const strategyAuto = document.getElementById("strategyAuto");
+  const strategySpecific = document.getElementById("strategySpecific");
+  const strategyAutoCard = document.getElementById("strategyAutoCard");
+  const strategySpecificCard = document.getElementById("strategySpecificCard");
+  const specificContainer = document.getElementById("specificVacanciesContainer");
+
+  function updateStrategyUI() {
+    if (strategySpecific.checked) {
+      strategySpecificCard.classList.add("border-primary", "bg-primary-subtle");
+      strategyAutoCard.classList.remove("border-primary", "bg-primary-subtle");
+      specificContainer.style.display = "block";
+    } else {
+      strategyAutoCard.classList.add("border-primary", "bg-primary-subtle");
+      strategySpecificCard.classList.remove("border-primary", "bg-primary-subtle");
+      specificContainer.style.display = "none";
+    }
+  }
+
+  if (strategyAuto && strategySpecific) {
+    strategyAuto.addEventListener("change", updateStrategyUI);
+    strategySpecific.addEventListener("change", updateStrategyUI);
+    updateStrategyUI();
+  }
+
+  // Vacancy Checkboxes
+  const vacancyCheckboxes = document.querySelectorAll(".vacancy-checkbox");
+  const selectAllVacancies = document.getElementById("selectAllVacancies");
+  const selectedJobsCount = document.getElementById("selectedJobsCount");
+
+  if (selectAllVacancies) {
+    selectAllVacancies.addEventListener("change", function () {
+      vacancyCheckboxes.forEach(cb => {
+        cb.checked = selectAllVacancies.checked;
+        if (cb.checked) selectedVacancyIds.add(cb.value);
+        else selectedVacancyIds.delete(cb.value);
+      });
+      if (selectedJobsCount) selectedJobsCount.textContent = selectedVacancyIds.size;
+    });
+  }
+
+  vacancyCheckboxes.forEach(cb => {
+    cb.addEventListener("change", function () {
+      if (cb.checked) selectedVacancyIds.add(cb.value);
+      else selectedVacancyIds.delete(cb.value);
+      if (selectedJobsCount) selectedJobsCount.textContent = selectedVacancyIds.size;
+    });
+  });
+
+  // ── 4. Audience Calculation ──
+  async function calculateAudience() {
+    const evalSpinner = document.getElementById("evalSpinner");
+    const evalIcon = document.getElementById("evalIcon");
+    if (evalSpinner) evalSpinner.style.display = "inline-block";
+    if (evalIcon) evalIcon.style.display = "none";
+
+    const payload = {
+      action: "calculate_audience",
+      alert_type: currentAlertType,
+      walkin_job_id: selectWalkinJob ? selectWalkinJob.value : "",
+      requirement_id: selectRequirement ? selectRequirement.value : "",
+      candidate_status: selectInterviewStatus ? selectInterviewStatus.value : "",
+      account_type: selectEmployerRole ? selectEmployerRole.value : "",
+      subject: document.getElementById("filterSubject").value,
+      profession: document.getElementById("filterProfession").value,
+      location: document.getElementById("filterLocation").value,
+      experience_min: document.getElementById("filterExpMin").value,
+      experience_max: document.getElementById("filterExpMax").value,
+      salary_min: document.getElementById("filterSalaryMin").value,
+      salary_max: document.getElementById("filterSalaryMax").value,
+      alerts_enabled_only: document.getElementById("filterAlertsOnly").checked,
+      active_only: document.getElementById("filterActiveOnly").checked,
+      matching_strategy: (strategySpecific && strategySpecific.checked) ? "specific_jobs" : "auto",
+      selected_job_ids: Array.from(selectedVacancyIds),
+      dedup_window_days: document.getElementById("filterDedupWindow").value,
+    };
+
+    try {
+      const resp = await fetch(BULK_ALERTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json();
+      if (data.status === "success") {
+        document.getElementById("statTotalFound").textContent = data.total_job_seekers_found;
+        document.getElementById("statValidEmail").textContent = data.with_valid_email;
+        document.getElementById("statEligible").textContent = data.eligible_candidates_count;
+        if (currentAlertType === "walkin_alert" || currentAlertType === "interview_alert" || currentAlertType === "requirement_alert") {
+          document.getElementById("statNoJobs").textContent = data.matching_profiles_count !== undefined ? data.matching_profiles_count : data.eligible_candidates_count;
+        } else {
+          document.getElementById("statNoJobs").textContent = data.no_matching_jobs_count;
+        }
+        document.getElementById("statExcluded").textContent = data.excluded_count;
+        document.getElementById("statQuotaRemaining").textContent = data.quota_status.remaining;
+        document.getElementById("evalTimestamp").textContent = "Updated just now";
+
+        evaluatedCandidates = data.candidates;
+        renderCandidateReviewTable(data.candidates);
+      }
+    } catch (err) {
+      console.error("Audience calculation failed:", err);
+    } finally {
+      if (evalSpinner) evalSpinner.style.display = "none";
+      if (evalIcon) evalIcon.style.display = "inline-block";
+    }
+  }
+
+  const btnEvaluateAudience = document.getElementById("btnEvaluateAudience");
+  if (btnEvaluateAudience) btnEvaluateAudience.addEventListener("click", calculateAudience);
+
+  // ── 5. Render Candidate / Employer Review Table ──
+  function renderCandidateReviewTable(candidates) {
+    const thead = document.getElementById("candidateReviewThead");
+    const tbody = document.getElementById("candidateReviewTbody");
+    tbody.innerHTML = "";
+    selectedCandidateIds.clear();
+
+    const isEmployerMode = (currentAlertType === "employer_alert");
+    const isWalkinMode = (currentAlertType === "walkin_alert");
+
+    // Dynamic thead based on alert mode
+    if (isEmployerMode) {
+      thead.innerHTML = `
+        <tr>
+          <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="selectAllCandidates" checked></th>
+          <th>Organization / Contact</th>
+          <th>Role / Entity Type</th>
+          <th>Location</th>
+          <th>Recruitment Portals</th>
+          <th>Status</th>
+          <th>Eligibility</th>
+          <th>Action</th>
+        </tr>
+      `;
+    } else if (isWalkinMode) {
+      thead.innerHTML = `
+        <tr>
+          <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="selectAllCandidates" checked></th>
+          <th>Candidate</th>
+          <th>Profession &amp; Subject</th>
+          <th>Preferred Location</th>
+          <th>Experience</th>
+          <th>Walk-in Match</th>
+          <th>Eligibility Status</th>
+          <th>Walk-in Details</th>
+        </tr>
+      `;
+    } else {
+      thead.innerHTML = `
+        <tr>
+          <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="selectAllCandidates" checked></th>
+          <th>Candidate</th>
+          <th>Profession &amp; Subject</th>
+          <th>Preferred Location</th>
+          <th>Experience</th>
+          <th>Matched Vacancies</th>
+          <th>Eligibility Status</th>
+          <th>Matched Jobs</th>
+        </tr>
+      `;
+    }
+
+    if (!candidates || candidates.length === 0) {
+      const emptyMsg = isEmployerMode ? "No employer accounts found matching the criteria." : "No candidates found matching the selected criteria.";
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">${emptyMsg}</td></tr>`;
+      updateSelectedCandidatesCount();
+      wireSelectAllCheckbox();
+      return;
+    }
+
+    candidates.forEach((cand, idx) => {
+      const tr = document.createElement("tr");
+      const isEligible = cand.is_eligible;
+      if (isEligible) selectedCandidateIds.add(cand.candidate_id);
+
+      const statusBadge = isEligible
+        ? `<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Eligible</span>`
+        : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle" title="${cand.exclusion_reason || ''}"><i class="bi bi-x-circle me-1"></i>${cand.exclusion_reason || 'Excluded'}</span>`;
+
+      if (isEmployerMode) {
+        tr.innerHTML = `
+          <td>
+            <input class="form-check-input candidate-select-cb" type="checkbox" value="${cand.candidate_id}" ${isEligible ? "checked" : "disabled"}>
+          </td>
+          <td>
+            <div class="fw-bold text-dark">${cand.name}</div>
+            <div class="fs-xs text-muted-2">${cand.email}</div>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border">${cand.profession || 'Academic Employer'}</span>
+          </td>
+          <td class="fs-xs text-muted-2">${cand.location || 'Tamil Nadu'}</td>
+          <td class="fs-xs">
+            <span class="badge bg-primary-subtle text-primary me-1"><i class="bi bi-plus-circle me-1"></i>Post Jobs</span>
+            <span class="badge bg-success-subtle text-success"><i class="bi bi-lightning me-1"></i>Requirement</span>
+          </td>
+          <td class="fs-xs text-success fw-semibold"><i class="bi bi-check2-all text-success me-1"></i>Verified</td>
+          <td>${statusBadge}</td>
+          <td class="fs-xs text-muted">-</td>
+        `;
+      } else if (isWalkinMode) {
+        const walkinBadge = isEligible
+          ? `<span class="badge bg-warning-subtle text-warning-emphasis fw-bold border border-warning-subtle"><i class="bi bi-geo-alt me-1"></i>Walk-in Match</span>`
+          : `<span class="text-muted fs-xs">Profile Mismatch</span>`;
+
+        tr.innerHTML = `
+          <td>
+            <input class="form-check-input candidate-select-cb" type="checkbox" value="${cand.candidate_id}" ${isEligible ? "checked" : "disabled"}>
+          </td>
+          <td>
+            <div class="fw-bold text-dark">${cand.name}</div>
+            <div class="fs-xs text-muted-2">${cand.email}</div>
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">${cand.profession || 'Teacher'}</div>
+            <div class="fs-xs text-muted-2">${cand.subject || 'General'}</div>
+          </td>
+          <td class="fs-xs text-muted-2">${cand.location || 'Any'}</td>
+          <td class="fs-xs text-muted-2">${cand.experience_years ? cand.experience_years + ' Yrs' : 'Fresher'}</td>
+          <td>${walkinBadge}</td>
+          <td>${statusBadge}</td>
+          <td>
+            <button type="button" class="btn btn-outline-warning btn-sm py-0 px-2 fs-xs view-matched-jobs-btn text-dark" data-index="${idx}"><i class="bi bi-eye me-1"></i>View Walk-in</button>
+          </td>
+        `;
+      } else {
+        const matchedJobsBadge = cand.matched_job_count > 0
+          ? `<span class="badge bg-primary-subtle text-primary fw-bold">${cand.matched_job_count} Vacanc${cand.matched_job_count === 1 ? 'y' : 'ies'}</span>`
+          : `<span class="text-muted fs-xs">None</span>`;
+
+        tr.innerHTML = `
+          <td>
+            <input class="form-check-input candidate-select-cb" type="checkbox" value="${cand.candidate_id}" ${isEligible ? "checked" : "disabled"}>
+          </td>
+          <td>
+            <div class="fw-bold text-dark">${cand.name}</div>
+            <div class="fs-xs text-muted-2">${cand.email}</div>
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">${cand.profession || 'Teacher'}</div>
+            <div class="fs-xs text-muted-2">${cand.subject || 'General'}</div>
+          </td>
+          <td class="fs-xs text-muted-2">${cand.location || 'Any'}</td>
+          <td class="fs-xs text-muted-2">${cand.experience_years ? cand.experience_years + ' Yrs' : 'Fresher'}</td>
+          <td>${matchedJobsBadge}</td>
+          <td>${statusBadge}</td>
+          <td>
+            ${cand.matched_job_count > 0 ? `<button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 fs-xs view-matched-jobs-btn" data-index="${idx}"><i class="bi bi-eye me-1"></i>View Jobs</button>` : `<span class="text-muted fs-xs">-</span>`}
+          </td>
+        `;
+      }
+
+      tbody.appendChild(tr);
+    });
+
+    // Wire individual checkboxes
+    document.querySelectorAll(".candidate-select-cb").forEach(cb => {
+      cb.addEventListener("change", function () {
+        if (cb.checked) selectedCandidateIds.add(cb.value);
+        else selectedCandidateIds.delete(cb.value);
+        updateSelectedCandidatesCount();
+      });
+    });
+
+    // Wire view jobs modal triggers
+    document.querySelectorAll(".view-matched-jobs-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        const index = parseInt(btn.getAttribute("data-index"), 10);
+        showMatchedJobsModal(evaluatedCandidates[index]);
+      });
+    });
+
+    updateSelectedCandidatesCount();
+    wireSelectAllCheckbox();
+  }
+
+  function wireSelectAllCheckbox() {
+    const selectAllCandidates = document.getElementById("selectAllCandidates");
+    if (selectAllCandidates) {
+      selectAllCandidates.checked = true;
+      selectAllCandidates.addEventListener("change", function () {
+        const isChecked = this.checked;
+        document.querySelectorAll(".candidate-select-cb:not(:disabled)").forEach(cb => {
+          cb.checked = isChecked;
+          if (isChecked) selectedCandidateIds.add(cb.value);
+          else selectedCandidateIds.delete(cb.value);
+        });
+        updateSelectedCandidatesCount();
+      });
+    }
+  }
+
+  function updateSelectedCandidatesCount() {
+    const count = selectedCandidateIds.size;
+    const selectedCandidateCountEl = document.getElementById("selectedCandidateCount");
+    if (selectedCandidateCountEl) selectedCandidateCountEl.textContent = count;
+    const btnLaunchCountEl = document.getElementById("btnLaunchCount");
+    if (btnLaunchCountEl) btnLaunchCountEl.textContent = count;
+  }
+
+  // ── 6. Matched Vacancies / Walk-in Modal ──
+  let matchedJobsModalInstance = null;
+
+  function showMatchedJobsModal(cand) {
+    if (!cand) return;
+    const isWalkin = (currentAlertType === "walkin_alert");
+    if (isWalkin) {
+      document.getElementById("modalCandidateName").textContent = `${cand.name} — Walk-in Vacancy Details`;
+      document.getElementById("modalCandidateMeta").textContent = `${cand.profession || 'Teacher'} • ${cand.subject || 'General'} • Profile Match for Walk-in`;
+    } else {
+      document.getElementById("modalCandidateName").textContent = `${cand.name} — Matching Vacancies`;
+      document.getElementById("modalCandidateMeta").textContent = `${cand.profession || 'Teacher'} • ${cand.subject || 'General'} • Preferred Location: ${cand.location || 'Any'}`;
+    }
+    const listContainer = document.getElementById("modalVacanciesList");
+    listContainer.innerHTML = "";
+
+    if (!cand.matched_jobs || cand.matched_jobs.length === 0) {
+      listContainer.innerHTML = `<p class="text-muted text-center py-4">${isWalkin ? "No walk-in details available." : "No vacancies matched this candidate's criteria."}</p>`;
+    } else {
+      cand.matched_jobs.forEach(j => {
+        const card = document.createElement("div");
+        card.className = "card border rounded-3 p-3 bg-light shadow-sm mb-3";
+
+        if (isWalkin || j.job_type === "Walk-in Interview") {
+          card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="fw-bold text-dark fs-sm">${j.title}</div>
+                <div class="fs-xs text-muted-2">${j.organization || 'Educational Institution'} • <span class="badge bg-warning-subtle text-dark border">Walk-in Interview</span></div>
+              </div>
+              <span class="badge bg-success-subtle text-success fs-xs border border-success-subtle fw-semibold">Profile Match</span>
+            </div>
+            <div class="fs-xs text-muted-2 mb-2">
+              <div class="mb-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i><strong>Venue:</strong> ${j.venue || j.location || 'Institution Premises'}</div>
+              <div class="mb-1"><i class="bi bi-calendar-event text-primary me-1"></i><strong>Dates &amp; Time:</strong> ${j.dates_and_time || 'Today'}</div>
+              <div class="mb-1"><i class="bi bi-info-circle text-info me-1"></i><strong>Instructions:</strong> ${j.instructions || 'Bring 2 copies of your updated CV, certificates, and ID proof.'}</div>
+              <div class="mb-1 text-success fw-semibold"><i class="bi bi-check-circle text-success me-1"></i>${j.attendance_note || 'Candidates can attend directly without submitting an online application.'}</div>
+              <div><i class="bi bi-cash-stack text-success me-1"></i><strong>Salary:</strong> ${j.salary_display || 'Competitive'}</div>
+            </div>
+            <div class="mt-2">
+              <a href="${j.url}" target="_blank" class="btn btn-outline-primary btn-sm py-1 px-2 fs-xs">
+                <i class="bi bi-box-arrow-up-right me-1"></i> View Walk-in on SevaJobs
+              </a>
+            </div>
+          `;
+        } else {
+          const rawScore = j.score;
+          const scoreVal = typeof rawScore === 'number' ? (rawScore <= 1 ? Math.round(rawScore * 100) : Math.round(rawScore)) : 0;
+          card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="fw-bold text-dark fs-sm">${j.title}</div>
+                <div class="fs-xs text-muted-2">${j.organization || 'Educational Institution'} • <span class="badge bg-white text-dark border">${j.job_type || 'Full Time'}</span></div>
+              </div>
+              <span class="badge bg-success-subtle text-success fs-xs border border-success-subtle fw-semibold">Score: ${scoreVal}%</span>
+            </div>
+            <div class="fs-xs text-muted-2 mb-2">
+              <span class="me-3"><i class="bi bi-geo-alt text-primary"></i> ${j.location || 'Location Not Specified'}</span>
+              <span><i class="bi bi-cash-stack text-success"></i> ${j.salary_display || 'Competitive'}</span>
+            </div>
+            <div>
+              <a href="${j.url}" target="_blank" class="btn btn-outline-primary btn-sm py-1 px-2 fs-xs">
+                <i class="bi bi-box-arrow-up-right me-1"></i> View Vacancy on SevaJobs
+              </a>
+            </div>
+          `;
+        }
+        listContainer.appendChild(card);
+      });
+    }
+
+    const modalEl = document.getElementById("matchedJobsModal");
+    if (!matchedJobsModalInstance) {
+      matchedJobsModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+    }
+    matchedJobsModalInstance.show();
+  }
+
+  // ── 7. Multi-Step Navigation ──
+  function switchTab(targetId) {
+    const tabEl = document.querySelector(`button[data-bs-target="${targetId}"]`);
+    if (tabEl) {
+      const tab = new bootstrap.Tab(tabEl);
+      tab.show();
+    }
+  }
+
+  document.getElementById("btnGoToStep2").addEventListener("click", () => switchTab("#step2"));
+  document.getElementById("btnBackToStep1").addEventListener("click", () => switchTab("#step1"));
+  document.getElementById("btnGoToStep3").addEventListener("click", () => {
+    switchTab("#step3");
+    if (evaluatedCandidates.length === 0) calculateAudience();
+  });
+  document.getElementById("btnBackToStep2").addEventListener("click", () => switchTab("#step2"));
+  document.getElementById("btnGoToStep4").addEventListener("click", () => {
+    switchTab("#step4");
+    updateLivePreview();
+  });
+  document.getElementById("btnBackToStep3").addEventListener("click", () => switchTab("#step3"));
+
+  // Also refresh preview whenever Step 4 tab is activated directly
+  const step4TabBtn = document.getElementById("step4-tab");
+  if (step4TabBtn) {
+    step4TabBtn.addEventListener("shown.bs.tab", () => {
+      updateLivePreview();
+    });
+  }
+
+  // ── 8. Compose & Live Preview ──
+  async function updateLivePreview() {
+    const refreshBtn = document.getElementById("btnRefreshPreview");
+    const refreshIcon = document.getElementById("refreshPreviewIcon");
+    const refreshSpinner = document.getElementById("refreshPreviewSpinner");
+
+    if (refreshIcon) refreshIcon.style.display = "none";
+    if (refreshSpinner) refreshSpinner.style.display = "inline-block";
+    if (refreshBtn) refreshBtn.disabled = true;
+
+    const firstEligibleId = Array.from(selectedCandidateIds)[0] || "";
+    const subject = document.getElementById("campaignSubject").value;
+    const bodyHtml = document.getElementById("campaignBodyHtml").value;
+
+    const payload = {
+      action: "preview_email",
+      alert_type: currentAlertType,
+      candidate_id: firstEligibleId,
+      subject: subject,
+      body_html: bodyHtml,
+      matching_strategy: (strategySpecific && strategySpecific.checked) ? "specific_jobs" : "auto",
+      selected_job_ids: Array.from(selectedVacancyIds),
+      walkin_job_id: selectWalkinJob ? selectWalkinJob.value : "",
+      requirement_id: selectRequirement ? selectRequirement.value : "",
+    };
+
+    try {
+      const resp = await fetch(BULK_ALERTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json();
+      const frame = document.getElementById("emailPreviewFrame");
+      if (data.status === "success") {
+        document.getElementById("previewSubjectDisplay").textContent = data.rendered_subject;
+        if (frame) frame.srcdoc = data.rendered_html;
+      } else {
+        if (frame) {
+          frame.srcdoc = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px 20px; text-align: center; color: #64748b;">
+              <div style="display:inline-block; background-color: #fee2e2; color: #dc2626; border-radius: 50%; width: 48px; height: 48px; line-height: 48px; font-size: 22px; font-weight:bold; margin-bottom: 12px;">!</div>
+              <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 16px;">Unable to Generate Preview</h4>
+              <p style="margin: 0; font-size: 13px; color: #dc2626;">${data.message || 'Please check your template settings.'}</p>
+            </div>
+          `;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load preview:", err);
+      const frame = document.getElementById("emailPreviewFrame");
+      if (frame) {
+        frame.srcdoc = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px 20px; text-align: center; color: #64748b;">
+            <div style="display:inline-block; background-color: #fee2e2; color: #dc2626; border-radius: 50%; width: 48px; height: 48px; line-height: 48px; font-size: 22px; font-weight:bold; margin-bottom: 12px;">!</div>
+            <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 16px;">Preview Loading Error</h4>
+            <p style="margin: 0; font-size: 13px; color: #dc2626;">A network or connection error occurred while generating the preview.</p>
+          </div>
+        `;
+      }
+    } finally {
+      if (refreshIcon) refreshIcon.style.display = "inline-block";
+      if (refreshSpinner) refreshSpinner.style.display = "none";
+      if (refreshBtn) refreshBtn.disabled = false;
+    }
+  }
+
+  document.getElementById("btnRefreshPreview").addEventListener("click", updateLivePreview);
+  document.getElementById("campaignSubject").addEventListener("input", () => {
+    document.getElementById("previewSubjectDisplay").textContent = document.getElementById("campaignSubject").value;
+  });
+
+  // Reset template button
+  document.getElementById("btnResetTemplate").addEventListener("click", function () {
+    const tpl = FIVE_TEMPLATES[currentAlertType];
+    if (tpl && confirm(`Reset message body to default ${tpl.name} template?`)) {
+      document.getElementById("campaignSubject").value = tpl.subject;
+      document.getElementById("campaignBodyHtml").value = tpl.body_html;
+      updateLivePreview();
+    }
+  });
+
+  // ── 9. Send Test Email ──
+  document.getElementById("btnSendTestEmail").addEventListener("click", async function () {
+    const testEmail = document.getElementById("testEmailAddress").value.trim();
+    const feedback = document.getElementById("testEmailFeedback");
+    const testSendIcon = document.getElementById("testSendIcon");
+    const testSendSpinner = document.getElementById("testSendSpinner");
+
+    if (!testEmail || !testEmail.includes("@")) {
+      feedback.className = "fs-xs mt-2 text-danger";
+      feedback.textContent = "Please enter a valid email address.";
+      feedback.style.display = "block";
+      return;
+    }
+
+    testSendIcon.style.display = "none";
+    testSendSpinner.style.display = "inline-block";
+    feedback.style.display = "none";
+
+    const payload = {
+      action: "send_test",
+      alert_type: currentAlertType,
+      test_email: testEmail,
+      subject: document.getElementById("campaignSubject").value,
+      body_html: document.getElementById("campaignBodyHtml").value,
+      matching_strategy: (strategySpecific && strategySpecific.checked) ? "specific_jobs" : "auto",
+      selected_job_ids: Array.from(selectedVacancyIds),
+      walkin_job_id: selectWalkinJob ? selectWalkinJob.value : "",
+      requirement_id: selectRequirement ? selectRequirement.value : "",
+    };
+
+    try {
+      const resp = await fetch(BULK_ALERTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json();
+      if (data.status === "success") {
+        feedback.className = "fs-xs mt-2 text-success";
+        feedback.textContent = data.message;
+      } else {
+        feedback.className = "fs-xs mt-2 text-danger";
+        feedback.textContent = data.message || "Failed to send test email.";
+      }
+    } catch (err) {
+      feedback.className = "fs-xs mt-2 text-danger";
+      feedback.textContent = "Network error delivering test email.";
+    } finally {
+      feedback.style.display = "block";
+      testSendIcon.style.display = "inline-block";
+      testSendSpinner.style.display = "none";
+    }
+  });
+
+  // ── 10. Launch / Draft Campaign ──
+  async function submitCampaign(isDraft) {
+    const candidateList = Array.from(selectedCandidateIds);
+    if (!isDraft && candidateList.length === 0) {
+      const targetLabel = (currentAlertType === "employer_alert") ? "employer accounts" : "candidates";
+      alert(`Please select at least one eligible ${targetLabel} before launching the campaign.`);
+      return;
+    }
+
+    const launchIcon = document.getElementById("launchIcon");
+    const launchSpinner = document.getElementById("launchSpinner");
+    if (!isDraft) {
+      launchIcon.style.display = "none";
+      launchSpinner.style.display = "inline-block";
+    }
+
+    const payload = {
+      action: isDraft ? "save_draft" : "launch_campaign",
+      alert_type: currentAlertType,
+      name: document.getElementById("campaignName").value.trim(),
+      subject: document.getElementById("campaignSubject").value.trim(),
+      body_html: document.getElementById("campaignBodyHtml").value.trim(),
+      matching_strategy: (strategySpecific && strategySpecific.checked) ? "specific_jobs" : "auto",
+      selected_job_ids: Array.from(selectedVacancyIds),
+      candidate_ids: candidateList,
+      walkin_job_id: selectWalkinJob ? selectWalkinJob.value : "",
+      requirement_id: selectRequirement ? selectRequirement.value : "",
+      candidate_status: selectInterviewStatus ? selectInterviewStatus.value : "",
+      account_type: selectEmployerRole ? selectEmployerRole.value : "",
+      targeting_criteria: {
+        alert_type: currentAlertType,
+        subject: document.getElementById("filterSubject").value,
+        profession: document.getElementById("filterProfession").value,
+        location: document.getElementById("filterLocation").value,
+        experience_min: document.getElementById("filterExpMin").value,
+        experience_max: document.getElementById("filterExpMax").value,
+        salary_min: document.getElementById("filterSalaryMin").value,
+        salary_max: document.getElementById("filterSalaryMax").value,
+        alerts_enabled_only: document.getElementById("filterAlertsOnly").checked,
+        active_only: document.getElementById("filterActiveOnly").checked,
+      },
+    };
+
+    try {
+      const resp = await fetch(BULK_ALERTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json();
+      if (data.status === "success") {
+        window.location.href = data.redirect_url;
+      } else {
+        alert(data.message || "Error submitting campaign.");
+        launchIcon.style.display = "inline-block";
+        launchSpinner.style.display = "none";
+      }
+    } catch (err) {
+      alert("Network error creating campaign.");
+      launchIcon.style.display = "inline-block";
+      launchSpinner.style.display = "none";
+    }
+  }
+
+  document.getElementById("btnLaunchCampaign").addEventListener("click", () => submitCampaign(false));
+  document.getElementById("btnSaveDraft").addEventListener("click", () => submitCampaign(true));
+
+  // Handle incoming query parameters (e.g. from Walk-in Management: ?alert_type=walkin_alert&walkin_id=...)
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramType = urlParams.get("alert_type");
+  const paramWalkinId = urlParams.get("walkin_id");
+  const paramReqId = urlParams.get("requirement_id");
+
+  if (paramWalkinId && selectWalkinJob) {
+    selectWalkinJob.value = paramWalkinId;
+  }
+  if (paramReqId && selectRequirement) {
+    selectRequirement.value = paramReqId;
+  }
+  if (paramType) {
+    setAlertType(paramType);
+  } else {
+    calculateAudience();
+  }
+});
+</script>
+{% endblock %}

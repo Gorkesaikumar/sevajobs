@@ -78,6 +78,12 @@ class ResendWebhookView(APIView):
                 return Response({"status": "duplicate_ignored", "event_id": event_id})
 
         # 4. Handle Specific Event Types
+        from django.utils import timezone
+        from django.db import models as dj_models
+        from .models import CampaignRecipient, EmailCampaign, JobAlertRecipient, JobAlertCampaign
+
+        resend_email_id = data.get("email_id", "")
+
         if event_type == "email.bounced":
             recipients = self._extract_recipients(data)
             bounce_type = str(data.get("bounce_type", "Permanent"))
@@ -85,7 +91,7 @@ class ResendWebhookView(APIView):
             for email in recipients:
                 details = {
                     "resend_event_id": event_id,
-                    "resend_email_id": data.get("email_id", ""),
+                    "resend_email_id": resend_email_id,
                     "event_type": event_type,
                     "bounce_type": bounce_type,
                     "timestamp": payload.get("created_at", ""),
@@ -98,6 +104,31 @@ class ResendWebhookView(APIView):
                 )
                 logger.warning("Recorded Resend bounce suppression for recipient=%s", email)
 
+                # Update matching campaign recipient
+                cr_qs = CampaignRecipient.objects.filter(email=email)
+                if resend_email_id:
+                    cr = cr_qs.filter(provider_message_id=resend_email_id).first() or cr_qs.filter(status=CampaignRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                else:
+                    cr = cr_qs.filter(status=CampaignRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                if cr:
+                    cr.status = CampaignRecipient.RecipientStatus.FAILED
+                    cr.last_error = f"Resend Bounce ({bounce_type})"
+                    cr.failed_at = timezone.now()
+                    cr.save(update_fields=["status", "last_error", "failed_at", "updated_at"])
+
+                # Update matching job alert recipient
+                jar_qs = JobAlertRecipient.objects.filter(email=email)
+                if resend_email_id:
+                    jar = jar_qs.filter(provider_message_id=resend_email_id).first() or jar_qs.filter(status=JobAlertRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                else:
+                    jar = jar_qs.filter(status=JobAlertRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                if jar:
+                    jar.status = JobAlertRecipient.RecipientStatus.FAILED
+                    jar.last_error = f"Resend Bounce ({bounce_type})"
+                    jar.failed_at = timezone.now()
+                    jar.save(update_fields=["status", "last_error", "failed_at", "updated_at"])
+                    JobAlertCampaign.objects.filter(pk=jar.campaign_id).update(failed_count=dj_models.F("failed_count") + 1)
+
             return Response({"status": "processed", "event_type": event_type})
 
         elif event_type == "email.complained":
@@ -106,7 +137,7 @@ class ResendWebhookView(APIView):
             for email in recipients:
                 details = {
                     "resend_event_id": event_id,
-                    "resend_email_id": data.get("email_id", ""),
+                    "resend_email_id": resend_email_id,
                     "event_type": event_type,
                     "timestamp": payload.get("created_at", ""),
                 }
@@ -117,9 +148,51 @@ class ResendWebhookView(APIView):
                 )
                 logger.warning("Recorded Resend spam complaint suppression for recipient=%s", email)
 
+                cr_qs = CampaignRecipient.objects.filter(email=email)
+                cr = cr_qs.filter(provider_message_id=resend_email_id).first() or cr_qs.filter(status=CampaignRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                if cr:
+                    cr.status = CampaignRecipient.RecipientStatus.FAILED
+                    cr.last_error = "Resend Spam Complaint"
+                    cr.failed_at = timezone.now()
+                    cr.save(update_fields=["status", "last_error", "failed_at", "updated_at"])
+
+                jar_qs = JobAlertRecipient.objects.filter(email=email)
+                jar = jar_qs.filter(provider_message_id=resend_email_id).first() or jar_qs.filter(status=JobAlertRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                if jar:
+                    jar.status = JobAlertRecipient.RecipientStatus.FAILED
+                    jar.last_error = "Resend Spam Complaint"
+                    jar.failed_at = timezone.now()
+                    jar.save(update_fields=["status", "last_error", "failed_at", "updated_at"])
+                    JobAlertCampaign.objects.filter(pk=jar.campaign_id).update(failed_count=dj_models.F("failed_count") + 1)
+
             return Response({"status": "processed", "event_type": event_type})
 
-        elif event_type in ("email.sent", "email.delivered", "email.opened", "email.clicked"):
+        elif event_type == "email.delivered":
+            from .quota_service import DailyEmailQuotaService
+            recipients = self._extract_recipients(data)
+            for email in recipients:
+                cr_qs = CampaignRecipient.objects.filter(email=email)
+                cr = cr_qs.filter(provider_message_id=resend_email_id).first() if resend_email_id else cr_qs.filter(status=CampaignRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                if cr and cr.status != CampaignRecipient.RecipientStatus.DELIVERED:
+                    cr.status = CampaignRecipient.RecipientStatus.DELIVERED
+                    cr.delivered_at = timezone.now()
+                    cr.save(update_fields=["status", "delivered_at", "updated_at"])
+                    EmailCampaign.objects.filter(pk=cr.campaign_id).update(delivered_count=dj_models.F("delivered_count") + 1)
+                    DailyEmailQuotaService.record_delivery_success(1)
+
+                jar_qs = JobAlertRecipient.objects.filter(email=email)
+                jar = jar_qs.filter(provider_message_id=resend_email_id).first() if resend_email_id else jar_qs.filter(status=JobAlertRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                if jar and jar.status != JobAlertRecipient.RecipientStatus.DELIVERED:
+                    jar.status = JobAlertRecipient.RecipientStatus.DELIVERED
+                    jar.delivered_at = timezone.now()
+                    jar.save(update_fields=["status", "delivered_at", "updated_at"])
+                    JobAlertCampaign.objects.filter(pk=jar.campaign_id).update(delivered_count=dj_models.F("delivered_count") + 1)
+                    DailyEmailQuotaService.record_delivery_success(1)
+
+            logger.info("Resend delivered event processed: email_id=%s", resend_email_id)
+            return Response({"status": "acknowledged", "event_type": event_type})
+
+        elif event_type in ("email.sent", "email.opened", "email.clicked"):
             logger.info("Resend event received: type=%s email_id=%s", event_type, data.get("email_id"))
             return Response({"status": "acknowledged", "event_type": event_type})
 

@@ -218,6 +218,14 @@ class Job(BaseModel):
     featured_until = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True, db_index=True)
 
+    # --- Walk-in interview fields -------------------------------------------
+    is_walkin = models.BooleanField(default=False, db_index=True)
+    walkin_start_date = models.DateField(null=True, blank=True, db_index=True)
+    walkin_end_date = models.DateField(null=True, blank=True, db_index=True)
+    walkin_time = models.CharField(max_length=100, blank=True, help_text="e.g. 10:00 AM - 4:00 PM")
+    walkin_venue = models.TextField(blank=True, help_text="Full address/venue for walk-in interview")
+    walkin_contact_instructions = models.TextField(blank=True, help_text="Contact person, phone, or specific walk-in instructions")
+
     class Meta(BaseModel.Meta):
         verbose_name = "Job"
         verbose_name_plural = "Jobs"
@@ -248,6 +256,26 @@ class Job(BaseModel):
 
     def __str__(self) -> str:
         return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            import uuid
+            company_name = self.company.name if getattr(self, "company", None) else "job"
+            base = slugify(f"{self.title}-{company_name}") or "job"
+            self.slug = f"{base[:260]}-{str(uuid.uuid4())[:8]}"
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self) -> str:
+        from django.urls import reverse
+        if self.slug:
+            return reverse("core:job-detail", kwargs={"slug": self.slug})
+        return reverse("core:job-detail", kwargs={"slug": str(self.id)})
+
+    @property
+    def company_name(self) -> str:
+        """Safe property returning the company/institution name or empty string."""
+        return self.company.name if getattr(self, "company", None) else ""
 
     @property
     def is_staff_job(self) -> bool:
@@ -711,6 +739,11 @@ class InstitutionRequirement(BaseModel):
     def is_fulfilled(self) -> bool:
         return self.joined_count >= self.positions_count
 
+    @property
+    def grade_level(self) -> str:
+        """Alias property returning formatted teaching_grade."""
+        return self.get_teaching_grade_display() if hasattr(self, "get_teaching_grade_display") else (self.teaching_grade or "High School")
+
 
 class RequirementCandidateMatch(BaseModel):
     """
@@ -774,9 +807,36 @@ class RequirementCandidateMatch(BaseModel):
                     "value": parts[1].strip(),
                     "status": "matched" if r.startswith("✓") else ("partial" if r.startswith("△") else "unmatched")
                 })
-            else:
-                result.append({"label": "Match", "value": r, "status": "matched"})
         return result
+
+    @property
+    def candidate_display_name(self) -> str:
+        """Safe display name for candidate."""
+        if self.candidate:
+            return self.candidate.get_full_name() or self.candidate.email or self.candidate.username
+        return "Candidate"
+
+    @property
+    def candidate_qualification(self) -> str:
+        """Safe qualification fallback."""
+        profile = getattr(self.candidate, "job_seeker_profile", None) if self.candidate else None
+        q = getattr(profile, "qualification", None) if profile else None
+        return q or self.requirement.qualification or "Any"
+
+    @property
+    def candidate_experience(self) -> str:
+        """Safe experience display fallback."""
+        profile = getattr(self.candidate, "job_seeker_profile", None) if self.candidate else None
+        if profile and profile.experience_years is not None:
+            return f"{profile.experience_years} Years Exp"
+        return f"{self.requirement.experience_range or '0+'} Years Exp"
+
+    @property
+    def candidate_location(self) -> str:
+        """Safe location fallback."""
+        profile = getattr(self.candidate, "job_seeker_profile", None) if self.candidate else None
+        loc = (getattr(profile, "current_city", None) or getattr(profile, "preferred_location", None)) if profile else None
+        return loc or self.requirement.location or "Location Unspecified"
 
 
 class RequirementActivityLog(BaseModel):
@@ -820,6 +880,13 @@ class RequirementActivityLog(BaseModel):
     def __str__(self) -> str:
         return f"Activity [{self.event_type}] on {self.requirement_id}"
 
+    @property
+    def actor_name(self) -> str:
+        """Safe display name for the actor or 'System' if null."""
+        if self.actor:
+            return self.actor.get_full_name() or self.actor.email or self.actor.username
+        return "System"
+
 
 class RequirementInternalNote(BaseModel):
     """
@@ -842,7 +909,14 @@ class RequirementInternalNote(BaseModel):
         indexes = [models.Index(fields=["requirement", "-created_at"])]
 
     def __str__(self) -> str:
-        return f"Note on {self.requirement_id} by {self.author.email}"
+        return f"Note on {self.requirement_id} by {self.author.email if self.author else 'Staff'}"
+
+    @property
+    def author_name(self) -> str:
+        """Safe display name for the author or 'Staff Member' if null."""
+        if self.author:
+            return self.author.get_full_name() or self.author.email or self.author.username
+        return "Staff Member"
 
 
 

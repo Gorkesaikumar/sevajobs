@@ -247,8 +247,10 @@ class RequirementConversionService:
             # Determine company
             company = requirement.company
             if not company:
+                from django.utils.text import slugify
                 import uuid
-                slug = f"{requirement.institution_name.lower().replace(' ', '-')}-{str(uuid.uuid4())[:6]}"
+                comp_slug_base = slugify(requirement.institution_name) or "institution"
+                slug = f"{comp_slug_base[:250]}-{str(uuid.uuid4())[:6]}"
                 company, _ = Company.objects.get_or_create(
                     name=requirement.institution_name,
                     defaults={
@@ -271,9 +273,11 @@ class RequirementConversionService:
                     )
 
             # Create Job draft
+            from django.utils.text import slugify
             import uuid
             title = f"{requirement.subject} {requirement.teaching_grade} Faculty"
-            slug = f"{requirement.institution_name.lower().replace(' ', '-')}-{requirement.subject.lower().replace(' ', '-')}-{str(uuid.uuid4())[:8]}"
+            job_slug_base = slugify(f"{requirement.institution_name}-{requirement.subject}") or "job"
+            slug = f"{job_slug_base[:250]}-{str(uuid.uuid4())[:8]}"
 
             job = Job.objects.create(
                 recruiter=recruiter,

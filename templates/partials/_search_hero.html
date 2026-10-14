@@ -12,9 +12,15 @@
           </span>
         </div>
         
+        {% if not seo_meta %}
         <h1 class="display-4 fw-800 mb-2 animate-fade-up text-white" style="animation-delay:.1s;">
           Find your <span class="text-warning">Teaching Job FREE</span> now
         </h1>
+        {% else %}
+        <p class="display-4 fw-800 mb-2 animate-fade-up text-white" style="animation-delay:.1s;" role="heading" aria-level="2">
+          Find your <span class="text-warning">Teaching Job FREE</span> now
+        </p>
+        {% endif %}
         
         <p class="lead mb-4 animate-fade-up text-white-50 fs-5" style="animation-delay:.2s;">
           Discover teaching opportunities across India’s top schools, colleges, and coaching institutes

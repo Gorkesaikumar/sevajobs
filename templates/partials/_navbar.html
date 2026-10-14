@@ -29,42 +29,81 @@
         </li>
         <li class="nav-item dropdown sj-mega-dropdown">
           <a class="nav-link dropdown-toggle {% block nav_jobs %}{% endblock %}" href="#" role="button"
-             data-bs-toggle="dropdown" aria-expanded="false">
+             data-bs-toggle="dropdown" aria-expanded="false" id="findJobsDropdown">
             <i class="bi bi-briefcase d-lg-none me-2"></i>Find Jobs
           </a>
-          <div class="dropdown-menu sj-mega-menu">
-            <div class="row">
-              <div class="col-lg-3">
-                <div class="mega-col-title">By Subject</div>
-                <a href="{% url 'core:job-search' %}?category=mathematics" class="mega-link"><i class="bi bi-calculator"></i> Mathematics</a>
-                <a href="{% url 'core:job-search' %}?category=science" class="mega-link"><i class="bi bi-lightbulb"></i> Science</a>
-                <a href="{% url 'core:job-search' %}?category=english" class="mega-link"><i class="bi bi-book"></i> English</a>
-                <a href="{% url 'core:job-search' %}?category=social-studies" class="mega-link"><i class="bi bi-globe"></i> Social Studies</a>
+          <div class="dropdown-menu sj-mega-menu shadow-lg border-0" aria-labelledby="findJobsDropdown">
+            <div class="row g-3 g-lg-4">
+              <!-- 1. Jobs by Subject -->
+              <div class="col-12 col-md-6 col-lg-3">
+                <div class="mega-col-title d-flex align-items-center gap-1 mb-2">
+                  <i class="bi bi-book text-primary"></i> <span>Jobs by Subject</span>
+                </div>
+                <div class="mega-col-links">
+                  {% for subj in seo_navigation.subjects %}
+                    <a href="{{ subj.url }}" class="mega-link" title="{{ subj.name }}">
+                      <i class="bi {{ subj.icon }}"></i> <span>{{ subj.short_name }}</span>
+                    </a>
+                  {% endfor %}
+                </div>
               </div>
-              <div class="col-lg-3">
-                <div class="mega-col-title">By Type</div>
-                <a href="{% url 'core:job-search' %}?job_type=full_time" class="mega-link"><i class="bi bi-clock"></i> Full Time</a>
-                <a href="{% url 'core:job-search' %}?job_type=part_time" class="mega-link"><i class="bi bi-clock-history"></i> Part Time</a>
-                <a href="{% url 'core:job-search' %}?job_type=contract" class="mega-link"><i class="bi bi-file-earmark-text"></i> Contract</a>
-                <a href="{% url 'core:job-search' %}?is_remote=true" class="mega-link"><i class="bi bi-laptop"></i> Remote</a>
+
+              <!-- 2. Jobs by City -->
+              <div class="col-12 col-md-6 col-lg-3">
+                <div class="mega-col-title d-flex align-items-center gap-1 mb-2">
+                  <i class="bi bi-buildings text-primary"></i> <span>Jobs by City</span>
+                </div>
+                <div class="mega-col-links">
+                  {% for city in seo_navigation.cities %}
+                    <a href="{{ city.url }}" class="mega-link d-flex align-items-center justify-content-between" title="Teaching Jobs in {{ city.name }}">
+                      <span class="d-inline-flex align-items-center gap-2">
+                        <i class="bi {{ city.icon }}"></i> <span>{{ city.name }}</span>
+                      </span>
+                      {% if city.is_locality %}
+                        <span class="badge bg-light text-muted border px-1" style="font-size:0.6rem;">Locality</span>
+                      {% endif %}
+                    </a>
+                  {% endfor %}
+                </div>
               </div>
-              <div class="col-lg-3">
-                <div class="mega-col-title">By Experience</div>
-                <a href="{% url 'core:job-search' %}?experience_level=FRESHER" class="mega-link"><i class="bi bi-mortarboard"></i> Fresher (0 Years)</a>
-                <a href="{% url 'core:job-search' %}?experience_level=1_3_YEARS" class="mega-link"><i class="bi bi-person"></i> 1 – 3 Years</a>
-                <a href="{% url 'core:job-search' %}?experience_level=3_6_YEARS" class="mega-link"><i class="bi bi-person-check"></i> 3 – 6 Years</a>
-                <a href="{% url 'core:job-search' %}?experience_level=6_10_YEARS" class="mega-link"><i class="bi bi-person-badge"></i> 6 – 10 Years</a>
-                <a href="{% url 'core:job-search' %}?experience_level=10_14_YEARS" class="mega-link"><i class="bi bi-person-badge"></i> 10 – 14 Years</a>
-                <a href="{% url 'core:job-search' %}?experience_level=14_18_YEARS" class="mega-link"><i class="bi bi-person-badge"></i> 14 – 18 Years</a>
-                <a href="{% url 'core:job-search' %}?experience_level=18_PLUS_YEARS" class="mega-link"><i class="bi bi-person-badge"></i> 18+ Years</a>
+
+              <!-- 3. Jobs by Level -->
+              <div class="col-12 col-md-6 col-lg-3">
+                <div class="mega-col-title d-flex align-items-center gap-1 mb-2">
+                  <i class="bi bi-mortarboard text-primary"></i> <span>Jobs by Level</span>
+                </div>
+                <div class="mega-col-links">
+                  {% for level in seo_navigation.levels %}
+                    <a href="{{ level.url }}" class="mega-link" title="{{ level.name }}">
+                      <i class="bi {{ level.icon }}"></i> <span>{{ level.short_name }}</span>
+                    </a>
+                  {% endfor %}
+                </div>
               </div>
-              <div class="col-lg-3">
-                <div class="mega-col-title">Popular Locations</div>
-                <a href="{% url 'core:job-search' %}?location=Mumbai" class="mega-link"><i class="bi bi-geo-alt"></i> Mumbai</a>
-                <a href="{% url 'core:job-search' %}?location=Bangalore" class="mega-link"><i class="bi bi-geo-alt"></i> Bengaluru</a>
-                <a href="{% url 'core:job-search' %}?location=Delhi" class="mega-link"><i class="bi bi-geo-alt"></i> Delhi NCR</a>
-                <a href="{% url 'core:job-search' %}?location=Pune" class="mega-link"><i class="bi bi-geo-alt"></i> Pune</a>
+
+              <!-- 4. Jobs by State -->
+              <div class="col-12 col-md-6 col-lg-3">
+                <div class="mega-col-title d-flex align-items-center gap-1 mb-2">
+                  <i class="bi bi-map text-primary"></i> <span>Jobs by State</span>
+                </div>
+                <div class="mega-col-links mega-scrollable-links" style="max-height: 380px; overflow-y: auto; padding-right: 4px;">
+                  {% for state in seo_navigation.states %}
+                    <a href="{{ state.url }}" class="mega-link" title="Teaching Jobs in {{ state.name }}">
+                      <i class="bi {{ state.icon }}"></i> <span>{{ state.name }}</span>
+                    </a>
+                  {% endfor %}
+                </div>
               </div>
+            </div>
+
+            <!-- Bottom quick action bar in mega menu -->
+            <div class="mega-menu-footer d-flex flex-wrap align-items-center justify-content-between pt-3 mt-3 border-top fs-xs text-muted-2">
+              <span class="d-inline-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill text-success"></i> 100% Verified teaching vacancies across India
+              </span>
+              <a href="{% url 'core:current-vacancies' %}" class="fw-semibold text-primary text-decoration-none">
+                Browse All Current Vacancies <i class="bi bi-arrow-right ms-1"></i>
+              </a>
             </div>
           </div>
         </li>
@@ -94,6 +133,58 @@
 
       <div class="d-flex align-items-center gap-2">
         {% if user.is_authenticated %}
+          <!-- Daily Email Quota Indicator (Admin / Staff) -->
+          {% if user.is_staff or user.is_admin_role or user.is_superuser %}
+          <div class="dropdown d-none d-md-block">
+            <button class="btn btn-sm btn-light border d-flex align-items-center gap-2 rounded-pill px-2 py-1 shadow-sm"
+                    id="navQuotaButton" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Resend Daily Email Quota">
+              <i class="bi bi-envelope-check text-primary" id="navQuotaIcon"></i>
+              <span class="fs-xs fw-bold font-monospace text-dark">
+                Emails: <span id="navQuotaSent">--</span>/<span id="navQuotaLimit">100</span>
+              </span>
+              <span class="badge bg-success-subtle text-success fs-xs py-0 px-1" id="navQuotaBadge">Normal</span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-3 rounded-4" style="width: 320px;" aria-labelledby="navQuotaButton">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fw-bold fs-sm text-dark"><i class="bi bi-speedometer2 text-primary me-1"></i>Daily Email Quota</span>
+                <span class="badge bg-light text-muted border fs-xs">Resend API</span>
+              </div>
+              <div class="d-flex justify-content-between fs-xs text-muted mb-1">
+                <span>Consumed Today:</span>
+                <span class="fw-bold text-dark font-monospace"><span id="navPopoverSent">--</span> / <span id="navPopoverTarget">90</span> target</span>
+              </div>
+              <div class="d-flex justify-content-between fs-xs text-muted mb-1">
+                <span>In Queue (Reserved):</span>
+                <span class="fw-bold text-info font-monospace" id="navPopoverQueued">--</span>
+              </div>
+              <div class="d-flex justify-content-between fs-xs text-muted mb-1">
+                <span>Remaining Quota:</span>
+                <span class="fw-bold text-success font-monospace" id="navPopoverRemaining">--</span>
+              </div>
+              <div class="d-flex justify-content-between fs-xs text-muted mb-2">
+                <span>Failed Deliveries:</span>
+                <span class="fw-bold text-danger font-monospace" id="navPopoverFailed">0</span>
+              </div>
+              
+              <!-- Progress Bar -->
+              <div class="progress rounded-pill mb-2" style="height: 8px;">
+                <div class="progress-bar bg-primary" id="navQuotaProgressBar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <div class="d-flex justify-content-between fs-xs text-muted-2 mb-3" style="font-size: 0.7rem;">
+                <span>0</span>
+                <span>Target: 90</span>
+                <span>Limit: 100</span>
+              </div>
+
+              <div class="border-top pt-2">
+                <a href="{% url 'admin-panel:email-quota' %}" class="btn btn-outline-primary btn-sm w-100 rounded-3 py-1 fs-xs fw-semibold">
+                  <i class="bi bi-bar-chart-fill me-1"></i> View Quota &amp; Delivery Logs
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
           <!-- Notifications -->
           <div class="dropdown d-none d-lg-block">
             <button class="sj-notif-bell" id="notif-bell" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications"
@@ -263,6 +354,74 @@
               {% endif %}
             })();
           </script>
+
+          {% if user.is_staff or user.is_admin_role or user.is_superuser %}
+          <script>
+            (function() {
+              function updateNavQuota() {
+                fetch('/api/v1/notifications/quota/status/', {
+                  headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(d => {
+                  if (d.status === 'success') {
+                    const sentEl = document.getElementById('navQuotaSent');
+                    const limitEl = document.getElementById('navQuotaLimit');
+                    const badgeEl = document.getElementById('navQuotaBadge');
+                    const iconEl = document.getElementById('navQuotaIcon');
+                    const popSent = document.getElementById('navPopoverSent');
+                    const popTarget = document.getElementById('navPopoverTarget');
+                    const popQueued = document.getElementById('navPopoverQueued');
+                    const popRem = document.getElementById('navPopoverRemaining');
+                    const popFail = document.getElementById('navPopoverFailed');
+                    const bar = document.getElementById('navQuotaProgressBar');
+
+                    if (sentEl) sentEl.textContent = d.sent_today;
+                    if (limitEl) limitEl.textContent = d.daily_limit;
+                    if (popSent) popSent.textContent = d.sent_today;
+                    if (popTarget) popTarget.textContent = d.daily_target;
+                    if (popQueued) popQueued.textContent = d.in_queue;
+                    if (popRem) popRem.textContent = d.remaining;
+                    if (popFail) popFail.textContent = d.failed_today;
+
+                    const pct = Math.min(100, Math.round(((d.sent_today + d.in_queue) / d.daily_limit) * 100));
+                    if (bar) {
+                      bar.style.width = pct + '%';
+                      bar.className = 'progress-bar ' + (d.is_limit_reached ? 'bg-danger' : (d.is_warning ? 'bg-warning' : 'bg-primary'));
+                    }
+
+                    if (badgeEl) {
+                      if (d.is_limit_reached) {
+                        badgeEl.className = 'badge bg-danger text-white fs-xs py-0 px-1';
+                        badgeEl.textContent = 'Limit Reached';
+                        if (iconEl) iconEl.className = 'bi bi-slash-circle text-danger';
+                      } else if (d.is_warning) {
+                        badgeEl.className = 'badge bg-warning-subtle text-warning-emphasis fs-xs py-0 px-1';
+                        badgeEl.textContent = 'Warning';
+                        if (iconEl) iconEl.className = 'bi bi-exclamation-triangle text-warning';
+                      } else {
+                        badgeEl.className = 'badge bg-success-subtle text-success fs-xs py-0 px-1';
+                        badgeEl.textContent = `${d.remaining} left`;
+                        if (iconEl) iconEl.className = 'bi bi-envelope-check text-primary';
+                      }
+                    }
+                  }
+                })
+                .catch(e => { /* silent fail on network blips */ });
+              }
+
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                  updateNavQuota();
+                  setInterval(updateNavQuota, 25000);
+                });
+              } else {
+                updateNavQuota();
+                setInterval(updateNavQuota, 25000);
+              }
+            })();
+          </script>
+          {% endif %}
 
           <!-- User dropdown -->
           <div class="dropdown">

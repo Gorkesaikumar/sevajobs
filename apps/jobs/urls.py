@@ -20,6 +20,9 @@ urlpatterns = [
     path("requirements/<uuid:pk>/matches/<uuid:match_id>/action/", requirement_views.RequirementCandidateActionView.as_view(), name="requirement-candidate-action"),
     path("requirements/<uuid:pk>/matches/<uuid:match_id>/interview/", requirement_views.RequirementCandidateInterviewView.as_view(), name="requirement-candidate-interview"),
     path("requirements/<uuid:pk>/notes/", requirement_views.RequirementInternalNoteView.as_view(), name="requirement-internal-note"),
+    path("requirements/<uuid:pk>/bulk-email/", requirement_views.RequirementBulkEmailView.as_view(), name="requirement-bulk-email"),
+    path("requirements/<uuid:pk>/campaigns/<uuid:campaign_id>/", requirement_views.RequirementCampaignDetailView.as_view(), name="requirement-campaign-detail"),
+
 
     path("categories/", views.JobCategoryListView.as_view(), name="category-list"),
     path("skills/", views.SkillListView.as_view(), name="skill-list"),

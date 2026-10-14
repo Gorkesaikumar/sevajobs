@@ -1,9 +1,15 @@
 {% extends "dashboard/admin/_layout.html" %}
 {% block title %}Users — Admin — SevaJobs{% endblock %}
 {% block dashboard_content %}
-<div class="d-flex align-items-center justify-content-between mb-4">
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
   <h4 class="fw-800 mb-0">User Management</h4>
-  <div class="d-flex gap-2">
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'admin-panel:job-alert-campaigns' %}" class="btn btn-outline-secondary btn-sm fw-semibold">
+      <i class="bi bi-clock-history me-1"></i> Alert History
+    </a>
+    <a href="{% url 'admin-panel:bulk-job-alerts' %}" class="btn btn-primary btn-sm fw-semibold">
+      <i class="bi bi-bell-fill me-1"></i> Bulk Job Alerts
+    </a>
     <a href="{% url 'admin-panel:users' %}?export=csv{% if request.META.QUERY_STRING %}&{{ request.META.QUERY_STRING }}{% endif %}" class="btn btn-outline-success btn-sm fw-semibold">
       <i class="bi bi-file-earmark-excel me-1"></i> Export All Filtered
     </a>

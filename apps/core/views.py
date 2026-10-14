@@ -116,205 +116,94 @@ class TermsView(TemplateView):
         return ctx
 
 
-class JobSearchView(TemplateView):
+class BaseJobDiscoveryView(TemplateView):
     template_name = "pages/jobs.html"
+
+    def get_discovery_kwargs(self) -> dict:
+        return {}
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        
-        # Recruiter Jobs queryset
-        rqs = Job.objects.filter(
-            status=Job.Status.ACTIVE,
-            approval_status=Job.ApprovalStatus.APPROVED,
-        ).select_related("company", "category")
+        params = self.request.GET
 
-        # Staff Jobs queryset
-        sqs = StaffJob.objects.filter(
-            status=StaffJob.Status.ACTIVE,
-            is_active=True
-        )
+        def _to_int(val):
+            try:
+                return int(val) if val else None
+            except (ValueError, TypeError):
+                return None
 
-        from apps.jobs.autocomplete import normalize_search_query
+        discovery_args = self.get_discovery_kwargs()
 
-        # Search Query q
-        q = self.request.GET.get("q", "").strip()
-        if q:
-            normalized = normalize_search_query(q)
-            q_filter_r = (
-                Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q) |
-                Q(state__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q) |
-                Q(category__name__icontains=q) | Q(preferred_qualifications__name__icontains=q)
-            )
-            q_filter_s = (
-                Q(designation__icontains=q) | Q(organization_name__icontains=q) | Q(job_location__icontains=q) |
-                Q(state__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q) | Q(qualification__icontains=q)
-            )
-            if normalized and normalized.lower() != q.lower():
-                q_filter_r |= (
-                    Q(title__icontains=normalized) | Q(description__icontains=normalized) | Q(location__icontains=normalized)
-                )
-                q_filter_s |= (
-                    Q(designation__icontains=normalized) | Q(organization_name__icontains=normalized) | Q(job_location__icontains=normalized)
-                )
+        search_args = {
+            "q": params.get("q", "").strip() or None,
+            "location_query": params.get("location", "").strip() or None,
+            "experience": params.get("experience", "").strip() or None,
+            "city_slug": params.get("city", "").strip() or discovery_args.get("city_slug"),
+            "state_slug": params.get("state", "").strip() or discovery_args.get("state_slug"),
+            "subject_slug": discovery_args.get("subject_slug"),
+            "location_slug": discovery_args.get("location_slug"),
+            "grade": params.get("grade", "").strip() or discovery_args.get("grade"),
+            "job_types": params.getlist("job_type") or None,
+            "experience_levels": params.getlist("experience_level") or None,
+            "is_remote": True if params.get("is_remote") in ["true", "on", "1"] else None,
+            "salary_min": _to_int(params.get("salary_min")),
+            "salary_max": _to_int(params.get("salary_max")),
+            "category_slug": params.get("category", "").strip() or None,
+            "sort": params.get("sort", "-published_at"),
+            "page": _to_int(params.get("page")) or 1,
+            "request": self.request,
+        }
 
-            rqs = rqs.filter(q_filter_r)
-            sqs = sqs.filter(q_filter_s)
-            ctx["search_query"] = q
-            ctx["search_query_normalized"] = normalized
+        from apps.jobs.discovery_service import JobDiscoveryService
+        search_result = JobDiscoveryService.search_jobs(**search_args)
+        ctx.update(search_result)
 
-        # Location filter (workplace address search)
-        location = self.request.GET.get("location", "").strip()
-        if location:
-            rqs = rqs.filter(Q(location__icontains=location) | Q(city__icontains=location) | Q(district__icontains=location) | Q(state__icontains=location))
-            sqs = sqs.filter(Q(job_location__icontains=location) | Q(city__icontains=location) | Q(district__icontains=location) | Q(state__icontains=location))
-            ctx["search_location"] = location
-
-        # Experience Filter (e.g. experience=3 or experience=FRESHER)
-        exp_param = self.request.GET.get("experience", "").strip()
-        if exp_param:
-            ctx["selected_experience"] = exp_param
-            if exp_param.isdigit():
-                years = int(exp_param)
-                rqs = rqs.filter(
-                    Q(min_experience_years__lte=years) &
-                    (Q(max_experience_years__isnull=True) | Q(max_experience_years__gte=years))
-                )
-            elif exp_param.lower() in ["fresher", "0"]:
-                rqs = rqs.filter(Q(min_experience_years=0) | Q(experience_level="FRESHER"))
-            else:
-                rqs = rqs.filter(experience_level__iexact=exp_param)
-
-        # Specific regional dropdown filters
-        state_filter = self.request.GET.get("state", "").strip()
-        if state_filter:
-            rqs = rqs.filter(state__iexact=state_filter)
-            sqs = sqs.filter(state__iexact=state_filter)
-
-        district_filter = self.request.GET.get("district", "").strip()
-        if district_filter:
-            rqs = rqs.filter(district__iexact=district_filter)
-            sqs = sqs.filter(district__iexact=district_filter)
-
-        city_filter = self.request.GET.get("city", "").strip()
-        if city_filter:
-            rqs = rqs.filter(city__iexact=city_filter)
-            sqs = sqs.filter(city__iexact=city_filter)
-
-        # Get active states, districts, and cities for the filter sidebar
+        # Active regional dropdown lists for the filter sidebar
         active_states = list(Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).values_list('state', flat=True).distinct()) + \
                         list(StaffJob.objects.filter(status=StaffJob.Status.ACTIVE, is_active=True).values_list('state', flat=True).distinct())
-        active_states = sorted(list(set([s for s in active_states if s])))
+        ctx["active_states"] = sorted(list(set([s for s in active_states if s])))
 
         active_districts = list(Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).values_list('district', flat=True).distinct()) + \
                            list(StaffJob.objects.filter(status=StaffJob.Status.ACTIVE, is_active=True).values_list('district', flat=True).distinct())
-        active_districts = sorted(list(set([d for d in active_districts if d])))
+        ctx["active_districts"] = sorted(list(set([d for d in active_districts if d])))
 
         active_cities = list(Job.objects.filter(status=Job.Status.ACTIVE, approval_status=Job.ApprovalStatus.APPROVED).values_list('city', flat=True).distinct()) + \
                         list(StaffJob.objects.filter(status=StaffJob.Status.ACTIVE, is_active=True).values_list('city', flat=True).distinct())
-        active_cities = sorted(list(set([c for c in active_cities if c])))
+        ctx["active_cities"] = sorted(list(set([c for c in active_cities if c])))
 
-        ctx["active_states"] = active_states
-        ctx["active_districts"] = active_districts
-        ctx["active_cities"] = active_cities
-
-        # Salary Min filter
-        salary_min = self.request.GET.get("salary_min", "").strip()
-        if salary_min:
-            rqs = rqs.filter(salary_min__gte=salary_min)
-            sqs = sqs.filter(offered_salary__gte=salary_min)
-
-        # Salary Max filter
-        salary_max = self.request.GET.get("salary_max", "").strip()
-        if salary_max:
-            rqs = rqs.filter(salary_max__lte=salary_max)
-            sqs = sqs.filter(offered_salary__lte=salary_max)
-
-        # Recruiter-only filters (exclude staff jobs if set)
-        job_types = self.request.GET.getlist("job_type")
-        has_recruiter_filters = False
-        if job_types:
-            rqs = rqs.filter(job_type__in=job_types)
-            has_recruiter_filters = True
-
-        exp_levels = self.request.GET.getlist("experience_level")
-        if exp_levels:
-            rqs = rqs.filter(experience_level__in=exp_levels)
-            has_recruiter_filters = True
-
-        is_remote = self.request.GET.get("is_remote")
-        if is_remote:
-            rqs = rqs.filter(is_remote=True)
-            has_recruiter_filters = True
-
-        category = self.request.GET.get("category")
-        if category:
-            rqs = rqs.filter(category__slug=category)
-            has_recruiter_filters = True
-
-        # Ordering
-        sort = self.request.GET.get("sort", "-published_at")
-        
-        # Apply database-level sorting to querysets for performance
-        if sort == "published_at": # Oldest First
-            rqs = rqs.order_by("published_at", "created_at")
-            sqs = sqs.order_by("published_at", "created_at")
-        elif sort == "salary_min": # Salary Low to High
-            rqs = rqs.order_by("salary_min", "-published_at", "-created_at")
-            sqs = sqs.order_by("offered_salary", "-published_at", "-created_at")
-        elif sort == "-salary_min": # Salary High to Low
-            rqs = rqs.order_by("-salary_min", "-published_at", "-created_at")
-            sqs = sqs.order_by("-offered_salary", "-published_at", "-created_at")
-        elif sort == "-applications_count": # Most Applied
-            rqs = rqs.order_by("-applications_count", "-published_at", "-created_at")
-            sqs = sqs.annotate(num_apps=Count("applications")).order_by("-num_apps", "-published_at", "-created_at")
-        elif sort == "featured": # Featured First
-            rqs = rqs.order_by("-is_featured", "-published_at", "-created_at")
-            sqs = sqs.order_by("-published_at", "-created_at")
-        else: # Default: Newest First ("-published_at")
-            # If Featured Jobs exist: Featured Jobs (Newest First) then Regular Jobs (Newest First)
-            rqs = rqs.order_by("-is_featured", "-published_at", "-created_at")
-            sqs = sqs.order_by("-published_at", "-created_at")
-
-        # Convert to list & Combine
-        r_jobs = list(rqs)
-        s_jobs = [] if has_recruiter_filters else list(sqs)
-        combined = r_jobs + s_jobs
-
-        # Python-level sorting to merge the two sorted lists correctly
-        if sort == "published_at": # Oldest First
-            combined.sort(key=lambda j: j.published_at or j.created_at)
-        elif sort == "salary_min": # Salary Low to High
-            combined.sort(key=lambda j: getattr(j, "salary_min", None) or getattr(j, "offered_salary", 0))
-        elif sort == "-salary_min": # Salary High to Low
-            combined.sort(key=lambda j: getattr(j, "salary_min", None) or getattr(j, "offered_salary", 0), reverse=True)
-        elif sort == "-applications_count": # Most Applied
-            combined.sort(key=lambda j: getattr(j, "num_apps", None) or getattr(j, "applications_count", 0) or j.applications.count(), reverse=True)
-        elif sort == "featured": # Featured First
-            combined.sort(key=lambda j: (getattr(j, "is_featured", False), j.published_at or j.created_at), reverse=True)
-        else: # Default / Newest First ("-published_at")
-            # Pins Featured Jobs (Newest First) then Regular Jobs (Newest First)
-            combined.sort(key=lambda j: (getattr(j, "is_featured", False), j.published_at or j.created_at), reverse=True)
-
-        paginator = Paginator(combined, 12)
-        page = self.request.GET.get("page", 1)
-        ctx["page_obj"] = paginator.get_page(page)
-        ctx["jobs"] = ctx["page_obj"]
-        ctx["total_results"] = paginator.count
         ctx["categories"] = JobCategory.objects.filter(is_active=True)
-        ctx["breadcrumbs"] = [{"label": "Find Jobs"}]
-
-        # Empty result recovery state suggestions
-        if ctx["total_results"] == 0:
-            recovery = []
-            if location:
-                recovery.append(f"Try clearing or expanding the location '{location}'")
-            if exp_param:
-                recovery.append(f"Try adjusting the experience filter '{exp_param}'")
-            if q:
-                recovery.append(f"Try searching for broader terms like 'Physics', 'Mathematics', 'PGT', or 'TGT'")
-            ctx["recovery_suggestions"] = recovery or ["Try resetting your search filters"]
+        ctx["breadcrumbs"] = search_result["seo_meta"]["breadcrumbs"]
 
         return ctx
+
+
+class JobSearchView(BaseJobDiscoveryView):
+    """General job search page."""
+    pass
+
+
+class JobSubjectView(BaseJobDiscoveryView):
+    """Dedicated SEO landing page for Jobs by Subject, e.g. /jobs/india/english-teacher/"""
+    def get_discovery_kwargs(self) -> dict:
+        return {"subject_slug": self.kwargs.get("subject_slug")}
+
+
+class JobLocationView(BaseJobDiscoveryView):
+    """Dedicated SEO landing page for Jobs by City or State, e.g. /jobs/hyderabad/ or /jobs/telangana/"""
+    def get_discovery_kwargs(self) -> dict:
+        return {"location_slug": self.kwargs.get("location_slug")}
+
+
+class JobLevelView(BaseJobDiscoveryView):
+    """Dedicated SEO landing page for Jobs by Level, e.g. /jobs/level/primary/"""
+    def get_discovery_kwargs(self) -> dict:
+        return {"grade": self.kwargs.get("level_slug")}
+
+
+class CurrentVacanciesView(BaseJobDiscoveryView):
+    """All Teaching Jobs & Current Vacancies page, e.g. /current-vacancies"""
+    def get_discovery_kwargs(self) -> dict:
+        return {"grade": self.request.GET.get("grade")}
 
 
 
@@ -329,6 +218,23 @@ class JobDetailPageView(DetailView):
         return Job.objects.select_related(
             "company", "category", "recruiter", "minimum_qualification"
         ).prefetch_related("preferred_qualifications")
+
+    def get_object(self, queryset=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        slug = self.kwargs.get(self.slug_url_kwarg)
+        job = queryset.filter(slug=slug).first()
+        if not job:
+            try:
+                import uuid
+                uuid_obj = uuid.UUID(str(slug))
+                job = queryset.filter(pk=uuid_obj).first()
+            except (ValueError, TypeError):
+                pass
+        if not job:
+            from django.http import Http404
+            raise Http404("Job not found")
+        return job
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

@@ -1,0 +1,556 @@
+{% extends "dashboard/admin/_layout.html" %}
+{% load static humanize %}
+
+{% block dashboard_title %}Email Quota & Delivery Health — Admin Panel — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid px-0">
+
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-primary-subtle text-primary fw-600 px-2 py-1 fs-xs">Infrastructure</span>
+        <span class="text-muted-2 fs-xs">•</span>
+        <span class="text-muted fs-xs">Resend Email API</span>
+      </div>
+      <h3 class="fw-800 mb-1">Email Quota &amp; Delivery Health</h3>
+      <p class="text-muted fs-sm mb-0">
+        Live tracking of daily bulk email consumption, queue reservations, delivery status, and safe failure retries.
+      </p>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reconcile_quota">
+        <button type="submit" class="btn btn-outline-secondary btn-sm fw-600 rounded-3 shadow-sm" title="Synchronize tracking with database recipient state">
+          <i class="bi bi-arrow-repeat me-1"></i> Sync &amp; Reconcile
+        </button>
+      </form>
+      <a href="{% url 'admin-panel:requirements' %}" class="btn btn-primary btn-sm fw-600 rounded-3 shadow-sm">
+        <i class="bi bi-envelope-plus me-1"></i> Teaching Requirements
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3 fs-sm" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Quota Status Banner (if Warning or Hard Limit Reached) -->
+  {% if quota_status.is_limit_reached %}
+    <div class="alert alert-danger border-danger border-2 rounded-4 p-3 mb-4 d-flex align-items-center gap-3">
+      <i class="bi bi-slash-circle-fill text-danger fs-2 flex-shrink-0"></i>
+      <div>
+        <h6 class="fw-bold text-danger mb-1">Daily Email Hard Limit Reached ({{ quota_status.daily_limit }}/{{ quota_status.daily_limit }})</h6>
+        <p class="mb-0 fs-xs text-danger-emphasis">
+          New bulk email campaign dispatches and retries are currently paused until midnight UTC to protect sender domain reputation.
+          Critical transactional notifications (password resets, OTPs) continue to be delivered.
+        </p>
+      </div>
+    </div>
+  {% elif quota_status.is_warning %}
+    <div class="alert alert-warning border-warning rounded-4 p-3 mb-4 d-flex align-items-center gap-3">
+      <i class="bi bi-exclamation-triangle-fill text-warning fs-3 flex-shrink-0"></i>
+      <div>
+        <h6 class="fw-bold text-dark mb-1">Daily Target Approaching ({{ quota_status.sent_today }}/{{ quota_status.daily_target }} Target, {{ quota_status.remaining }} Remaining)</h6>
+        <p class="mb-0 fs-xs text-muted">
+          Bulk email dispatches are nearing the recommended daily ceiling of {{ quota_status.daily_target }} emails.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- KPI Metric Summary Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Card 1: Sent Today -->
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-primary">
+        <div class="text-muted fs-xs text-uppercase fw-600 mb-1">Sent Today</div>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="fs-2 fw-800 text-dark">{{ quota_status.sent_today }}</span>
+          <span class="text-muted fs-xs">/ {{ quota_status.daily_target }} target</span>
+        </div>
+        <div class="text-muted fs-xs mt-1">
+          Hard limit: <span class="fw-semibold">{{ quota_status.daily_limit }}</span> / day
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: In Queue / Reserved -->
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-info">
+        <div class="text-muted fs-xs text-uppercase fw-600 mb-1">In Queue / Reserved</div>
+        <div class="fs-2 fw-800 text-info">{{ quota_status.in_queue }}</div>
+        <div class="text-muted fs-xs mt-1">Pending Celery async dispatch</div>
+      </div>
+    </div>
+
+    <!-- Card 3: Remaining Quota -->
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 {% if quota_status.remaining == 0 %}border-danger{% elif quota_status.remaining < 20 %}border-warning{% else %}border-success{% endif %}">
+        <div class="text-muted fs-xs text-uppercase fw-600 mb-1">Remaining Quota</div>
+        <div class="fs-2 fw-800 {% if quota_status.remaining == 0 %}text-danger{% elif quota_status.remaining < 20 %}text-warning{% else %}text-success{% endif %}">
+          {{ quota_status.remaining }}
+        </div>
+        <div class="text-muted fs-xs mt-1">
+          Status: 
+          {% if quota_status.status == 'normal' %}
+            <span class="badge bg-success-subtle text-success">Healthy</span>
+          {% elif quota_status.status == 'warning' %}
+            <span class="badge bg-warning-subtle text-warning-emphasis">Warning</span>
+          {% else %}
+            <span class="badge bg-danger-subtle text-danger">Exhausted</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Delivered vs Failed -->
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-secondary">
+        <div class="text-muted fs-xs text-uppercase fw-600 mb-1">Delivery Outcomes Today</div>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <span class="badge bg-success-subtle text-success fs-sm py-1 px-2">
+            <i class="bi bi-check-circle me-1"></i>{{ quota_status.delivered_today }} Delivered
+          </span>
+          <span class="badge bg-danger-subtle text-danger fs-sm py-1 px-2">
+            <i class="bi bi-x-circle me-1"></i>{{ quota_status.failed_today }} Failed
+          </span>
+        </div>
+        <div class="text-muted fs-xs mt-2">Verified via Resend Webhooks</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quota Visual Progress Bar -->
+  <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="fw-bold text-dark fs-sm">
+        <i class="bi bi-speedometer2 text-primary me-2"></i>Daily Quota Consumption
+      </div>
+      <div class="fs-xs text-muted">
+        Consumed: <strong>{{ quota_status.total_consumed }}</strong> / {{ quota_status.daily_limit }} ({{ quota_status.consumption_percentage }}%)
+      </div>
+    </div>
+
+    <div class="progress rounded-pill mb-2" style="height: 14px;">
+      <div class="progress-bar {% if quota_status.is_limit_reached %}bg-danger{% elif quota_status.is_warning %}bg-warning{% else %}bg-primary{% endif %}" 
+           role="progressbar" 
+           style="width: {{ quota_status.consumption_percentage }}%;" 
+           aria-valuenow="{{ quota_status.consumption_percentage }}" 
+           aria-valuemin="0" 
+           aria-valuemax="100"></div>
+    </div>
+
+    <div class="d-flex justify-content-between text-muted fs-xs">
+      <span>0 sent</span>
+      <span class="text-warning fw-600"><i class="bi bi-flag me-1"></i>Target: 90 / day</span>
+      <span class="text-danger fw-600"><i class="bi bi-slash-circle me-1"></i>Hard Limit: 100 / day</span>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs for Detailed Inspection -->
+  <ul class="nav nav-tabs border-bottom mb-4" id="quotaTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active fw-600 fs-sm" id="campaigns-tab" data-bs-toggle="tab" data-bs-target="#campaigns" type="button" role="tab">
+        <i class="bi bi-envelope-paper me-1"></i> Recent Campaigns ({{ recent_campaigns|length }})
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-600 fs-sm" id="job-alerts-tab" data-bs-toggle="tab" data-bs-target="#job-alerts" type="button" role="tab">
+        <i class="bi bi-bell me-1 text-primary"></i> Bulk Job Alerts ({{ recent_job_alert_campaigns|length }})
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-600 fs-sm" id="failures-tab" data-bs-toggle="tab" data-bs-target="#failures" type="button" role="tab">
+        <i class="bi bi-exclamation-octagon me-1 text-danger"></i> Failed Recipients &amp; Retries ({{ failed_recipients|length }})
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-600 fs-sm" id="templates-tab" data-bs-toggle="tab" data-bs-target="#templates" type="button" role="tab">
+        <i class="bi bi-file-earmark-richtext me-1"></i> Recruitment Status Templates ({{ templates|length }})
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-600 fs-sm" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+        <i class="bi bi-calendar3 me-1"></i> 14-Day Delivery History
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="quotaTabsContent">
+
+    <!-- Tab 1: Recent Campaigns -->
+    <div class="tab-pane fade show active" id="campaigns" role="tabpanel">
+      <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <h5 class="fw-bold mb-3 text-dark">Recent Bulk Email Campaigns</h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light fs-xs text-uppercase">
+              <tr>
+                <th>Campaign Name</th>
+                <th>Requirement</th>
+                <th>Recipients</th>
+                <th>Sent</th>
+                <th>Delivered</th>
+                <th>Failed</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody class="fs-sm">
+              {% for c in recent_campaigns %}
+              <tr>
+                <td>
+                  <div class="fw-bold text-dark">{{ c.name }}</div>
+                  <div class="text-muted fs-xs text-truncate" style="max-width: 200px;">{{ c.subject }}</div>
+                </td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ c.requirement.subject }}</div>
+                  <div class="text-muted fs-xs">{{ c.requirement.institution_name }} ({{ c.requirement.req_code }})</div>
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ c.total_recipients }}</span></td>
+                <td><span class="badge bg-primary-subtle text-primary">{{ c.sent_count }}</span></td>
+                <td><span class="badge bg-success-subtle text-success">{{ c.delivered_count }}</span></td>
+                <td>
+                  {% if c.failed_count > 0 %}
+                    <span class="badge bg-danger-subtle text-danger">{{ c.failed_count }}</span>
+                  {% else %}
+                    <span class="text-muted fs-xs">0</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if c.status == 'completed' %}
+                    <span class="badge bg-success">Completed</span>
+                  {% elif c.status == 'processing' %}
+                    <span class="badge bg-warning-subtle text-warning-emphasis">Processing</span>
+                  {% elif c.status == 'queued' %}
+                    <span class="badge bg-info-subtle text-info">Queued</span>
+                  {% elif c.status == 'failed' or c.status == 'partially_failed' %}
+                    <span class="badge bg-danger">{{ c.get_status_display }}</span>
+                  {% elif c.status == 'cancelled' %}
+                    <span class="badge bg-secondary">Cancelled</span>
+                  {% else %}
+                    <span class="badge bg-light text-dark border">{{ c.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted fs-xs">{{ c.created_at|date:"d M Y, H:i" }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-1">
+                    <a href="{% url 'admin-panel:requirement-campaign-detail' c.requirement.pk c.id %}" class="btn btn-outline-primary btn-sm py-1 px-2 fs-xs rounded-2">
+                      <i class="bi bi-eye me-1"></i> Details
+                    </a>
+                    {% if c.failed_count > 0 and c.status != 'queued' and c.status != 'processing' %}
+                      <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="retry_campaign_failures">
+                        <input type="hidden" name="campaign_id" value="{{ c.id }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2 fs-xs rounded-2" title="Retry failed recipients (checks daily quota first)">
+                          <i class="bi bi-arrow-repeat me-1"></i> Retry
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="9" class="text-center text-muted py-4">No bulk email campaigns dispatched yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Bulk Job Alerts -->
+    <div class="tab-pane fade" id="job-alerts" role="tabpanel">
+      <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <div>
+            <h5 class="fw-bold mb-1 text-dark">Recent Bulk Job Alert Campaigns</h5>
+            <p class="text-muted fs-xs mb-0">Personalized matching vacancy email broadcasts sent to active job seekers.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'admin-panel:job-alert-campaigns' %}" class="btn btn-outline-secondary btn-sm fw-semibold">
+              <i class="bi bi-clock-history me-1"></i> Full Alert History
+            </a>
+            <a href="{% url 'admin-panel:bulk-job-alerts' %}" class="btn btn-primary btn-sm fw-semibold">
+              <i class="bi bi-plus-circle me-1"></i> New Job Alert Campaign
+            </a>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light fs-xs text-uppercase">
+              <tr>
+                <th>Campaign Name</th>
+                <th>Strategy</th>
+                <th>Recipients</th>
+                <th>Sent</th>
+                <th>Delivered</th>
+                <th>Failed</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody class="fs-sm">
+              {% for c in recent_job_alert_campaigns %}
+              <tr>
+                <td>
+                  <div class="fw-bold text-dark">{{ c.name }}</div>
+                  <div class="text-muted fs-xs text-truncate" style="max-width: 220px;">{{ c.subject }}</div>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ c.get_matching_strategy_display }}</span>
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ c.total_recipients }}</span></td>
+                <td><span class="badge bg-primary-subtle text-primary">{{ c.sent_count }}</span></td>
+                <td><span class="badge bg-success-subtle text-success">{{ c.delivered_count }}</span></td>
+                <td>
+                  {% if c.failed_count > 0 %}
+                    <span class="badge bg-danger-subtle text-danger">{{ c.failed_count }}</span>
+                  {% else %}
+                    <span class="text-muted fs-xs">0</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if c.status == 'completed' %}
+                    <span class="badge bg-success">Completed</span>
+                  {% elif c.status == 'processing' %}
+                    <span class="badge bg-warning-subtle text-warning-emphasis">Processing</span>
+                  {% elif c.status == 'queued' %}
+                    <span class="badge bg-info-subtle text-info">Queued</span>
+                  {% elif c.status == 'failed' or c.status == 'partially_failed' %}
+                    <span class="badge bg-danger">{{ c.get_status_display }}</span>
+                  {% elif c.status == 'cancelled' %}
+                    <span class="badge bg-secondary">Cancelled</span>
+                  {% else %}
+                    <span class="badge bg-light text-dark border">{{ c.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted fs-xs">{{ c.created_at|date:"d M Y, H:i" }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-1">
+                    <a href="{% url 'admin-panel:job-alert-campaign-detail' c.id %}" class="btn btn-outline-primary btn-sm py-1 px-2 fs-xs rounded-2">
+                      <i class="bi bi-eye me-1"></i> Details
+                    </a>
+                    {% if c.failed_count > 0 and c.status != 'queued' and c.status != 'processing' %}
+                      <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="retry_job_alert_failures">
+                        <input type="hidden" name="campaign_id" value="{{ c.id }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2 fs-xs rounded-2" title="Retry failed job alert recipients">
+                          <i class="bi bi-arrow-repeat me-1"></i> Retry
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="9" class="text-center text-muted py-4">No bulk job alert campaigns recorded yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Failed Recipients & Retries -->
+    <div class="tab-pane fade" id="failures" role="tabpanel">
+      <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="fw-bold mb-1 text-dark">Failed Delivery Audit &amp; Retries</h5>
+            <p class="text-muted fs-xs mb-0">
+              Transient failures (network timeouts, rate limits) can be safely retried. Permanent errors (bounces, suppressions) are suppressed automatically.
+            </p>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light fs-xs text-uppercase">
+              <tr>
+                <th>Recipient</th>
+                <th>Campaign &amp; Requirement</th>
+                <th>Attempts</th>
+                <th>Failure Reason</th>
+                <th>Failed At</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody class="fs-sm">
+              {% for r in failed_recipients %}
+              <tr>
+                <td>
+                  <div class="fw-bold text-dark">{{ r.recipient_name }}</div>
+                  <div class="text-muted fs-xs font-monospace">{{ r.email }}</div>
+                </td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ r.campaign.name }}</div>
+                  <div class="text-muted fs-xs">{{ r.campaign.requirement.subject }}</div>
+                </td>
+                <td>
+                  <span class="badge {% if r.attempt_count >= 3 %}bg-secondary{% else %}bg-warning-subtle text-warning-emphasis{% endif %}">
+                    {{ r.attempt_count }}/3
+                  </span>
+                </td>
+                <td>
+                  <span class="text-danger fs-xs font-monospace text-truncate d-inline-block" style="max-width: 280px;" title="{{ r.last_error }}">
+                    {{ r.last_error|default:"Delivery failed" }}
+                  </span>
+                </td>
+                <td class="text-muted fs-xs">{{ r.updated_at|date:"d M Y, H:i" }}</td>
+                <td>
+                  {% if r.attempt_count < 3 %}
+                    <form method="post" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="retry_campaign_failures">
+                      <input type="hidden" name="campaign_id" value="{{ r.campaign.id }}">
+                      <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2 fs-xs rounded-2">
+                        <i class="bi bi-arrow-repeat me-1"></i> Retry Campaign
+                      </button>
+                    </form>
+                  {% else %}
+                    <span class="badge bg-light text-muted border">Max Retries</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-success py-4">
+                  <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>
+                  No failed recipients recorded. All deliveries are healthy!
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Recruitment Status Templates -->
+    <div class="tab-pane fade" id="templates" role="tabpanel">
+      <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <h5 class="fw-bold mb-3 text-dark">Default Templates by Candidate Status</h5>
+        <p class="text-muted fs-sm mb-3">
+          Each candidate recruitment lifecycle status has a dedicated, personalized email template.
+          Administrators can customize or restore templates at any time.
+        </p>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light fs-xs text-uppercase">
+              <tr>
+                <th>Lifecycle Status</th>
+                <th>Template Name</th>
+                <th>Subject Line</th>
+                <th>Type</th>
+                <th>Version</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody class="fs-sm">
+              {% for t in templates %}
+              <tr>
+                <td>
+                  <span class="badge {% if t.status_key == 'shortlisted' %}bg-primary-subtle text-primary{% elif t.status_key == 'interviewing' %}bg-warning-subtle text-warning-emphasis{% elif t.status_key == 'selected' %}bg-success-subtle text-success{% elif t.status_key == 'joined' %}bg-info-subtle text-info{% elif t.status_key == 'rejected' %}bg-danger-subtle text-danger{% else %}bg-secondary-subtle text-secondary{% endif %} px-2 py-1">
+                    {{ t.status_key|title }}
+                  </span>
+                </td>
+                <td class="fw-bold text-dark">{{ t.name }}</td>
+                <td class="text-muted fs-xs text-truncate" style="max-width: 320px;">{{ t.subject }}</td>
+                <td>
+                  {% if t.is_default %}
+                    <span class="badge bg-light text-dark border">Canonical Default</span>
+                  {% else %}
+                    <span class="badge bg-primary-subtle text-primary">Custom</span>
+                  {% endif %}
+                </td>
+                <td><span class="badge bg-light text-dark border">v{{ t.version }}</span></td>
+                <td class="text-muted fs-xs">{{ t.updated_at|date:"d M Y" }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">No templates found.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: 14-Day Delivery History -->
+    <div class="tab-pane fade" id="history" role="tabpanel">
+      <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <h5 class="fw-bold mb-3 text-dark">14-Day Quota &amp; Delivery Log</h5>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light fs-xs text-uppercase">
+              <tr>
+                <th>Date</th>
+                <th>Emails Sent</th>
+                <th>Delivered</th>
+                <th>Failed</th>
+                <th>Reserved</th>
+                <th>Hard Limit Hit?</th>
+                <th>Last Synchronized</th>
+              </tr>
+            </thead>
+            <tbody class="fs-sm">
+              {% for h in quota_history %}
+              <tr>
+                <td class="fw-bold text-dark">{{ h.date|date:"l, d M Y" }}</td>
+                <td><span class="badge bg-primary-subtle text-primary">{{ h.sent_count }}</span></td>
+                <td><span class="badge bg-success-subtle text-success">{{ h.delivered_count }}</span></td>
+                <td>
+                  {% if h.failed_count > 0 %}
+                    <span class="badge bg-danger-subtle text-danger">{{ h.failed_count }}</span>
+                  {% else %}
+                    <span class="text-muted fs-xs">0</span>
+                  {% endif %}
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ h.reserved_count }}</span></td>
+                <td>
+                  {% if h.limit_reached %}
+                    <span class="badge bg-danger">Yes (Paused)</span>
+                  {% else %}
+                    <span class="badge bg-success-subtle text-success">No (Normal)</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted fs-xs">{{ h.updated_at|date:"H:i:s" }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">No historical quota tracking records yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

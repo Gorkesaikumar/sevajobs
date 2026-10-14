@@ -1,0 +1,314 @@
+{% extends layout_template|default:'dashboard/recruiter/_layout.html' %}
+{% load static humanize %}
+
+{% block dashboard_title %}Campaign Progress: {{ campaign.name }} - SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid px-0">
+
+  <!-- Header Breadcrumb & Controls -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <a href="{% url 'jobs:requirement-bulk-email' requirement.pk %}" class="text-decoration-none text-muted fs-xs">
+          <i class="bi bi-arrow-left me-1"></i> Back to Campaign Composer
+        </a>
+        <span class="text-muted-2 fs-xs">?</span>
+        <span class="badge bg-dark text-white font-monospace px-2 py-1 fs-xs">{{ requirement.req_code }}</span>
+      </div>
+      <h3 class="fw-800 mb-1">
+        {{ campaign.name }}
+      </h3>
+      <p class="text-muted fs-sm mb-0">
+        <i class="bi bi-tag me-1"></i>Subject: "{{ campaign.subject }}" ? 
+        <i class="bi bi-person me-1"></i>Created by {{ campaign.created_by.get_full_name|default:campaign.created_by.email }} ? 
+        {{ campaign.created_at|naturaltime }}
+      </p>
+    </div>
+
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      <a href="{% url 'jobs:requirement-bulk-email' requirement.pk %}" class="btn btn-outline-primary btn-sm fw-600 rounded-3 shadow-sm">
+        <i class="bi bi-plus-circle me-1"></i> New Campaign
+      </a>
+      {% if campaign.failed_count > 0 and campaign.status != 'queued' and campaign.status != 'processing' %}
+        <form method="post" action="{% url 'jobs:requirement-campaign-detail' requirement.pk campaign.id %}" onsubmit="return confirm('Retry delivery for failed recipients? This will check daily quota and re-queue eligible recipients.');" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="retry_failed">
+          <button type="submit" class="btn btn-outline-danger btn-sm fw-600 rounded-3 shadow-sm">
+            <i class="bi bi-arrow-repeat me-1"></i> Retry Failed ({{ campaign.failed_count }})
+          </button>
+        </form>
+      {% endif %}
+      {% if campaign.status == 'queued' or campaign.status == 'processing' %}
+        <form method="post" action="{% url 'jobs:requirement-campaign-detail' requirement.pk campaign.id %}" onsubmit="return confirm('Are you sure you want to cancel this campaign? Dispatched emails cannot be recalled.');" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="cancel">
+          <button type="submit" class="btn btn-danger btn-sm fw-600 rounded-3 shadow-sm">
+            <i class="bi bi-stop-circle me-1"></i> Cancel Campaign
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3 fs-sm" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Campaign Status & Metrics Banner -->
+  <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
+      <div>
+        <span class="text-muted fs-xs text-uppercase fw-600">Campaign Execution Status:</span>
+        <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2 mt-1" id="campaignStatusHeading">
+          {% if campaign.status == 'completed' %}
+            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> Completed</span>
+          {% elif campaign.status == 'processing' %}
+            <span class="badge bg-warning-subtle text-warning-emphasis"><span class="spinner-border spinner-border-sm me-1"></span> Processing Delivery</span>
+          {% elif campaign.status == 'queued' %}
+            <span class="badge bg-info-subtle text-info"><i class="bi bi-hourglass-split me-1"></i> Queued for Dispatch</span>
+          {% elif campaign.status == 'partially_failed' %}
+            <span class="badge bg-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i> Partially Failed</span>
+          {% elif campaign.status == 'failed' %}
+            <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i> Failed</span>
+          {% elif campaign.status == 'cancelled' %}
+            <span class="badge bg-secondary"><i class="bi bi-slash-circle me-1"></i> Cancelled</span>
+          {% else %}
+            <span class="badge bg-light text-dark border">{{ campaign.get_status_display }}</span>
+          {% endif %}
+        </h4>
+      </div>
+
+      <div class="text-md-end">
+        <span class="text-muted fs-xs">Targeted Statuses:</span>
+        <div class="mt-1">
+          {% for s in campaign.selected_statuses %}
+            <span class="badge bg-light text-dark border me-1">{{ s|capfirst }}</span>
+          {% empty %}
+            <span class="badge bg-light text-dark border">All Candidates</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Progress Bar -->
+    <div class="mb-4">
+      <div class="d-flex justify-content-between fs-xs text-muted mb-1">
+        <span>Delivery Progress</span>
+        <span id="progressPercentDisplay">Calculating...</span>
+      </div>
+      <div class="progress" style="height: 12px; border-radius: 6px;">
+        <div class="progress-bar bg-primary" id="progressBar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="row g-2 text-center">
+      <div class="col-6 col-md-2">
+        <div class="p-2 border rounded-3 bg-light">
+          <div class="text-muted fs-xs">Total Recipients</div>
+          <div class="fs-4 fw-bold text-dark" id="statTotal">{{ campaign.total_recipients }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="p-2 border rounded-3 bg-light">
+          <div class="text-muted fs-xs">Sent (Provider)</div>
+          <div class="fs-4 fw-bold text-primary" id="statSent">{{ campaign.sent_count }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="p-2 border rounded-3 bg-light">
+          <div class="text-muted fs-xs">Delivered (Webhook)</div>
+          <div class="fs-4 fw-bold text-success" id="statDelivered">{{ campaign.delivered_count }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="p-2 border rounded-3 bg-light">
+          <div class="text-muted fs-xs">Failed</div>
+          <div class="fs-4 fw-bold text-danger" id="statFailed">{{ campaign.failed_count }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="p-2 border rounded-3 bg-light">
+          <div class="text-muted fs-xs">Suppressed</div>
+          <div class="fs-4 fw-bold text-warning-emphasis" id="statSuppressed">{{ campaign.suppressed_count }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="p-2 border rounded-3 bg-light">
+          <div class="text-muted fs-xs">Pending / Queued</div>
+          <div class="fs-4 fw-bold text-secondary" id="statPending">{{ campaign.pending_count }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recipient Breakdown Table -->
+  <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h5 class="fw-bold mb-0 text-dark">
+        <i class="bi bi-people me-2 text-primary"></i>Recipient Delivery Audit Log
+      </h5>
+      <span class="text-muted fs-xs">Strictly 1-to-1 dispatch records</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light fs-xs text-uppercase">
+          <tr>
+            <th>Candidate</th>
+            <th>Email</th>
+            <th>Match Status</th>
+            <th>Delivery Status</th>
+            <th>Provider Message ID</th>
+            <th>Sent At</th>
+            <th>Delivered At</th>
+            <th>Error / Details</th>
+          </tr>
+        </thead>
+        <tbody class="fs-sm">
+          {% for r in page_obj %}
+          <tr>
+            <td class="fw-semibold text-dark">
+              {{ r.recipient_name|default:r.candidate.get_full_name|default:"Candidate" }}
+            </td>
+            <td>
+              <code>{{ r.email }}</code>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border">{{ r.match.get_status_display|default:"Matched" }}</span>
+            </td>
+            <td>
+              {% if r.status == 'delivered' %}
+                <span class="badge bg-success-subtle text-success"><i class="bi bi-check-all me-1"></i> Delivered</span>
+              {% elif r.status == 'sent' %}
+                <span class="badge bg-primary-subtle text-primary"><i class="bi bi-check me-1"></i> Sent</span>
+              {% elif r.status == 'sending' %}
+                <span class="badge bg-warning-subtle text-warning"><span class="spinner-border spinner-border-sm me-1"></span> Sending</span>
+              {% elif r.status == 'failed' %}
+                <span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle me-1"></i> Failed</span>
+              {% elif r.status == 'suppressed' %}
+                <span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-slash-circle me-1"></i> Suppressed</span>
+              {% elif r.status == 'cancelled' %}
+                <span class="badge bg-light text-muted border">Cancelled</span>
+              {% else %}
+                <span class="badge bg-info-subtle text-info">Queued</span>
+              {% endif %}
+            </td>
+            <td class="fs-xs font-monospace text-muted">
+              {{ r.provider_message_id|default:"-" }}
+            </td>
+            <td class="fs-xs text-muted">
+              {{ r.sent_at|date:"d M Y, H:i:s"|default:"-" }}
+            </td>
+            <td class="fs-xs text-muted">
+              {{ r.delivered_at|date:"d M Y, H:i:s"|default:"-" }}
+            </td>
+            <td class="fs-xs text-danger text-truncate" style="max-width: 200px;" title="{{ r.last_error }}">
+              {{ r.last_error|default:"-" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">No recipients recorded for this campaign.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+      <span class="text-muted fs-xs">
+        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} recipients
+      </span>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Previous</span></li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Next</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+
+  </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const isFinished = {% if campaign.status in 'completed,failed,partially_failed,cancelled' %}true{% else %}false{% endif %};
+  const progressBar = document.getElementById("progressBar");
+  const progressPercentDisplay = document.getElementById("progressPercentDisplay");
+
+  function calculateProgress(total, sent, failed, suppressed) {
+    if (!total || total === 0) return 100;
+    const processed = (sent || 0) + (failed || 0) + (suppressed || 0);
+    const pct = Math.min(100, Math.round((processed / total) * 100));
+    return pct;
+  }
+
+  function updateProgressBar(pct) {
+    progressBar.style.width = pct + "%";
+    progressBar.setAttribute("aria-valuenow", pct);
+    progressPercentDisplay.textContent = pct + "% Complete";
+  }
+
+  // Initial calculation
+  const initPct = calculateProgress({{ campaign.total_recipients }}, {{ campaign.sent_count }}, {{ campaign.failed_count }}, {{ campaign.suppressed_count }});
+  updateProgressBar(initPct);
+
+  // Poll progress if still active
+  if (!isFinished) {
+    const pollInterval = setInterval(function() {
+      fetch(window.location.href + "?format=json", {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      })
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById("statTotal").textContent = data.total;
+        document.getElementById("statSent").textContent = data.sent;
+        document.getElementById("statDelivered").textContent = data.delivered;
+        document.getElementById("statFailed").textContent = data.failed;
+        document.getElementById("statSuppressed").textContent = data.suppressed;
+        document.getElementById("statPending").textContent = data.pending;
+
+        const currentPct = calculateProgress(data.total, data.sent, data.failed, data.suppressed);
+        updateProgressBar(currentPct);
+
+        if (data.is_finished) {
+          clearInterval(pollInterval);
+          // Reload page once to update status badges and recipient table
+          setTimeout(function() { window.location.reload(); }, 1500);
+        }
+      })
+      .catch(err => console.error("Poll error", err));
+    }, 3000);
+  }
+});
+</script>
+{% endblock %}

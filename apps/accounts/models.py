@@ -214,6 +214,11 @@ class JobSeekerProfile(BaseModel):
     github_url = models.URLField(blank=True)
 
     is_open_to_work = models.BooleanField(default=True, db_index=True)
+    job_alerts_enabled = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text="Whether this candidate is subscribed to bulk job alerts.",
+    )
 
     # Shared catalogs (defined in the jobs app)
     skills = models.ManyToManyField("jobs.Skill", blank=True, related_name="job_seekers")
@@ -232,6 +237,12 @@ class JobSeekerProfile(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.user.full_name} — Seeker Profile"
+
+    @property
+    def qualification(self) -> str:
+        """Convenience property returning the first qualification name or empty string."""
+        first_q = self.qualifications.first() if hasattr(self, "qualifications") else None
+        return first_q.name if first_q else ""
 
     @property
     def profile_completion(self) -> int:

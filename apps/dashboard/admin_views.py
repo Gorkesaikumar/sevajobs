@@ -2382,4 +2382,142 @@ class AdminRequirementCandidateInterviewView(AdminMixin, View):
         return RequirementCandidateInterviewView.as_view()(request, pk=pk, match_id=match_id, *args, **kwargs)
 
 
+class AdminRequirementBulkEmailView(AdminMixin, View):
+    sidebar_section = "admin_requirements"
+
+    def dispatch(self, request, pk, *args, **kwargs):
+        from apps.jobs.requirement_views import RequirementBulkEmailView
+        from django.urls import reverse
+        request.layout_template = "dashboard/admin/_layout.html"
+        request.sidebar_section = "admin_requirements"
+        request.back_to_requirement_url = reverse("admin-panel:requirement-detail", kwargs={"pk": pk})
+        return RequirementBulkEmailView.as_view()(request, pk=pk, *args, **kwargs)
+
+
+class AdminRequirementCampaignDetailView(AdminMixin, View):
+    sidebar_section = "admin_requirements"
+
+    def dispatch(self, request, pk, campaign_id, *args, **kwargs):
+        from apps.jobs.requirement_views import RequirementCampaignDetailView
+        from django.urls import reverse
+        request.layout_template = "dashboard/admin/_layout.html"
+        request.sidebar_section = "admin_requirements"
+        request.back_to_requirement_url = reverse("admin-panel:requirement-detail", kwargs={"pk": pk})
+        return RequirementCampaignDetailView.as_view()(request, pk=pk, campaign_id=campaign_id, *args, **kwargs)
+
+
+class AdminEmailQuotaDashboardView(AdminMixin, View):
+    """
+    Dedicated administration dashboard for monitoring Resend daily bulk email quota,
+    tracking email delivery health, inspecting failed recipients, and managing retries.
+    """
+    sidebar_section = "email_quota"
+
+    def get(self, request, *args, **kwargs):
+        from apps.notifications.quota_service import DailyEmailQuotaService
+        from apps.notifications.models import (
+            EmailCampaign,
+            CampaignRecipient,
+            RecruitmentEmailTemplate,
+            DailyEmailQuotaTracking,
+        )
+        from django.utils import timezone
+        from datetime import timedelta
+
+        quota_status = DailyEmailQuotaService.get_quota_status()
+        recent_campaigns = EmailCampaign.objects.select_related("requirement", "created_by").order_by("-created_at")[:15]
+        
+        # Recent failed recipients (for failure inspection and retry management)
+        failed_recipients = CampaignRecipient.objects.filter(
+            status=CampaignRecipient.RecipientStatus.FAILED
+        ).select_related("campaign", "campaign__requirement").order_by("-updated_at")[:50]
+
+        # Active recruitment email templates
+        templates = RecruitmentEmailTemplate.objects.filter(is_active=True).order_by("status_key", "-is_default")
+
+        # Quota history past 14 days
+        fourteen_days_ago = timezone.now().date() - timedelta(days=14)
+        quota_history = DailyEmailQuotaTracking.objects.filter(date__gte=fourteen_days_ago).order_by("-date")
+
+        # Job Alert Campaigns & Failures
+        from apps.notifications.models import JobAlertCampaign, JobAlertRecipient
+        recent_job_alert_campaigns = JobAlertCampaign.objects.select_related("created_by").order_by("-created_at")[:10]
+        failed_job_alert_recipients = JobAlertRecipient.objects.filter(
+            status=JobAlertRecipient.RecipientStatus.FAILED
+        ).select_related("campaign").order_by("-updated_at")[:25]
+
+        context = {
+            "quota_status": quota_status,
+            "recent_campaigns": recent_campaigns,
+            "failed_recipients": failed_recipients,
+            "recent_job_alert_campaigns": recent_job_alert_campaigns,
+            "failed_job_alert_recipients": failed_job_alert_recipients,
+            "templates": templates,
+            "quota_history": quota_history,
+            "sidebar_section": "email_quota",
+        }
+        return render(request, "dashboard/admin/email_quota_dashboard.html", context)
+
+    def post(self, request, *args, **kwargs):
+        from apps.notifications.campaign_service import CampaignService
+        from apps.notifications.job_alert_service import JobAlertCampaignService
+        from apps.notifications.quota_service import DailyEmailQuotaService
+        from django.contrib import messages
+        from django.urls import reverse
+
+        action = request.POST.get("action", "").strip()
+
+        if action == "retry_campaign_failures":
+            campaign_id = request.POST.get("campaign_id", "").strip()
+            try:
+                retried = CampaignService.retry_failed_recipients(campaign_id, actor=request.user)
+                if retried > 0:
+                    messages.success(request, f"Successfully re-queued {retried} failed recipient(s) for delivery.")
+                else:
+                    messages.info(request, "No eligible failed recipients found to retry (or maximum retry attempts reached).")
+            except ValueError as e:
+                messages.error(request, str(e))
+            except Exception as e:
+                logger.exception("Failed to retry campaign recipients: %s", e)
+                messages.error(request, f"Retry error: {e}")
+
+        elif action == "retry_job_alert_failures":
+            campaign_id = request.POST.get("campaign_id", "").strip()
+            try:
+                retried = JobAlertCampaignService.retry_failed_recipients(campaign_id, actor=request.user)
+                if retried > 0:
+                    messages.success(request, f"Successfully re-queued {retried} failed job alert recipient(s) for delivery.")
+                else:
+                    messages.info(request, "No eligible failed job alert recipients found to retry.")
+            except ValueError as e:
+                messages.error(request, str(e))
+            except Exception as e:
+                logger.exception("Failed to retry job alert recipients: %s", e)
+                messages.error(request, f"Retry error: {e}")
+
+        elif action == "reconcile_quota":
+            DailyEmailQuotaService.reconcile_today()
+            messages.success(request, "Daily email quota synchronized and reconciled against recipient database records.")
+
+        return redirect(reverse("admin-panel:email-quota"))
+
+
+# ── Job Alert Views ───────────────────────────────────────────────────────────
+from .admin_job_alert_views import (
+    AdminBulkJobAlertsView,
+    AdminJobAlertCampaignDetailView,
+    AdminJobAlertCampaignListView,
+)
+
+# ── Walk-in Management Views ──────────────────────────────────────────────────
+from .admin_walkin_views import (
+    AdminWalkInListView,
+    AdminWalkInCreateView,
+    AdminWalkInUpdateView,
+    AdminWalkInDetailView,
+    AdminWalkInStatusActionView,
+)
+
+
+
 
