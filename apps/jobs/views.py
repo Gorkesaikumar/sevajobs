@@ -404,3 +404,30 @@ class AdminContactVisibilityConfigView(APIView):
             ip=_client_ip(request),
         )
         return Response(ContactVisibilityConfigSerializer(config).data)
+
+
+@extend_schema(tags=["jobs"])
+class AutocompleteView(APIView):
+    """GET /api/v1/jobs/autocomplete/?q=<term>&type=<keyword|location>"""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        q = request.GET.get("q", "").strip()
+        search_type = request.GET.get("type", "keyword").strip().lower()
+
+        from .autocomplete import get_autocomplete_suggestions, get_location_suggestions, normalize_search_query
+
+        if search_type == "location":
+            suggestions = get_location_suggestions(q)
+        else:
+            suggestions = get_autocomplete_suggestions(q)
+
+        normalized = normalize_search_query(q)
+
+        return Response({
+            "query": q,
+            "normalized": normalized,
+            "suggestions": suggestions
+        })
+

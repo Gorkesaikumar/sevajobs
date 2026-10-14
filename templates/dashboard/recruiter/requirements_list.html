@@ -1,0 +1,89 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load humanize %}
+{% block title %}Submitted Requirements — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-800 mb-1">Institution Requirements</h4>
+    <p class="text-muted-2 fs-sm mb-0">Hiring requirements submitted for automated candidate matching.</p>
+  </div>
+  <button type="button" class="btn btn-gradient btn-sm" data-bs-toggle="modal" data-bs-target="#postRequirementModal">
+    <i class="bi bi-plus-circle me-1"></i> Post Requirement
+  </button>
+</div>
+
+{% if requirements %}
+<div class="sj-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table sj-table mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Institution & Subject</th>
+          <th>Grade / Qualification</th>
+          <th>Location & Exp</th>
+          <th>Positions</th>
+          <th>Status</th>
+          <th>Matched Candidates</th>
+          <th>Submitted</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requirements %}
+        <tr>
+          <td>
+            <div class="fw-bold text-ink">{{ req.subject }}</div>
+            <div class="fs-xs text-muted-2"><i class="bi bi-building me-1"></i>{{ req.institution_name }}</div>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark me-1">{{ req.get_teaching_grade_display }}</span>
+            <div class="fs-xs text-muted-2 mt-1">{{ req.get_qualification_display }}</div>
+          </td>
+          <td>
+            <div class="fs-sm"><i class="bi bi-geo-alt me-1 text-danger"></i>{{ req.location }}</div>
+            <div class="fs-xs text-muted-2"><i class="bi bi-briefcase me-1"></i>{{ req.get_experience_display }}</div>
+          </td>
+          <td class="fw-semibold text-center">{{ req.positions }}</td>
+          <td>
+            {% if req.status == 'submitted' %}
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill">Submitted</span>
+            {% elif req.status == 'in_progress' %}
+              <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill">In Progress</span>
+            {% elif req.status == 'fulfilled' %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Fulfilled</span>
+            {% elif req.status == 'closed' %}
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">Closed</span>
+            {% else %}
+              <span class="badge bg-light text-dark rounded-pill">{{ req.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'recruiter:requirement-detail' pk=req.pk %}" class="badge bg-primary text-white text-decoration-none px-2 py-1 rounded-pill">
+              <i class="bi bi-people-fill me-1"></i>{{ req.matches.count }} matches
+            </a>
+          </td>
+          <td class="fs-xs text-muted-2">{{ req.created_at|date:"M j, Y" }}</td>
+          <td>
+            <a href="{% url 'recruiter:requirement-detail' pk=req.pk %}" class="btn btn-outline-primary btn-sm rounded-pill">
+              View Matches <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "partials/_pagination.html" %}
+{% else %}
+<div class="sj-empty py-5">
+  <div class="icon mb-3"><i class="bi bi-file-earmark-text fs-1 text-primary"></i></div>
+  <h5>No hiring requirements submitted yet</h5>
+  <p class="text-muted-2 fs-sm max-w-md mx-auto">Submit a hiring requirement in under 30 seconds to instantly match with pre-filtered teacher candidates across India.</p>
+  <button type="button" class="btn btn-gradient btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#postRequirementModal">
+    <i class="bi bi-plus-circle me-1"></i> Post your first Requirement
+  </button>
+</div>
+{% endif %}
+{% endblock %}

@@ -79,21 +79,22 @@
           </td>
           <td>
             <span class="badge rounded-pill fs-xs px-3 py-1 fw-bold
-              {% if app.status == 'applied' %}btn-warning text-dark
-              {% elif app.status == 'under_review' %}btn-info text-white
-              {% elif app.status == 'shortlisted' %}btn-success text-white
-              {% elif app.status == 'interview_scheduled' %}btn-primary text-white
-              {% elif app.status == 'selected' %}btn-success text-white
-              {% elif app.status == 'rejected' %}btn-danger text-white
-              {% else %}btn-secondary{% endif %}">
-              {% if app.status == 'applied' %}🟡
+              {% if app.status == 'applied' or not app.status %}bg-warning text-dark
+              {% elif app.status == 'under_review' %}bg-info text-white
+              {% elif app.status == 'shortlisted' %}bg-success text-white
+              {% elif app.status == 'interview_scheduled' or app.status == 'interviewing' %}bg-primary text-white
+              {% elif app.status == 'selected' or app.status == 'joined' or app.status == 'offer_accepted' %}bg-success text-white
+              {% elif app.status == 'rejected' %}bg-danger text-white
+              {% else %}bg-secondary text-white{% endif %}">
+              {% if app.status == 'applied' or not app.status %}🟡
               {% elif app.status == 'under_review' %}🔵
               {% elif app.status == 'shortlisted' %}🟢
-              {% elif app.status == 'interview_scheduled' %}🟣
-              {% elif app.status == 'selected' %}✅
+              {% elif app.status == 'interview_scheduled' or app.status == 'interviewing' %}🟣
+              {% elif app.status == 'selected' or app.status == 'joined' or app.status == 'offer_accepted' %}✅
               {% elif app.status == 'rejected' %}🔴
+              {% else %}⚪
               {% endif %}
-              {{ app.get_status_display }}
+              {{ app.get_status_display|default:app.status|default:"Applied" }}
             </span>
           </td>
           <td class="text-end">

@@ -1,0 +1,216 @@
+{% extends layout_template|default:'dashboard/recruiter/_layout.html' %}
+{% load static humanize %}
+
+{% block dashboard_title %}Teaching Requirements Queue — SevaJobs Admin{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid px-0">
+  
+  <!-- Header Title -->
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+    <div>
+      <h3 class="fw-800 mb-1">Teaching Requirements Queue</h3>
+      <p class="text-muted fs-sm mb-0">Manage institution hiring requirements, assign internal recruiters, and oversee candidate matching pipelines.</p>
+    </div>
+    <div>
+      <button type="button" class="btn btn-primary btn-sm fw-600 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#postRequirementModal">
+        <i class="bi bi-plus-lg me-1"></i> Post New Requirement
+      </button>
+    </div>
+  </div>
+
+  <!-- Metric Overview Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm p-3 rounded-4 bg-white">
+        <div class="text-muted fs-xs fw-600 text-uppercase">Total Requirements</div>
+        <div class="fs-3 fw-800 text-dark">{{ total_count|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm p-3 rounded-4 bg-white border-start border-warning border-4">
+        <div class="text-muted fs-xs fw-600 text-uppercase">New / Unassigned</div>
+        <div class="fs-3 fw-800 text-warning">{{ new_count|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm p-3 rounded-4 bg-white border-start border-primary border-4">
+        <div class="text-muted fs-xs fw-600 text-uppercase">In Progress</div>
+        <div class="fs-3 fw-800 text-primary">{{ in_progress_count|default:0 }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm p-3 rounded-4 bg-white border-start border-success border-4">
+        <div class="text-muted fs-xs fw-600 text-uppercase">Fulfilled</div>
+        <div class="fs-3 fw-800 text-success">{{ fulfilled_count|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-12 col-md-3">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control border-start-0 ps-0" name="q" value="{{ search_query }}" placeholder="Search ID, School, Subject, Phone...">
+        </div>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <select class="form-select form-select-sm" name="status">
+          <option value="">All Statuses</option>
+          {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <select class="form-select form-select-sm" name="grade">
+          <option value="">All Grades</option>
+          {% for val, label in grade_choices %}
+            <option value="{{ val }}" {% if selected_grade == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <select class="form-select form-select-sm" name="assigned_to">
+          <option value="">All Assignments</option>
+          <option value="unassigned" {% if selected_assigned == 'unassigned' %}selected{% endif %}>Unassigned</option>
+          <option value="me" {% if selected_assigned == 'me' %}selected{% endif %}>Assigned to Me</option>
+          {% for staff in staff_list %}
+            <option value="{{ staff.id }}" {% if selected_assigned == staff.id|stringformat:"s" %}selected{% endif %}>{{ staff.get_full_name|default:staff.email }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <select class="form-select form-select-sm" name="priority">
+          <option value="">All Priorities</option>
+          <option value="normal" {% if selected_priority == 'normal' %}selected{% endif %}>Normal</option>
+          <option value="high" {% if selected_priority == 'high' %}selected{% endif %}>High</option>
+          <option value="urgent" {% if selected_priority == 'urgent' %}selected{% endif %}>Urgent</option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-1">
+        <button type="submit" class="btn btn-dark btn-sm w-100 fw-600">Filter</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Requirements Table -->
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 fs-sm">
+        <thead class="table-light">
+          <tr>
+            <th>REQ ID</th>
+            <th>Institution / School</th>
+            <th>Subject & Grade</th>
+            <th>Positions</th>
+            <th>Location</th>
+            <th>Submitted</th>
+            <th>Status</th>
+            <th>Assigned To</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in requirements %}
+          <tr>
+            <td>
+              <span class="badge bg-dark-subtle text-dark font-monospace fw-700 px-2 py-1">
+                {{ req.req_code }}
+              </span>
+            </td>
+            <td>
+              <div class="fw-700 text-dark mb-0">{{ req.institution_name }}</div>
+              <div class="fs-xs text-muted"><i class="bi bi-telephone me-1"></i>{{ req.phone_number }}</div>
+            </td>
+            <td>
+              <div class="fw-600 text-primary mb-0">{{ req.subject }}</div>
+              <span class="badge bg-secondary-subtle text-secondary fs-xs">{{ req.teaching_grade }}</span>
+              <span class="fs-xs text-muted ms-1">({{ req.qualification }})</span>
+            </td>
+            <td>
+              <span class="badge bg-info-subtle text-info fw-700">{{ req.positions_count }} Pos</span>
+            </td>
+            <td>
+              <span class="text-muted fs-xs"><i class="bi bi-geo-alt me-1"></i>{{ req.location }}</span>
+            </td>
+            <td>
+              <span class="fs-xs text-muted" title="{{ req.created_at }}">{{ req.created_at|naturaltime }}</span>
+            </td>
+            <td>
+              {% if req.status == 'submitted' %}
+                <span class="badge bg-warning-subtle text-warning-emphasis fw-700">Submitted</span>
+              {% elif req.status == 'assigned' %}
+                <span class="badge bg-primary-subtle text-primary fw-700">Assigned</span>
+              {% elif req.status == 'in_progress' %}
+                <span class="badge bg-info-subtle text-info fw-700">In Progress</span>
+              {% elif req.status == 'candidates_found' %}
+                <span class="badge bg-success-subtle text-success fw-700">Matches Found</span>
+              {% elif req.status == 'interviewing' %}
+                <span class="badge bg-purple-subtle text-purple fw-700">Interviewing</span>
+              {% elif req.status == 'partially_filled' %}
+                <span class="badge bg-warning-subtle text-warning fw-700">Partially Filled</span>
+              {% elif req.status == 'fulfilled' %}
+                <span class="badge bg-success text-white fw-700">Fulfilled</span>
+              {% elif req.status == 'closed' %}
+                <span class="badge bg-secondary text-white fw-700">Closed</span>
+              {% else %}
+                <span class="badge bg-light text-dark fw-700">{{ req.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if req.assigned_staff %}
+                <span class="fs-xs fw-600 text-dark"><i class="bi bi-person-check me-1"></i>{{ req.assigned_staff.get_full_name|default:req.assigned_staff.email }}</span>
+              {% else %}
+                <span class="fs-xs text-danger fw-600"><i class="bi bi-exclamation-circle me-1"></i>Unassigned</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if layout_template == 'dashboard/admin/_layout.html' %}
+                <a href="{% url 'admin-panel:requirement-detail' req.pk %}" class="btn btn-outline-primary btn-sm fw-600 rounded-3 px-3">
+                  View Workflow <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+              {% else %}
+                <a href="{% url 'jobs:requirement-detail' req.pk %}" class="btn btn-outline-primary btn-sm fw-600 rounded-3 px-3">
+                  View Workflow <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox fs-1 d-block mb-2 text-muted-2"></i>
+              No teaching requirements found matching your filter criteria.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <nav class="d-flex justify-content-center">
+    <ul class="pagination pagination-sm mb-0">
+      {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&status={{ selected_status }}">&laquo; Prev</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&status={{ selected_status }}">Next &raquo;</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+</div>
+{% endblock %}

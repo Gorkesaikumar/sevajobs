@@ -328,3 +328,60 @@ class AdminRecruitmentTests(TestCase):
             action="Resume Downloaded",
             user=self.admin_user
         ).exists())
+
+    def test_admin_teaching_requirements_role_aware_navigation(self):
+        """Test Admin requirement workflow retains Admin layout, sidebar, and active section."""
+        from apps.jobs.models import InstitutionRequirement
+        req = InstitutionRequirement.objects.create(
+            institution_name="Test School",
+            phone_number="9876543210",
+            subject="Mathematics",
+            qualification="M.Sc B.Ed",
+            teaching_grade="PGT",
+            positions_count=2,
+            location="Hyderabad",
+            experience_range="1-3",
+            posted_by_user=self.admin_user
+        )
+
+        self.login_admin()
+
+        # Step 1: Admin opens Teaching Requirements queue
+        queue_url = reverse("admin-panel:requirements")
+        response = self.client.get(queue_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["layout_template"], "dashboard/admin/_layout.html")
+        self.assertEqual(response.context["sidebar_section"], "admin_requirements")
+        self.assertContains(response, "Teaching Requirements")
+        self.assertContains(response, "Job Management")
+
+        # Step 2: Admin opens Requirement Detail via "View Workflow"
+        detail_url = reverse("admin-panel:requirement-detail", kwargs={"pk": req.pk})
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["layout_template"], "dashboard/admin/_layout.html")
+        self.assertEqual(response.context["sidebar_section"], "admin_requirements")
+        self.assertEqual(response.context["back_to_queue_url"], queue_url)
+
+        # Admin sidebar navigation remains rendered
+        self.assertContains(response, "Job Management")
+        self.assertContains(response, "All Jobs")
+        self.assertContains(response, "Teaching Requirements")
+
+        # Step 3: Job seeker access forbidden / redirected by AdminMixin
+        self.client.logout()
+        self.client.login(username=self.seeker_user.email, password="seekerpassword123")
+        session = self.client.session
+        session['current_role_scope'] = 'job_seeker'
+        session.save()
+
+        # Accessing Admin UI endpoint as seeker redirects to admin login (302)
+        response_admin_endpoint = self.client.get(detail_url)
+        self.assertEqual(response_admin_endpoint.status_code, 302)
+
+        # Accessing generic requirement endpoint as seeker returns 403 Forbidden
+        generic_detail_url = reverse("jobs:requirement-detail", kwargs={"pk": req.pk})
+        response_generic_endpoint = self.client.get(generic_detail_url)
+        self.assertEqual(response_generic_endpoint.status_code, 403)
+
+

@@ -31,3 +31,26 @@ def expire_due_jobs() -> int:
     from .services import JobService
 
     return JobService().expire_due_jobs()
+
+
+@shared_task(name="jobs.process_requirement_matching")
+def process_requirement_matching_task(requirement_id: str) -> int:
+    """
+    Asynchronous Celery task for running CandidateMatchingService on an InstitutionRequirement.
+    Safe execution with error handling & activity logging.
+    """
+    from .models import InstitutionRequirement
+    from .matching_service import CandidateMatchingService
+    from .requirement_services import RequirementWorkflowService
+
+    try:
+        req = InstitutionRequirement.objects.get(pk=requirement_id)
+        matches = CandidateMatchingService.find_and_store_matches(req)
+        match_count = len(matches)
+        RequirementWorkflowService.update_matching_status(req, match_count=match_count)
+        logger.info("Requirement %s matching finished: %d candidates found.", requirement_id, match_count)
+        return match_count
+    except Exception as exc:
+        logger.exception("Requirement %s matching failed: %s", requirement_id, exc)
+        return 0
+

@@ -1,0 +1,151 @@
+{% extends layout_template|default:"dashboard/admin/_layout.html" %}
+{% load sj_extras humanize %}
+
+{% block title %}Schedule Interview — {{ candidate.get_full_name|default:candidate.email }} — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid px-0">
+  
+  <!-- Breadcrumb & Back Navigation -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <a href="{{ back_to_requirement_url }}#candidate-matches" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-left me-1"></i> Back to Candidate Matches
+      </a>
+    </div>
+    <div>
+      <span class="badge bg-purple-subtle text-purple border border-purple-subtle fs-xs py-2 px-3 fw-700">
+        <i class="bi bi-calendar-event me-1"></i> Interview Workflow Stage
+      </span>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    
+    <!-- Form Side -->
+    <div class="col-lg-7 col-xl-8">
+      <div class="sj-card p-4 border-0 shadow-sm rounded-4">
+        
+        <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+          <div class="ico-gradient-purple p-3 rounded-3 text-white fs-4 d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:linear-gradient(135deg, #7928CA, #FF0080);">
+            <i class="bi bi-calendar-check-fill"></i>
+          </div>
+          <div>
+            <h4 class="fw-800 text-dark mb-1">Schedule Candidate Interview</h4>
+            <div class="text-muted fs-sm">Set date, time, and mode for this requirement candidate match.</div>
+          </div>
+        </div>
+
+        <form method="post" action="">
+          {% csrf_token %}
+
+          <div class="row g-3 mb-4">
+            
+            <div class="col-md-6">
+              <label class="form-label fw-700 fs-xs text-muted text-uppercase mb-1">Interview Date <span class="text-danger">*</span></label>
+              <input type="date" name="interview_date" class="form-control form-control-lg rounded-3 fs-sm" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-700 fs-xs text-muted text-uppercase mb-1">Interview Time <span class="text-danger">*</span></label>
+              <input type="time" name="interview_time" class="form-control form-control-lg rounded-3 fs-sm" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-700 fs-xs text-muted text-uppercase mb-1">Interview Mode <span class="text-danger">*</span></label>
+              <select name="interview_mode" id="interviewModeSelect" class="form-select form-select-lg rounded-3 fs-sm" required>
+                <option value="Online">Online Video Call (Google Meet / Zoom)</option>
+                <option value="Phone">Telephonic Interview</option>
+                <option value="Onsite">On-site Campus Interview</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-700 fs-xs text-muted text-uppercase mb-1">Interviewer Name</label>
+              <input type="text" name="interviewer_name" class="form-control form-control-lg rounded-3 fs-sm" placeholder="e.g. Principal Dr. Sharma / HR Panel">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-700 fs-xs text-muted text-uppercase mb-1">Meeting Link / Location Venue</label>
+              <input type="text" name="location_or_link" class="form-control form-control-lg rounded-3 fs-sm" placeholder="e.g. https://meet.google.com/xyz or Main Campus Conference Room A">
+              <div class="form-text fs-xs text-muted">Include video call link or campus location details for candidate reference.</div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-700 fs-xs text-muted text-uppercase mb-1">Internal Instructions / Notes</label>
+              <textarea name="interview_notes" class="form-control rounded-3 fs-sm" rows="3" placeholder="Add optional details or instructions for candidate or panel..."></textarea>
+            </div>
+
+          </div>
+
+          <div class="d-flex align-items-center justify-content-end gap-2 pt-3 border-top">
+            <a href="{{ back_to_requirement_url }}#candidate-matches" class="btn btn-light fw-600 rounded-3 px-4">Cancel</a>
+            <button type="submit" class="btn btn-primary fw-700 rounded-3 px-4 py-2" style="background:linear-gradient(135deg, #7928CA, #FF0080);border:0;">
+              <i class="bi bi-calendar-check me-1"></i> Schedule Interview
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Context Context Card Side -->
+    <div class="col-lg-5 col-xl-4">
+      
+      <!-- Candidate Context Card -->
+      <div class="sj-card p-4 border-0 shadow-sm rounded-4 mb-4">
+        <h6 class="fw-800 text-uppercase fs-xs text-muted tracking-wider mb-3">Candidate Context</h6>
+        
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="avatar bg-soft-primary text-primary fw-800 rounded-circle fs-4 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+            {{ candidate.first_name|slice:":1"|upper|default:candidate.email|slice:":1"|upper }}
+          </div>
+          <div class="min-w-0">
+            <h5 class="fw-800 text-dark mb-0 text-truncate">{{ candidate.get_full_name|default:candidate.email }}</h5>
+            <div class="fs-xs text-muted">{{ candidate.email }}</div>
+          </div>
+        </div>
+
+        {% with profile=candidate.job_seeker_profile %}
+        <div class="p-3 bg-light rounded-3 fs-sm space-y-2 mb-3">
+          {% if profile %}
+            {% if profile.highest_qualification %}
+              <div class="d-flex justify-content-between"><span class="text-muted">Qualification:</span> <span class="fw-600 text-dark">{{ profile.highest_qualification }}</span></div>
+            {% endif %}
+            {% if profile.experience_years %}
+              <div class="d-flex justify-content-between"><span class="text-muted">Experience:</span> <span class="fw-600 text-dark">{{ profile.experience_years }} Year{{ profile.experience_years|pluralize }}</span></div>
+            {% endif %}
+            {% if profile.city or profile.current_location %}
+              <div class="d-flex justify-content-between"><span class="text-muted">Location:</span> <span class="fw-600 text-dark">{{ profile.city|default:profile.current_location }}</span></div>
+            {% endif %}
+          {% endif %}
+          <div class="d-flex justify-content-between"><span class="text-muted">Match Score:</span> <span class="badge bg-success-subtle text-success fw-700">{{ match.match_score }}% Match</span></div>
+        </div>
+        {% endwith %}
+
+        <div class="fs-xs text-muted">
+          <i class="bi bi-shield-check text-success me-1"></i> Candidate match is shortlisted and authorized for interview scheduling.
+        </div>
+      </div>
+
+      <!-- Requirement Context Card -->
+      <div class="sj-card p-4 border-0 shadow-sm rounded-4">
+        <h6 class="fw-800 text-uppercase fs-xs text-muted tracking-wider mb-3">Requirement Details</h6>
+        
+        <div class="fw-800 fs-5 text-dark mb-1">{{ requirement.subject }} ({{ requirement.teaching_grade }})</div>
+        <div class="text-primary fw-600 fs-sm mb-3"><i class="bi bi-building me-1"></i>{{ requirement.institution_name }}</div>
+
+        <div class="p-3 bg-light rounded-3 fs-sm space-y-2">
+          <div class="d-flex justify-content-between"><span class="text-muted">Req Code:</span> <span class="fw-700 font-monospace text-dark">{{ requirement.req_code }}</span></div>
+          <div class="d-flex justify-content-between"><span class="text-muted">Location:</span> <span class="fw-600 text-dark">{{ requirement.location|default:"Not specified" }}</span></div>
+          <div class="d-flex justify-content-between"><span class="text-muted">Positions:</span> <span class="fw-600 text-dark">{{ requirement.joined_count }} / {{ requirement.positions_count }} Filled</span></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

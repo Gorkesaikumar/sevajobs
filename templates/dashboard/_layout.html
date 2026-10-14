@@ -24,6 +24,10 @@
 </div>
 {% endblock %}
 
+{% block modals %}
+  {% block dashboard_modals %}{% endblock %}
+{% endblock %}
+
 {% block extra_js %}
 <script src="{% static 'js/dashboard.js' %}" defer></script>
 {% block dashboard_js %}{% endblock %}

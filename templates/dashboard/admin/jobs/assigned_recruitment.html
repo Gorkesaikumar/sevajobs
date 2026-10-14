@@ -27,9 +27,70 @@
       {% endif %}
     </div>
   </div>
-</form>
+<!-- Teaching Requirements Assignment Section -->
+<div class="sj-card overflow-hidden mb-4">
+  <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+    <h6 class="fw-800 mb-0"><i class="bi bi-file-earmark-text me-2 text-primary"></i> Teaching Requirements Assignments</h6>
+    <span class="badge bg-primary rounded-pill fs-xs">{{ requirements|length }} Requirements</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>Requirement Code / Subject</th>
+          <th>Institution</th>
+          <th>Status</th>
+          <th>Assigned Employee</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requirements %}
+        <tr>
+          <td>
+            <div class="fw-bold text-dark">{{ req.subject }} ({{ req.teaching_grade }})</div>
+            <div class="fs-xs text-muted-2">Code: {{ req.req_code }}</div>
+            <div class="fs-xs text-muted-2">Submitted: {{ req.created_at|date:"M d, Y" }}</div>
+          </td>
+          <td>
+            <div class="fw-semibold fs-sm">{{ req.institution_name }}</div>
+            <div class="fs-xs text-muted-2">📍 {{ req.location }}</div>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border fw-600 text-uppercase fs-xs">{{ req.get_status_display }}</span>
+          </td>
+          <td>
+            {% if req.assigned_staff %}
+              <div class="badge bg-primary-subtle text-primary border border-primary-subtle d-inline-flex align-items-center gap-1 py-2 px-3">
+                <i class="bi bi-person-fill"></i>
+                <span>{{ req.assigned_staff.get_full_name|default:req.assigned_staff.email }}</span>
+              </div>
+            {% else %}
+              <span class="badge bg-danger-subtle text-danger fw-600">Unassigned</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'admin-panel:requirement-detail' pk=req.pk %}" class="btn btn-sm btn-outline-primary fw-600 rounded-3">
+              <i class="bi bi-eye me-1"></i> View Workflow
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center py-4 text-muted fs-sm">
+            No teaching requirements found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <div class="sj-card overflow-hidden">
+  <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between">
+    <h6 class="fw-800 mb-0"><i class="bi bi-briefcase me-2 text-primary"></i> Job Posting Assignments</h6>
+  </div>
   <div class="table-responsive">
     <table class="table sj-table mb-0">
       <thead>

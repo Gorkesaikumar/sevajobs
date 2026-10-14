@@ -544,4 +544,305 @@ class JobAssignment(BaseModel):
         verbose_name_plural = "Job Assignments"
 
     def __str__(self) -> str:
-        return f"{self.job.designation} assigned to {self.assigned_staff.email}"
+        return f"{self.job.designation if self.job else self.recruiter_job.title} assigned to {self.assigned_staff.email}"
+
+
+# ===========================================================================
+# Institution Hiring Requirement & Candidate Matching Models
+# ===========================================================================
+class InstitutionRequirement(BaseModel):
+    """
+    Fast requirement submission by schools, colleges, and recruiters (<30 seconds).
+    Triggers deterministic candidate matching and enters staff/admin workflow.
+    """
+
+    class RequirementStatus(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SUBMITTED = "submitted", "Submitted"
+        UNDER_REVIEW = "under_review", "Under Review"
+        ASSIGNED = "assigned", "Assigned"
+        IN_PROGRESS = "in_progress", "In Progress"
+        MATCHING = "matching", "Matching Candidates"
+        CANDIDATES_FOUND = "candidates_found", "Candidates Found"
+        JOB_CREATED = "job_created", "Job Created"
+        INTERVIEWING = "interviewing", "Interviewing"
+        PARTIALLY_FILLED = "partially_filled", "Partially Filled"
+        FULFILLED = "fulfilled", "Fulfilled"
+        ON_HOLD = "on_hold", "On Hold"
+        REJECTED = "rejected", "Rejected"
+        CLOSED = "closed", "Closed"
+
+    class TeachingGrade(models.TextChoices):
+        PRT = "PRT", "Primary Teacher (PRT)"
+        TGT = "TGT", "Trained Graduate Teacher (TGT)"
+        PGT = "PGT", "Post Graduate Teacher (PGT)"
+        LECTURER = "Lecturer", "Lecturer"
+        ASSISTANT_PROFESSOR = "Assistant Professor", "Assistant Professor"
+        PROFESSOR = "Professor", "Professor"
+        NEET = "NEET", "NEET Faculty"
+        JEE = "JEE", "JEE / IIT-JEE Faculty"
+        CET = "CET", "CET Faculty"
+        FOUNDATION = "Foundation", "Foundation Faculty"
+        OTHER = "Other", "Other"
+
+    class Priority(models.TextChoices):
+        NORMAL = "normal", "Normal"
+        HIGH = "high", "High"
+        URGENT = "urgent", "Urgent"
+
+    recruiter = models.ForeignKey(
+        "recruiters.RecruiterProfile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="submitted_requirements",
+    )
+    company = models.ForeignKey(
+        "recruiters.Company",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="submitted_requirements",
+    )
+    posted_by_user = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="posted_requirements",
+    )
+
+    institution_name = models.CharField(max_length=255, db_index=True)
+    phone_number = models.CharField(max_length=16, db_index=True)
+    subject = models.CharField(max_length=150, db_index=True)
+    qualification = models.CharField(max_length=150)
+    teaching_grade = models.CharField(
+        max_length=50, choices=TeachingGrade.choices, default=TeachingGrade.PRT, db_index=True
+    )
+
+    positions_count = models.PositiveIntegerField(default=1)
+    location = models.CharField(max_length=200, db_index=True)
+    state = models.CharField(max_length=100, default="", blank=True, db_index=True)
+    district = models.CharField(max_length=100, default="", blank=True, db_index=True)
+    city = models.CharField(max_length=100, default="", blank=True, db_index=True)
+
+    experience_range = models.CharField(max_length=50, blank=True)
+    min_experience_years = models.PositiveSmallIntegerField(default=0)
+    max_experience_years = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    salary_min = models.PositiveIntegerField(null=True, blank=True)
+    salary_max = models.PositiveIntegerField(null=True, blank=True)
+    salary_period = models.CharField(
+        max_length=20, choices=[("monthly", "Monthly ₹"), ("annual", "Annual LPA ₹")], default="monthly"
+    )
+
+    logo = models.ImageField(upload_to="requirement_logos/%Y/%m/", null=True, blank=True)
+    status = models.CharField(
+        max_length=30, choices=RequirementStatus.choices, default=RequirementStatus.SUBMITTED, db_index=True
+    )
+    priority = models.CharField(
+        max_length=20, choices=Priority.choices, default=Priority.NORMAL, db_index=True
+    )
+
+    # Workflow & Assignment links
+    assigned_staff = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_institution_requirements",
+    )
+    assigned_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="requirement_assignments_made",
+    )
+    assigned_at = models.DateTimeField(null=True, blank=True)
+
+    started_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    started_at = models.DateTimeField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    fulfilled_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    # Requirement → Job conversion
+    converted_job = models.ForeignKey(
+        Job,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="origin_requirement",
+    )
+    converted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Institution Requirement"
+        verbose_name_plural = "Institution Requirements"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["phone_number", "institution_name"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.subject} ({self.teaching_grade}) at {self.institution_name} [{self.req_code}]"
+
+    @property
+    def req_code(self) -> str:
+        """Human-readable reference identifier e.g. REQ-2026-8F2A1B."""
+        year = self.created_at.year if self.created_at else 2026
+        hex_id = str(self.id).replace("-", "")[:6].upper()
+        return f"REQ-{year}-{hex_id}"
+
+    @property
+    def joined_count(self) -> int:
+        """Count of joined candidates derived from requirement matches."""
+        return self.candidate_matches.filter(status="joined").count()
+
+    @property
+    def is_fulfilled(self) -> bool:
+        return self.joined_count >= self.positions_count
+
+
+class RequirementCandidateMatch(BaseModel):
+    """
+    Match record produced by CandidateMatchingService for an InstitutionRequirement.
+    Includes score (0-100), label, and structured match explanations.
+    """
+
+    class MatchStatus(models.TextChoices):
+        MATCHED = "matched", "Matched"
+        SHORTLISTED = "shortlisted", "Shortlisted"
+        INTERVIEW_SCHEDULED = "interview_scheduled", "Interview Scheduled"
+        SELECTED = "selected", "Selected"
+        JOINED = "joined", "Joined"
+        REJECTED = "rejected", "Rejected"
+
+    requirement = models.ForeignKey(
+        InstitutionRequirement, on_delete=models.CASCADE, related_name="candidate_matches"
+    )
+    candidate = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="requirement_matches"
+    )
+    match_score = models.PositiveSmallIntegerField(default=0, db_index=True)
+    match_label = models.CharField(max_length=30, default="Partial Match")
+    match_reasons = models.JSONField(default=list, blank=True)
+    status = models.CharField(
+        max_length=30, choices=MatchStatus.choices, default=MatchStatus.MATCHED, db_index=True
+    )
+    rejection_reason = models.TextField(blank=True)
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Requirement Candidate Match"
+        verbose_name_plural = "Requirement Candidate Matches"
+        ordering = ["-match_score", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["requirement", "candidate"], name="unique_match_per_req_candidate"),
+        ]
+        indexes = [
+            models.Index(fields=["requirement", "-match_score"]),
+            models.Index(fields=["status", "-created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.candidate.email} ({self.match_score}%) for {self.requirement_id}"
+
+    @property
+    def allowed_actions(self) -> dict:
+        from apps.jobs.requirement_services import RequirementPipelineIntegrationService
+        return RequirementPipelineIntegrationService.get_allowed_actions(self)
+
+    @property
+    def explanation_list(self) -> list[dict]:
+        """
+        Parses match_reasons JSON list into structured dict objects for UI template rendering.
+        """
+        result = []
+        for r in (self.match_reasons or []):
+            if ":" in r:
+                parts = r.lstrip("✓△✕ ").split(":", 1)
+                result.append({
+                    "label": parts[0].strip(),
+                    "value": parts[1].strip(),
+                    "status": "matched" if r.startswith("✓") else ("partial" if r.startswith("△") else "unmatched")
+                })
+            else:
+                result.append({"label": "Match", "value": r, "status": "matched"})
+        return result
+
+
+class RequirementActivityLog(BaseModel):
+    """
+    Structured timeline audit log for an InstitutionRequirement lifecycle.
+    """
+
+    class EventType(models.TextChoices):
+        SUBMITTED = "submitted", "Requirement Submitted"
+        REVIEWED = "reviewed", "Under Review"
+        ASSIGNED = "assigned", "Employee Assigned"
+        WORK_STARTED = "work_started", "Work Started"
+        MATCHING_STARTED = "matching_started", "Matching Started"
+        MATCHING_COMPLETED = "matching_completed", "Matching Completed"
+        SHORTLISTED = "shortlisted", "Candidate Shortlisted"
+        INTERVIEW_SCHEDULED = "interview_scheduled", "Interview Scheduled"
+        SELECTED = "selected", "Candidate Selected"
+        JOINED = "joined", "Candidate Joined"
+        JOB_CONVERTED = "job_converted", "Converted to Job"
+        STATUS_CHANGED = "status_changed", "Status Changed"
+        NOTE_ADDED = "note_added", "Internal Note Added"
+        REJECTED = "rejected", "Requirement Rejected"
+        CLOSED = "closed", "Requirement Closed"
+
+    requirement = models.ForeignKey(
+        InstitutionRequirement, on_delete=models.CASCADE, related_name="activity_logs"
+    )
+    actor = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="requirement_activity_actions"
+    )
+    event_type = models.CharField(max_length=50, choices=EventType.choices, db_index=True)
+    description = models.TextField()
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Requirement Activity Log"
+        verbose_name_plural = "Requirement Activity Logs"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["requirement", "-created_at"])]
+
+    def __str__(self) -> str:
+        return f"Activity [{self.event_type}] on {self.requirement_id}"
+
+
+class RequirementInternalNote(BaseModel):
+    """
+    Internal recruiter/staff notes attached to an InstitutionRequirement.
+    Strictly protected from candidates and non-staff recruiters.
+    """
+
+    requirement = models.ForeignKey(
+        InstitutionRequirement, on_delete=models.CASCADE, related_name="internal_notes"
+    )
+    author = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="authored_requirement_internal_notes"
+    )
+    body = models.TextField()
+
+    class Meta(BaseModel.Meta):
+        verbose_name = "Requirement Internal Note"
+        verbose_name_plural = "Requirement Internal Notes"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["requirement", "-created_at"])]
+
+    def __str__(self) -> str:
+        return f"Note on {self.requirement_id} by {self.author.email}"
+
+
+

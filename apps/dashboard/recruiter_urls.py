@@ -22,5 +22,9 @@ urlpatterns = [
     path("selected/<uuid:pk>/join/", views.RecruiterMarkJoinedView.as_view(), name="mark-joined"),
     path("selected/<uuid:pk>/whatsapp/log/", views.RecruiterWhatsAppLogView.as_view(), name="whatsapp-log"),
     path("rejected/", views.RecruiterRejectedView.as_view(), name="rejected"),
+    path("requirements/", views.RecruiterRequirementsListView.as_view(), name="requirements-list"),
+    path("requirements/<uuid:pk>/", views.RecruiterRequirementDetailView.as_view(), name="requirement-detail"),
+    path("requirements/<uuid:pk>/match-action/", views.RecruiterMatchActionView.as_view(), name="requirement-match-action"),
+    path("requirements/<uuid:pk>/matches/<uuid:match_id>/interview/", views.RecruiterRequirementCandidateInterviewView.as_view(), name="requirement-candidate-interview"),
     path("settings/", views.RecruiterSettingsView.as_view(), name="settings"),
 ]

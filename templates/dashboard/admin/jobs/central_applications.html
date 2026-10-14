@@ -105,23 +105,28 @@
             <span class="fs-sm">{{ app.applied_at|date:"M d, Y" }}</span>
           </td>
           <td>
-            <span class="badge rounded-pill fs-xs px-3 py-1 fw-bold
-              {% if app.status == 'applied' %}btn-warning text-dark
-              {% elif app.status == 'under_review' %}btn-info text-white
-              {% elif app.status == 'shortlisted' %}btn-success text-white
-              {% elif app.status == 'interview_scheduled' %}btn-primary text-white
-              {% elif app.status == 'selected' %}btn-success text-white
-              {% elif app.status == 'rejected' %}btn-danger text-white
-              {% else %}btn-secondary{% endif %}">
-              {% if app.status == 'applied' %}🟡
-              {% elif app.status == 'under_review' %}🔵
-              {% elif app.status == 'shortlisted' %}🟢
-              {% elif app.status == 'interview_scheduled' %}🟣
-              {% elif app.status == 'selected' %}✅
-              {% elif app.status == 'rejected' %}🔴
-              {% endif %}
-              {{ app.get_status_display }}
-            </span>
+            <form action="{% url 'admin-panel:applications' %}" method="post" class="d-inline m-0 p-0">
+              {% csrf_token %}
+              <input type="hidden" name="application_id" value="{{ app.id }}">
+              <input type="hidden" name="action" value="update_status">
+              <select name="status" class="form-select form-select-sm fw-bold border-0 shadow-xs px-2 py-1 fs-xs rounded-pill
+                {% if app.status == 'applied' or not app.status %}bg-warning text-dark
+                {% elif app.status == 'under_review' %}bg-info text-white
+                {% elif app.status == 'shortlisted' %}bg-success text-white
+                {% elif app.status == 'interview_scheduled' or app.status == 'interviewing' %}bg-primary text-white
+                {% elif app.status == 'selected' or app.status == 'joined' or app.status == 'offer_accepted' %}bg-success text-white
+                {% elif app.status == 'rejected' %}bg-danger text-white
+                {% else %}bg-secondary text-white{% endif %}"
+                style="min-width: 140px; cursor: pointer;"
+                onchange="this.form.submit()"
+                title="Click to update status">
+                {% for val, name in status_choices %}
+                  <option value="{{ val }}" {% if app.status == val or not app.status and val == 'applied' %}selected{% endif %} class="bg-white text-dark">
+                    {{ name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </form>
           </td>
           <td class="text-end">
             <!-- Desktop: Tooltips & Icons -->

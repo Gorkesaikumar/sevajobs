@@ -5,6 +5,7 @@
 <div class="sidebar-section">Jobs</div>
 <a class="nav-link {% if sidebar_section == 'post-job' %}active{% endif %}" href="{% url 'recruiter:post-job' %}"><i class="bi bi-plus-circle"></i> Post a Job</a>
 <a class="nav-link {% if sidebar_section == 'manage-jobs' %}active{% endif %}" href="{% url 'recruiter:manage-jobs' %}"><i class="bi bi-briefcase"></i> Manage Jobs</a>
+<a class="nav-link {% if sidebar_section == 'requirements' %}active{% endif %}" href="{% url 'recruiter:requirements-list' %}"><i class="bi bi-file-earmark-text"></i> Requirements</a>
 <div class="sidebar-section">Hiring</div>
 <a class="nav-link {% if sidebar_section == 'applications' %}active{% endif %} d-flex justify-content-between align-items-center" href="{% url 'recruiter:applications' %}">
   <span><i class="bi bi-inbox"></i> Applications</span>

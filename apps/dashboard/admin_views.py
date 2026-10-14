@@ -1882,10 +1882,13 @@ class AdminAssignedRecruitmentView(AdminMixin, TemplateView):
     sidebar_section = "admin_assigned_recruitment"
 
     def get_context_data(self, **kwargs):
+        from apps.jobs.models import InstitutionRequirement
         ctx = super().get_context_data(**kwargs)
         qs = StaffJob.objects.filter(
             created_by__role__in=["super_admin", "admin"]
         ).prefetch_related("assignments__assigned_staff").order_by("-created_at")
+
+        req_qs = InstitutionRequirement.objects.select_related("assigned_staff", "assigned_by", "posted_by_user").order_by("-created_at")
 
         q = self.request.GET.get("q", "").strip()
         if q:
@@ -1893,11 +1896,17 @@ class AdminAssignedRecruitmentView(AdminMixin, TemplateView):
                 Q(designation__icontains=q) |
                 Q(organization_name__icontains=q)
             )
+            req_qs = req_qs.filter(
+                Q(subject__icontains=q) |
+                Q(institution_name__icontains=q) |
+                Q(req_code__icontains=q)
+            )
 
         paginator = Paginator(qs, 10)
         page_number = self.request.GET.get("page", 1)
         ctx["page_obj"] = paginator.get_page(page_number)
         ctx["jobs"] = ctx["page_obj"]
+        ctx["requirements"] = req_qs
         ctx["search_query"] = q
         return ctx
 
@@ -2337,3 +2346,40 @@ class AdminResumeViewerView(AdminMixin, DetailView):
     template_name = "dashboard/admin/applications/resume_viewer.html"
     context_object_name = "app"
     sidebar_section = "central_applications"
+
+
+class AdminRequirementsQueueView(AdminMixin, View):
+    sidebar_section = "admin_requirements"
+
+    def get(self, request, *args, **kwargs):
+        from apps.jobs.requirement_views import RequirementAdminQueueView
+        request.layout_template = "dashboard/admin/_layout.html"
+        request.sidebar_section = "admin_requirements"
+        return RequirementAdminQueueView.as_view()(request, *args, **kwargs)
+
+
+class AdminRequirementDetailView(AdminMixin, View):
+    sidebar_section = "admin_requirements"
+
+    def get(self, request, pk, *args, **kwargs):
+        from apps.jobs.requirement_views import RequirementDetailView
+        from django.urls import reverse
+        request.layout_template = "dashboard/admin/_layout.html"
+        request.sidebar_section = "admin_requirements"
+        request.back_to_queue_url = reverse("admin-panel:requirements")
+        return RequirementDetailView.as_view()(request, pk=pk, *args, **kwargs)
+
+
+class AdminRequirementCandidateInterviewView(AdminMixin, View):
+    sidebar_section = "admin_requirements"
+
+    def dispatch(self, request, pk, match_id, *args, **kwargs):
+        from apps.jobs.requirement_views import RequirementCandidateInterviewView
+        from django.urls import reverse
+        request.layout_template = "dashboard/admin/_layout.html"
+        request.sidebar_section = "admin_requirements"
+        request.back_to_requirement_url = reverse("admin-panel:requirement-detail", kwargs={"pk": pk})
+        return RequirementCandidateInterviewView.as_view()(request, pk=pk, match_id=match_id, *args, **kwargs)
+
+
+

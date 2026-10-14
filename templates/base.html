@@ -106,7 +106,10 @@
     </div>
   </div>
 
+  {% include "partials/_post_requirement_modal.html" %}
+
   {% block modals %}{% endblock %}
+
 
   {% if not user.is_authenticated %}
     {% include "partials/_welcome_modal.html" %}

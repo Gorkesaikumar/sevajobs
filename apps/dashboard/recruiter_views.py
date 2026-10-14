@@ -1,5 +1,5 @@
-"""Recruiter dashboard template views."""
-
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from django.views import View
@@ -15,8 +15,10 @@ class RecruiterMixin(LoginRequiredMixin, UserPassesTestMixin):
     login_url = "/recruiter/login/"
 
     def test_func(self):
+        if not self.request.user.is_authenticated:
+            return False
         scope = self.request.session.get('current_role_scope')
-        if scope == 'recruiter':
+        if not scope or scope == 'recruiter':
             return self.request.user.is_recruiter or getattr(self.request.user, 'is_admin_role', False)
         return False
 
@@ -1481,4 +1483,110 @@ class RecruiterWhatsAppLogView(RecruiterMixin, View):
         )
 
         return JsonResponse({"success": True})
+
+
+# ===========================================================================
+# Institution Hiring Requirement & Candidate Matching Views
+# ===========================================================================
+class RecruiterRequirementsListView(RecruiterMixin, TemplateView):
+    template_name = "dashboard/recruiter/requirements_list.html"
+    sidebar_section = "manage-jobs"
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import Q
+        from apps.jobs.models import InstitutionRequirement
+        ctx = super().get_context_data(**kwargs)
+        company = self.get_company()
+        recruiter_profile = getattr(self.request.user, "recruiter_profile", None)
+
+        if company or recruiter_profile:
+            qs = InstitutionRequirement.objects.filter(
+                Q(recruiter=recruiter_profile) | Q(company=company) | Q(posted_by_user=self.request.user)
+            ).distinct().order_by("-created_at")
+            paginator = Paginator(qs, 10)
+            ctx["page_obj"] = paginator.get_page(self.request.GET.get("page", 1))
+            ctx["requirements"] = ctx["page_obj"]
+        return ctx
+
+
+class RecruiterRequirementDetailView(RecruiterMixin, TemplateView):
+    template_name = "dashboard/recruiter/requirement_detail.html"
+    sidebar_section = "manage-jobs"
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import Q
+        from apps.jobs.models import InstitutionRequirement, RequirementCandidateMatch
+        from apps.jobs.matching_service import CandidateMatchingService
+        ctx = super().get_context_data(**kwargs)
+        req_id = self.kwargs.get("pk")
+        company = self.get_company()
+
+        requirement = get_object_or_404(
+            InstitutionRequirement.objects.filter(
+                Q(recruiter__company=company) | Q(company=company) | Q(posted_by_user=self.request.user)
+            ).distinct(),
+            pk=req_id
+        )
+
+        # Trigger candidate matching if matches count is 0
+        matches_qs = RequirementCandidateMatch.objects.filter(requirement=requirement).select_related(
+            "candidate", "candidate__job_seeker_profile", "candidate__teacher_profile"
+        )
+        if not matches_qs.exists():
+            CandidateMatchingService().match_and_store(requirement)
+            matches_qs = RequirementCandidateMatch.objects.filter(requirement=requirement).select_related(
+                "candidate", "candidate__job_seeker_profile", "candidate__teacher_profile"
+            )
+
+        ctx["requirement"] = requirement
+        ctx["matches"] = matches_qs
+        return ctx
+
+
+class RecruiterMatchActionView(RecruiterMixin, View):
+    """
+    Action handler for one-click ATS actions on candidate matches (Shortlist, Reject, Schedule Interview).
+    """
+
+    def post(self, request, pk, *args, **kwargs):
+        from apps.jobs.models import RequirementCandidateMatch, Job
+        from apps.applications.models import JobApplication
+        from apps.applications.services import ApplicationService
+
+        match_id = request.POST.get("match_id", pk)
+        match = get_object_or_404(RequirementCandidateMatch.objects.select_related("requirement", "candidate"), pk=match_id)
+        action = request.POST.get("action", "").strip()
+        reason = request.POST.get("reason", "").strip()
+
+        if action == "shortlist":
+            match.status = RequirementCandidateMatch.MatchStatus.SHORTLISTED
+            match.save(update_fields=["status"])
+            messages.success(request, f"Candidate {match.candidate.full_name} shortlisted.")
+
+        elif action == "reject":
+            match.status = RequirementCandidateMatch.MatchStatus.REJECTED
+            match.rejection_reason = reason
+            match.save(update_fields=["status", "rejection_reason"])
+            messages.info(request, f"Candidate {match.candidate.full_name} rejected.")
+
+        elif action == "schedule_interview":
+            match.status = RequirementCandidateMatch.MatchStatus.INTERVIEW_SCHEDULED
+            match.save(update_fields=["status"])
+            messages.success(request, f"Interview scheduled for {match.candidate.full_name}.")
+
+        return redirect(request.META.get("HTTP_REFERER", f"/dashboard/recruiter/requirements/{match.requirement.id}/"))
+
+
+class RecruiterRequirementCandidateInterviewView(RecruiterMixin, View):
+    sidebar_section = "requirements-list"
+
+    def dispatch(self, request, pk, match_id, *args, **kwargs):
+        from apps.jobs.requirement_views import RequirementCandidateInterviewView
+        from django.urls import reverse
+        request.layout_template = "dashboard/recruiter/_layout.html"
+        request.sidebar_section = "requirements-list"
+        request.back_to_requirement_url = reverse("recruiter:requirement-detail", kwargs={"pk": pk})
+        return RequirementCandidateInterviewView.as_view()(request, pk=pk, match_id=match_id, *args, **kwargs)
+
+
 

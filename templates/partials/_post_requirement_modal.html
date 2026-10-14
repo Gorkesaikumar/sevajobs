@@ -1,0 +1,235 @@
+{% load static %}
+<!-- ====== POST A TEACHING REQUIREMENT MODAL ====== -->
+<div class="modal fade sj-requirement-modal" id="postRequirementModal" tabindex="-1" role="dialog" aria-labelledby="postRequirementTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-xl overflow-hidden" style="border-radius: var(--sj-radius-lg, 20px);">
+      
+      <!-- Top Decor Bar -->
+      <div class="position-absolute top-0 start-0 w-100" style="height: 5px; background: linear-gradient(135deg, #06b6d4 0%, #4f46e5 100%); z-index: 10;"></div>
+      
+      <button type="button" class="btn-close position-absolute top-0 end-0 m-3 z-3 shadow-sm bg-white p-2 rounded-circle" data-bs-dismiss="modal" aria-label="Close"></button>
+
+      <div class="modal-body p-4 p-md-5">
+        <!-- Header -->
+        <div class="text-center mb-4">
+          <span class="badge bg-info-subtle text-info-emphasis fw-700 px-3 py-1 mb-2 rounded-pill fs-xs text-uppercase">
+            ⚡ 30-Second Quick Post
+          </span>
+          <h3 class="fw-800 mb-1 tracking-tight" id="postRequirementTitle">
+            Post a Teaching <span class="text-gradient">Requirement</span>
+          </h3>
+          <p class="text-muted-2 fs-sm mb-0">
+            Tell us who you need. SevaJobs will automatically match qualified candidates for your institution.
+          </p>
+        </div>
+
+        <!-- Form -->
+        <form id="requirementPostForm" method="post" action="{% url 'jobs:submit-requirement' %}" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+
+          <div class="row g-3 mb-3">
+            <!-- 1. Institution Name -->
+            <div class="col-12 col-md-6">
+              <label for="req_institution_name" class="form-label fw-600 fs-xs mb-1">Institution / School Name <span class="text-danger">*</span></label>
+              <div class="input-icon-group">
+                <i class="bi bi-building input-icon text-muted"></i>
+                <input type="text" class="form-control form-control-sm" id="req_institution_name" name="institution_name" 
+                       value="{% if user.is_authenticated and user.is_recruiter %}{{ user.recruiter_profile.company.name }}{% endif %}"
+                       placeholder="e.g. Greenwood High School" required>
+              </div>
+            </div>
+
+            <!-- 2. WhatsApp / Mobile Number -->
+            <div class="col-12 col-md-6">
+              <label for="req_phone_number" class="form-label fw-600 fs-xs mb-1">WhatsApp / Mobile Number <span class="text-danger">*</span></label>
+              <div class="input-icon-group">
+                <i class="bi bi-whatsapp input-icon text-success"></i>
+                <input type="tel" class="form-control form-control-sm" id="req_phone_number" name="phone_number" 
+                       value="{% if user.is_authenticated %}{{ user.phone|default:'' }}{% endif %}"
+                       placeholder="+91 98765 43210" required minlength="10" maxlength="15">
+              </div>
+            </div>
+
+            <!-- 3. Subject -->
+            <div class="col-12 col-md-6">
+              <label for="req_subject" class="form-label fw-600 fs-xs mb-1">Subject Needed <span class="text-danger">*</span></label>
+              <div class="input-icon-group">
+                <i class="bi bi-journal-bookmark input-icon text-muted"></i>
+                <input type="text" class="form-control form-control-sm" id="req_subject" name="subject" 
+                       placeholder="e.g. Physics, Mathematics, English" required>
+              </div>
+            </div>
+
+            <!-- 4. Required Qualification -->
+            <div class="col-12 col-md-6">
+              <label for="req_qualification" class="form-label fw-600 fs-xs mb-1">Required Qualification <span class="text-danger">*</span></label>
+              <div class="input-icon-group">
+                <i class="bi bi-mortarboard input-icon text-muted"></i>
+                <input type="text" class="form-control form-control-sm" id="req_qualification" name="qualification" 
+                       placeholder="e.g. M.Sc Physics, B.Ed, Ph.D" required>
+              </div>
+            </div>
+
+            <!-- 5. Teaching Grade -->
+            <div class="col-12 col-md-6">
+              <label for="req_teaching_grade" class="form-label fw-600 fs-xs mb-1">Teaching Grade / Category <span class="text-danger">*</span></label>
+              <div class="input-icon-group">
+                <i class="bi bi-award input-icon text-muted"></i>
+                <select class="form-select form-select-sm" id="req_teaching_grade" name="teaching_grade" required>
+                  <option value="PRT">PRT — Primary Teacher</option>
+                  <option value="TGT">TGT — Trained Graduate Teacher</option>
+                  <option value="PGT" selected>PGT — Post Graduate Teacher</option>
+                  <option value="Lecturer">Lecturer</option>
+                  <option value="Assistant Professor">Assistant Professor</option>
+                  <option value="Professor">Professor</option>
+                  <option value="NEET">NEET Faculty</option>
+                  <option value="JEE">JEE / IIT-JEE Faculty</option>
+                  <option value="CET">CET Faculty</option>
+                  <option value="Foundation">Foundation Faculty</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 6. Number of Positions -->
+            <div class="col-12 col-md-6">
+              <label for="req_positions_count" class="form-label fw-600 fs-xs mb-1">Number of Positions <span class="text-danger">*</span></label>
+              <div class="input-icon-group">
+                <i class="bi bi-people input-icon text-muted"></i>
+                <input type="number" class="form-control form-control-sm" id="req_positions_count" name="positions_count" 
+                       value="1" min="1" max="100" required>
+              </div>
+            </div>
+
+            <!-- 7. Job Location -->
+            <div class="col-12 col-md-6">
+              <label for="req_location" class="form-label fw-600 fs-xs mb-1">Job Location (City / District) <span class="text-danger">*</span></label>
+              <div class="input-icon-group">
+                <i class="bi bi-geo-alt input-icon text-muted"></i>
+                <input type="text" class="form-control form-control-sm" id="req_location" name="location" 
+                       placeholder="e.g. Hyderabad, Telangana" required>
+              </div>
+            </div>
+
+            <!-- 8. Experience Range -->
+            <div class="col-12 col-md-6">
+              <label for="req_experience_range" class="form-label fw-600 fs-xs mb-1">Experience Required</label>
+              <div class="input-icon-group">
+                <i class="bi bi-clock-history input-icon text-muted"></i>
+                <select class="form-select form-select-sm" id="req_experience_range" name="experience_range">
+                  <option value="Fresher">Fresher (0 Years)</option>
+                  <option value="0-1">0 – 1 Years</option>
+                  <option value="1-3" selected>1 – 3 Years</option>
+                  <option value="3-5">3 – 5 Years</option>
+                  <option value="5-8">5 – 8 Years</option>
+                  <option value="8-10">8 – 10 Years</option>
+                  <option value="10+">10+ Years</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 9. Salary Range -->
+            <div class="col-12 col-md-8">
+              <label class="form-label fw-600 fs-xs mb-1">Salary Range (Optional)</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <input type="number" class="form-control form-control-sm" name="salary_min" placeholder="Min ₹ (e.g. 30000)">
+                </div>
+                <div class="col-6">
+                  <input type="number" class="form-control form-control-sm" name="salary_max" placeholder="Max ₹ (e.g. 50000)">
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <label for="req_salary_period" class="form-label fw-600 fs-xs mb-1">Period</label>
+              <select class="form-select form-select-sm" id="req_salary_period" name="salary_period">
+                <option value="monthly" selected>Monthly (₹)</option>
+                <option value="annual">Annual LPA (₹)</option>
+              </select>
+            </div>
+
+            <!-- 10. Institution Logo (Optional) -->
+            <div class="col-12">
+              <label for="req_logo" class="form-label fw-600 fs-xs mb-1">Institution Logo (Optional)</label>
+              <input type="file" class="form-control form-control-sm" id="req_logo" name="logo" accept="image/png,image/jpeg,image/webp">
+              <div class="form-text fs-xs">JPG, PNG or WEBP (Max 2MB)</div>
+            </div>
+          </div>
+
+          <!-- Alert feedback box -->
+          <div id="requirementAlert" class="alert d-none mb-3 py-2 fs-xs"></div>
+
+          <!-- Submit CTA -->
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-gradient btn-lg fw-700 py-3 rounded-3" id="submitRequirementBtn">
+              <i class="bi bi-send-check me-1"></i> Submit Requirement &amp; Match Candidates
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('requirementPostForm');
+    const alertBox = document.getElementById('requirementAlert');
+    const submitBtn = document.getElementById('submitRequirementBtn');
+
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      alertBox.classList.add('d-none');
+      alertBox.className = 'alert d-none mb-3 py-2 fs-xs';
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Submitting...';
+
+      const formData = new FormData(form);
+
+      fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(res => res.json().then(data => ({ status: res.status, body: data })))
+      .then(res => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-send-check me-1"></i> Submit Requirement &amp; Match Candidates';
+
+          if (res.status === 200 || res.status === 201) {
+            alertBox.className = 'alert alert-success py-3 fs-sm rounded-3 shadow-sm';
+            let reqCode = res.body.req_code ? `<span class="badge bg-dark text-white px-2 py-1 ms-1">${res.body.req_code}</span>` : '';
+            let viewBtn = res.body.redirect_url ? `<a href="${res.body.redirect_url}" class="btn btn-sm btn-primary mt-2 ms-2"><i class="bi bi-eye me-1"></i> View Requirement</a>` : '';
+            
+            alertBox.innerHTML = `
+              <div class="fw-700 fs-base text-success mb-1">✓ Requirement Submitted Successfully!</div>
+              <div class="mb-2">Reference ID: ${reqCode}</div>
+              <p class="mb-2 text-muted fs-xs">We've received your teaching requirement. Our recruitment team will review it and candidate matching has started asynchronously.</p>
+              <div class="mt-2">
+                ${viewBtn}
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-bs-dismiss="modal">Done</button>
+              </div>
+            `;
+            alertBox.classList.remove('d-none');
+            form.classList.add('d-none');
+          } else {
+            alertBox.className = 'alert alert-danger py-2 fs-xs';
+            alertBox.innerHTML = res.body.message || res.body.detail || 'Failed to submit requirement. Please check input fields.';
+            alertBox.classList.remove('d-none');
+          }
+        })
+        .catch(err => {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="bi bi-send-check me-1"></i> Submit Requirement &amp; Match Candidates';
+          alertBox.className = 'alert alert-danger py-2 fs-xs';
+          alertBox.innerHTML = 'An unexpected error occurred. Please try again.';
+          alertBox.classList.remove('d-none');
+        });
+      });
+    });
+  </script>

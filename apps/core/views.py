@@ -134,18 +134,55 @@ class JobSearchView(TemplateView):
             is_active=True
         )
 
+        from apps.jobs.autocomplete import normalize_search_query
+
         # Search Query q
         q = self.request.GET.get("q", "").strip()
         if q:
-            rqs = rqs.filter(Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q) | Q(state__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q))
-            sqs = sqs.filter(Q(designation__icontains=q) | Q(organization_name__icontains=q) | Q(job_location__icontains=q) | Q(state__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q))
+            normalized = normalize_search_query(q)
+            q_filter_r = (
+                Q(title__icontains=q) | Q(description__icontains=q) | Q(location__icontains=q) |
+                Q(state__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q) |
+                Q(category__name__icontains=q) | Q(preferred_qualifications__name__icontains=q)
+            )
+            q_filter_s = (
+                Q(designation__icontains=q) | Q(organization_name__icontains=q) | Q(job_location__icontains=q) |
+                Q(state__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q) | Q(qualification__icontains=q)
+            )
+            if normalized and normalized.lower() != q.lower():
+                q_filter_r |= (
+                    Q(title__icontains=normalized) | Q(description__icontains=normalized) | Q(location__icontains=normalized)
+                )
+                q_filter_s |= (
+                    Q(designation__icontains=normalized) | Q(organization_name__icontains=normalized) | Q(job_location__icontains=normalized)
+                )
+
+            rqs = rqs.filter(q_filter_r)
+            sqs = sqs.filter(q_filter_s)
             ctx["search_query"] = q
+            ctx["search_query_normalized"] = normalized
 
         # Location filter (workplace address search)
         location = self.request.GET.get("location", "").strip()
         if location:
             rqs = rqs.filter(Q(location__icontains=location) | Q(city__icontains=location) | Q(district__icontains=location) | Q(state__icontains=location))
             sqs = sqs.filter(Q(job_location__icontains=location) | Q(city__icontains=location) | Q(district__icontains=location) | Q(state__icontains=location))
+            ctx["search_location"] = location
+
+        # Experience Filter (e.g. experience=3 or experience=FRESHER)
+        exp_param = self.request.GET.get("experience", "").strip()
+        if exp_param:
+            ctx["selected_experience"] = exp_param
+            if exp_param.isdigit():
+                years = int(exp_param)
+                rqs = rqs.filter(
+                    Q(min_experience_years__lte=years) &
+                    (Q(max_experience_years__isnull=True) | Q(max_experience_years__gte=years))
+                )
+            elif exp_param.lower() in ["fresher", "0"]:
+                rqs = rqs.filter(Q(min_experience_years=0) | Q(experience_level="FRESHER"))
+            else:
+                rqs = rqs.filter(experience_level__iexact=exp_param)
 
         # Specific regional dropdown filters
         state_filter = self.request.GET.get("state", "").strip()
@@ -265,7 +302,20 @@ class JobSearchView(TemplateView):
         ctx["total_results"] = paginator.count
         ctx["categories"] = JobCategory.objects.filter(is_active=True)
         ctx["breadcrumbs"] = [{"label": "Find Jobs"}]
+
+        # Empty result recovery state suggestions
+        if ctx["total_results"] == 0:
+            recovery = []
+            if location:
+                recovery.append(f"Try clearing or expanding the location '{location}'")
+            if exp_param:
+                recovery.append(f"Try adjusting the experience filter '{exp_param}'")
+            if q:
+                recovery.append(f"Try searching for broader terms like 'Physics', 'Mathematics', 'PGT', or 'TGT'")
+            ctx["recovery_suggestions"] = recovery or ["Try resetting your search filters"]
+
         return ctx
+
 
 
 class JobDetailPageView(DetailView):

@@ -1,0 +1,227 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load humanize %}
+{% block title %}{{ requirement.subject }} Matches — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<!-- Back link & Requirement Header -->
+<div class="mb-4">
+  <a href="{% url 'recruiter:requirements-list' %}" class="btn btn-ghost btn-sm mb-2">
+    <i class="bi bi-arrow-left me-1"></i> Back to Requirements
+  </a>
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+    <div>
+      <h3 class="fw-800 text-ink mb-1">{{ requirement.subject }}</h3>
+      <div class="fs-sm text-muted-2 d-flex align-items-center gap-3 flex-wrap">
+        <span><i class="bi bi-building me-1"></i>{{ requirement.institution_name }}</span>
+        <span><i class="bi bi-geo-alt me-1 text-danger"></i>{{ requirement.location }}</span>
+        <span><i class="bi bi-clock me-1"></i>Submitted {{ requirement.created_at|date:"M j, Y" }}</span>
+      </div>
+    </div>
+    <div>
+      {% if requirement.status == 'submitted' %}
+        <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-2 fs-6">Status: Submitted</span>
+      {% elif requirement.status == 'in_progress' %}
+        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-2 fs-6">Status: In Progress</span>
+      {% elif requirement.status == 'fulfilled' %}
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 fs-6">Status: Fulfilled</span>
+      {% else %}
+        <span class="badge bg-light text-dark rounded-pill px-3 py-2 fs-6">Status: {{ requirement.get_status_display }}</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Requirement Details Card -->
+<div class="sj-card p-4 mb-4">
+  <h6 class="fw-bold text-uppercase text-muted fs-xs mb-3" style="letter-spacing: 0.5px;">Requirement Parameters</h6>
+  <div class="row g-3">
+    <div class="col-6 col-md-3">
+      <div class="fs-xs text-muted-2">Teaching Grade</div>
+      <div class="fw-semibold text-ink">{{ requirement.get_teaching_grade_display }}</div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="fs-xs text-muted-2">Qualification</div>
+      <div class="fw-semibold text-ink">{{ requirement.get_qualification_display }}</div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="fs-xs text-muted-2">Experience</div>
+      <div class="fw-semibold text-ink">{{ requirement.experience_range|default:"1-3 Years" }}</div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="fs-xs text-muted-2">Positions</div>
+      <div class="fw-semibold text-ink">{{ requirement.positions_count }} Openings</div>
+    </div>
+    {% if requirement.salary_min or requirement.salary_max %}
+    <div class="col-6 col-md-3">
+      <div class="fs-xs text-muted-2">Salary Range</div>
+      <div class="fw-semibold text-ink">
+        {% if requirement.salary_min %}₹{{ requirement.salary_min|intcomma }}{% endif %}
+        {% if requirement.salary_min and requirement.salary_max %} - {% endif %}
+        {% if requirement.salary_max %}₹{{ requirement.salary_max|intcomma }}{% endif %}
+        / {{ requirement.salary_period|default:"month" }}
+      </div>
+    </div>
+    {% endif %}
+    <div class="col-6 col-md-3">
+      <div class="fs-xs text-muted-2">Contact Phone</div>
+      <div class="fw-semibold text-ink"><i class="bi bi-telephone me-1 text-success"></i>{{ requirement.phone_number }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Matched Candidates Section -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <div>
+    <h5 class="fw-bold mb-0">Pre-Filtered Candidate Matches</h5>
+    <div class="fs-xs text-muted-2">Automated rank matching based on subject, grade, qualification, location, and experience.</div>
+  </div>
+  <span class="badge bg-primary rounded-pill px-3 py-1">{{ matches|length }} Candidate{{ matches|length|pluralize }} Found</span>
+</div>
+
+{% if matches %}
+<div class="row g-3 mb-4">
+  {% for match in matches %}
+  <div class="col-12">
+    <div class="sj-card p-4 border {% if match.status == 'shortlisted' %}border-success{% elif match.status == 'rejected' %}border-danger opacity-75{% endif %}">
+      <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+        <!-- Candidate Info -->
+        <div class="d-flex gap-3 align-items-start">
+          <div class="avatar bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold fs-4" style="width:52px; height:52px;">
+            {{ match.candidate.full_name|slice:":1"|upper|default:"T" }}
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+              <h5 class="fw-bold text-ink mb-0">{{ match.candidate.full_name }}</h5>
+              <!-- Match Score Badge -->
+              {% if match.match_score >= 75 %}
+                <span class="badge bg-success text-white px-2 py-1 rounded-pill fs-xs"><i class="bi bi-patch-check-fill me-1"></i>{{ match.match_score }}% Match (Strong)</span>
+              {% elif match.match_score >= 55 %}
+                <span class="badge bg-primary text-white px-2 py-1 rounded-pill fs-xs"><i class="bi bi-check-circle-fill me-1"></i>{{ match.match_score }}% Match (Good)</span>
+              {% else %}
+                <span class="badge bg-warning text-dark px-2 py-1 rounded-pill fs-xs"><i class="bi bi-info-circle-fill me-1"></i>{{ match.match_score }}% Match (Partial)</span>
+              {% endif %}
+
+              {% if match.status == 'shortlisted' %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill fs-xs">Shortlisted</span>
+              {% elif match.status == 'interview_scheduled' %}
+                <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill fs-xs">Interview Scheduled</span>
+              {% elif match.status == 'rejected' %}
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill fs-xs">Rejected</span>
+              {% endif %}
+            </div>
+
+            <div class="fs-sm text-muted-2 d-flex align-items-center gap-3 flex-wrap mb-2">
+              {% if match.candidate.teacher_profile %}
+                <span><i class="bi bi-mortarboard me-1 text-primary"></i>{{ match.candidate.teacher_profile.get_applying_position_display|default:"Teacher" }} • {{ match.candidate.teacher_profile.subject_specialization|default:"" }}</span>
+              {% endif %}
+              <span><i class="bi bi-geo-alt me-1 text-danger"></i>{{ match.candidate.job_seeker_profile.city|default:match.candidate.teacher_profile.city|default:"Location unspecified" }}</span>
+              <span><i class="bi bi-briefcase me-1"></i>{{ match.candidate.job_seeker_profile.experience_years|default:match.candidate.teacher_profile.total_experience_years|default:0 }} Years Exp.</span>
+            </div>
+
+            <!-- Match Breakdown Explanations -->
+            {% if match.explanation_list %}
+            <div class="d-flex flex-wrap gap-1 mt-2">
+              {% for item in match.explanation_list %}
+                <span class="badge bg-light text-dark border fs-xs rounded-pill px-2 py-1">
+                  {% if item.status == 'matched' %}
+                    <i class="bi bi-check-lg text-success me-1"></i>
+                  {% elif item.status == 'partial' %}
+                    <i class="bi bi-dash-lg text-warning me-1"></i>
+                  {% else %}
+                    <i class="bi bi-x-lg text-muted me-1"></i>
+                  {% endif %}
+                  {{ item.label }}: {{ item.value }}
+                </span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- One-Click ATS Action Buttons -->
+        <div class="d-flex align-items-center gap-2">
+          {% if match.status != 'shortlisted' and match.status != 'interview_scheduled' %}
+          <form method="post" action="{% url 'recruiter:requirement-match-action' pk=requirement.pk %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="match_id" value="{{ match.id }}">
+            <input type="hidden" name="action" value="shortlist">
+            <button type="submit" class="btn btn-soft-success btn-sm rounded-pill">
+              <i class="bi bi-check-circle me-1"></i> Shortlist
+            </button>
+          </form>
+          {% endif %}
+
+          {% if match.status != 'rejected' %}
+          <button type="button" class="btn btn-soft-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#interviewModal-{{ match.id }}">
+            <i class="bi bi-calendar-event me-1"></i> Schedule Interview
+          </button>
+          {% endif %}
+
+          {% if match.status != 'rejected' %}
+          <form method="post" action="{% url 'recruiter:requirement-match-action' pk=requirement.pk %}" class="d-inline" onsubmit="return confirm('Reject this candidate match?');">
+            {% csrf_token %}
+            <input type="hidden" name="match_id" value="{{ match.id }}">
+            <input type="hidden" name="action" value="reject">
+            <button type="submit" class="btn btn-ghost text-danger btn-sm rounded-pill">
+              <i class="bi bi-x-circle me-1"></i> Reject
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interview Schedule Modal for each candidate -->
+  <div class="modal fade" id="interviewModal-{{ match.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form method="post" action="{% url 'recruiter:requirement-match-action' pk=requirement.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="match_id" value="{{ match.id }}">
+          <input type="hidden" name="action" value="schedule_interview">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold"><i class="bi bi-calendar-event text-primary me-2"></i>Schedule Interview</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="fs-sm text-muted-2 mb-3">Schedule an interview with <strong>{{ match.candidate.get_full_name }}</strong> for requirement: <strong>{{ requirement.subject }}</strong>.</p>
+            <div class="mb-3">
+              <label class="form-label fs-xs fw-semibold">Interview Date & Time</label>
+              <input type="datetime-local" name="scheduled_time" class="form-control form-control-sm" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fs-xs fw-semibold">Interview Type</label>
+              <select name="interview_type" class="form-select form-select-sm">
+                <option value="telephonic">Telephonic / WhatsApp</option>
+                <option value="online">Online Video (Google Meet / Zoom)</option>
+                <option value="in_person">In-Person Demo Teaching</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fs-xs fw-semibold">Meeting Link / Location</label>
+              <input type="text" name="location_link" class="form-control form-control-sm" placeholder="e.g. Google Meet URL or Campus Address">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fs-xs fw-semibold">Notes for Candidate</label>
+              <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="e.g. Prepare 10 min demo on Class 11 Kinematics..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-gradient btn-sm"><i class="bi bi-check-lg me-1"></i>Confirm & Schedule</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="sj-empty py-5">
+  <div class="icon mb-3"><i class="bi bi-people fs-1 text-muted"></i></div>
+  <h5>No candidate matches found yet</h5>
+  <p class="text-muted-2 fs-sm max-w-md mx-auto">Our automated matching engine triggers background candidate discovery. Check back shortly as new teacher profiles are registered.</p>
+</div>
+{% endif %}
+{% endblock %}

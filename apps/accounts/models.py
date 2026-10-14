@@ -110,6 +110,9 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
 
+    def get_full_name(self) -> str:
+        return self.full_name
+
     @property
     def is_job_seeker(self) -> bool:
         return self.role == self.Role.JOB_SEEKER

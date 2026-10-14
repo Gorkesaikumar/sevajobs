@@ -1,0 +1,125 @@
+{% load static humanize %}
+<!-- ====== SEVAJOBS TEACHER SEARCH HERO ====== -->
+<section class="sj-hero py-5 py-lg-6 position-relative overflow-hidden">
+  <div class="container position-relative" style="z-index: 2;">
+    <div class="row justify-content-center text-center">
+      <div class="col-lg-10 col-xl-9">
+        
+        <!-- Header Badge & Titles -->
+        <div class="mb-3">
+          <span class="sj-badge is-new animate-bounce-in">
+            🚀 Over {{ total_jobs|default:"10,000"|intcomma }}+ active teaching jobs
+          </span>
+        </div>
+        
+        <h1 class="display-4 fw-800 mb-2 animate-fade-up text-white" style="animation-delay:.1s;">
+          Find your <span class="text-warning">Teaching Job FREE</span> now
+        </h1>
+        
+        <p class="lead mb-4 animate-fade-up text-white-50 fs-5" style="animation-delay:.2s;">
+          Discover teaching opportunities across India’s top schools, colleges, and coaching institutes
+        </p>
+
+        <!-- 3-FIELD HORIZONTAL COMPACT SEARCH COMPONENT -->
+        <div class="sj-search mx-auto bg-white animate-fade-up" style="animation-delay:.3s;">
+          <form action="{% url 'core:job-search' %}" method="get" id="teacherSearchForm" class="sj-search-form">
+            <div class="sj-search-bar-inner">
+              
+              <!-- Field 1: Skills / Subject / Designation -->
+              <div class="sj-search-field sj-search-field-main">
+                <label for="search-hero-keyword" class="visually-hidden">Subject, skill or designation</label>
+                <div class="input-icon-group">
+                  <i class="bi bi-search input-icon"></i>
+                  <input type="text" class="form-control sj-search-input" 
+                         name="q" id="search-hero-keyword" value="{{ search_query|default:'' }}"
+                         placeholder="Subject, skill or designation" autocomplete="off">
+                </div>
+                <!-- Autocomplete Dropdown -->
+                <div id="search-hero-suggestions" class="dropdown-menu w-100 d-none shadow-lg border-0 mt-2 p-0 overflow-hidden" 
+                     style="border-radius: var(--sj-radius, 14px); z-index: 1050;"></div>
+              </div>
+
+              <!-- Divider 1 -->
+              <div class="sj-search-divider"></div>
+
+              <!-- Field 2: Experience -->
+              <div class="sj-search-field sj-search-field-exp">
+                <label for="search-hero-experience" class="visually-hidden">Experience</label>
+                <div class="input-icon-group">
+                  <i class="bi bi-briefcase input-icon"></i>
+                  <select class="form-select sj-search-select" 
+                          name="experience" id="search-hero-experience">
+                    <option value="" {% if not selected_experience %}selected{% endif %}>Experience (Any)</option>
+                    <option value="Fresher" {% if selected_experience == 'Fresher' or selected_experience == '0' %}selected{% endif %}>Fresher (0 Years)</option>
+                    <option value="1" {% if selected_experience == '1' %}selected{% endif %}>1 Year</option>
+                    <option value="2" {% if selected_experience == '2' %}selected{% endif %}>2 Years</option>
+                    <option value="3" {% if selected_experience == '3' %}selected{% endif %}>3 Years</option>
+                    <option value="4" {% if selected_experience == '4' %}selected{% endif %}>4 Years</option>
+                    <option value="5" {% if selected_experience == '5' %}selected{% endif %}>5 Years</option>
+                    <option value="6" {% if selected_experience == '6' %}selected{% endif %}>6 Years</option>
+                    <option value="7" {% if selected_experience == '7' %}selected{% endif %}>7 Years</option>
+                    <option value="8" {% if selected_experience == '8' %}selected{% endif %}>8 Years</option>
+                    <option value="9" {% if selected_experience == '9' %}selected{% endif %}>9 Years</option>
+                    <option value="10" {% if selected_experience == '10' or selected_experience == '10+' %}selected{% endif %}>10+ Years</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Divider 2 -->
+              <div class="sj-search-divider"></div>
+
+              <!-- Field 3: Location -->
+              <div class="sj-search-field sj-search-field-loc">
+                <label for="search-hero-location" class="visually-hidden">City or location</label>
+                <div class="input-icon-group">
+                  <i class="bi bi-geo-alt input-icon"></i>
+                  <input type="text" class="form-control sj-search-input" 
+                         name="location" id="search-hero-location" value="{{ search_location|default:'' }}"
+                         placeholder="City or location" autocomplete="off">
+                </div>
+                <!-- Location Autocomplete Dropdown -->
+                <div id="location-hero-suggestions" class="dropdown-menu w-100 d-none shadow-lg border-0 mt-2 p-0 overflow-hidden" 
+                     style="border-radius: var(--sj-radius, 14px); z-index: 1050;"></div>
+              </div>
+
+              <!-- Search Button -->
+              <div class="sj-search-btn-wrap">
+                <button type="submit" class="btn btn-search-hero">
+                  <i class="bi bi-search"></i> <span>Search Jobs</span>
+                </button>
+              </div>
+
+            </div>
+          </form>
+        </div>
+
+        <!-- POPULAR SEARCH CHIPS -->
+        <div class="d-flex align-items-center justify-content-center flex-wrap gap-2 mt-3 fs-xs text-muted-2 animate-fade-up" style="animation-delay:.4s;">
+          <span class="fw-semibold text-uppercase me-1" style="letter-spacing:0.5px;"><i class="bi bi-fire text-danger me-1"></i>Popular:</span>
+          <a href="{% url 'core:job-search' %}?q=Physics" class="badge rounded-pill bg-white text-dark border text-decoration-none px-2.5 py-1.5 shadow-sm">Physics</a>
+          <a href="{% url 'core:job-search' %}?q=Mathematics" class="badge rounded-pill bg-white text-dark border text-decoration-none px-2.5 py-1.5 shadow-sm">Mathematics</a>
+          <a href="{% url 'core:job-search' %}?q=English" class="badge rounded-pill bg-white text-dark border text-decoration-none px-2.5 py-1.5 shadow-sm">English</a>
+          <a href="{% url 'core:job-search' %}?q=Computer+Science" class="badge rounded-pill bg-white text-dark border text-decoration-none px-2.5 py-1.5 shadow-sm">Computer Science</a>
+          <a href="{% url 'core:job-search' %}?q=PGT" class="badge rounded-pill bg-white text-dark border text-decoration-none px-2.5 py-1.5 shadow-sm">PGT</a>
+          <a href="{% url 'core:job-search' %}?q=TGT" class="badge rounded-pill bg-white text-dark border text-decoration-none px-2.5 py-1.5 shadow-sm">TGT</a>
+          <a href="{% url 'core:job-search' %}?q=NEET" class="badge rounded-pill bg-white text-dark border text-decoration-none px-2.5 py-1.5 shadow-sm">NEET</a>
+          <a href="{% url 'core:job-search' %}?q=JEE" class="badge rounded-pill bg-white text-dark border text-decoration-none px-2.5 py-1.5 shadow-sm">JEE</a>
+        </div>
+
+        <!-- SECONDARY CTA BANNER — INSTITUTION / JOB PROVIDER FLOW -->
+        <div class="mt-4 pt-2 animate-fade-up" style="animation-delay:.5s;">
+          <div class="d-inline-flex flex-column flex-sm-row align-items-center gap-3 p-3 rounded-4" style="background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2);">
+            <div class="text-start text-white">
+              <div class="fw-700 fs-sm mb-0">Are you a School, College or Institute hiring teachers?</div>
+              <div class="fs-xs text-white-75">Post your hiring requirement in under 30 seconds and get instant candidate matches.</div>
+            </div>
+            <button type="button" class="btn btn-light btn-sm fw-700 px-3 py-2 text-nowrap rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#postRequirementModal">
+              Post a Requirement <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>

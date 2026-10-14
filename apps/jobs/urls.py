@@ -1,12 +1,26 @@
 from django.urls import path
 from . import views
+from . import requirement_views
 
 app_name = "jobs"
 
 urlpatterns = [
-    # Public discovery
+    # Public discovery & requirement submission
     path("", views.JobListView.as_view(), name="job-list"),
     path("featured/", views.FeaturedJobsView.as_view(), name="featured-jobs"),
+    path("autocomplete/", views.AutocompleteView.as_view(), name="autocomplete"),
+    path("submit-requirement/", requirement_views.SubmitRequirementView.as_view(), name="submit-requirement"),
+
+    # Requirement workflow management
+    path("requirements/", requirement_views.RequirementAdminQueueView.as_view(), name="requirement-queue"),
+    path("requirements/<uuid:pk>/", requirement_views.RequirementDetailView.as_view(), name="requirement-detail"),
+    path("requirements/<uuid:pk>/assign/", requirement_views.RequirementAssignView.as_view(), name="requirement-assign"),
+    path("requirements/<uuid:pk>/start-work/", requirement_views.RequirementStartWorkView.as_view(), name="requirement-start-work"),
+    path("requirements/<uuid:pk>/convert-job/", requirement_views.RequirementConvertJobView.as_view(), name="requirement-convert-job"),
+    path("requirements/<uuid:pk>/matches/<uuid:match_id>/action/", requirement_views.RequirementCandidateActionView.as_view(), name="requirement-candidate-action"),
+    path("requirements/<uuid:pk>/matches/<uuid:match_id>/interview/", requirement_views.RequirementCandidateInterviewView.as_view(), name="requirement-candidate-interview"),
+    path("requirements/<uuid:pk>/notes/", requirement_views.RequirementInternalNoteView.as_view(), name="requirement-internal-note"),
+
     path("categories/", views.JobCategoryListView.as_view(), name="category-list"),
     path("skills/", views.SkillListView.as_view(), name="skill-list"),
     path("qualifications/", views.QualificationListView.as_view(), name="qualification-list"),

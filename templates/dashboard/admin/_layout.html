@@ -6,6 +6,7 @@
 <a class="nav-link {% if sidebar_section == 'admin_all_jobs' %}active{% endif %}" href="{% url 'admin-panel:all-jobs' %}"><i class="bi bi-briefcase"></i> All Jobs</a>
 <a class="nav-link {% if sidebar_section == 'admin_create_job' %}active{% endif %}" href="{% url 'admin-panel:create-job' %}"><i class="bi bi-plus-circle"></i> Create Job</a>
 <a class="nav-link {% if sidebar_section == 'admin_applications' %}active{% endif %}" href="{% url 'admin-panel:applications' %}"><i class="bi bi-file-earmark-person"></i> Applications</a>
+<a class="nav-link {% if sidebar_section == 'admin_requirements' or sidebar_section == 'requirement-queue' %}active{% endif %}" href="{% url 'admin-panel:requirements' %}"><i class="bi bi-file-earmark-text"></i> Teaching Requirements</a>
 <a class="nav-link {% if sidebar_section == 'admin_assigned_recruitment' %}active{% endif %}" href="{% url 'admin-panel:assigned-recruitment' %}"><i class="bi bi-people"></i> Assigned Recruitment</a>
 <a class="nav-link {% if sidebar_section == 'admin_recruitment_workflow' %}active{% endif %}" href="{% url 'admin-panel:recruitment-workflow' %}"><i class="bi bi-diagram-3"></i> Recruitment Workflow</a>
 
