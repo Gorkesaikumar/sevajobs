@@ -104,6 +104,40 @@ class ResendEmailBackend(BaseEmailBackend):
             if message.bcc:
                 payload["bcc"] = list(message.bcc)
 
+            # Headers and metadata tags
+            extra_headers = getattr(message, "extra_headers", None) or {}
+            custom_headers = {k: v for k, v in extra_headers.items() if k.lower() != "provider_message_id"}
+            if custom_headers:
+                payload["headers"] = custom_headers
+
+            tags = []
+            c_val = custom_headers.get("X-Campaign-ID") or custom_headers.get("campaign_id")
+            if c_val:
+                tags.append({"name": "campaign_id", "value": str(c_val)[:256]})
+            a_val = custom_headers.get("X-Alert-Type") or custom_headers.get("alert_type")
+            if a_val:
+                tags.append({"name": "alert_type", "value": str(a_val)[:256]})
+            if tags:
+                payload["tags"] = tags
+
+            # Attachments support
+            if getattr(message, "attachments", None):
+                import base64
+                attachments_payload = []
+                for attachment in message.attachments:
+                    if isinstance(attachment, tuple) and len(attachment) >= 2:
+                        filename = attachment[0]
+                        content = attachment[1]
+                        if isinstance(content, str):
+                            content = content.encode("utf-8")
+                        b64_content = base64.b64encode(content).decode("utf-8")
+                        attachments_payload.append({
+                            "filename": filename,
+                            "content": b64_content,
+                        })
+                if attachments_payload:
+                    payload["attachments"] = attachments_payload
+
             # Invoke Resend SDK
             resend.api_key = self.api_key
             response = resend.Emails.send(payload)
@@ -114,6 +148,12 @@ class ResendEmailBackend(BaseEmailBackend):
                 msg_id = response.get("id")
             elif hasattr(response, "id"):
                 msg_id = getattr(response, "id")
+
+            if msg_id:
+                setattr(message, "provider_message_id", msg_id)
+                if not hasattr(message, "extra_headers") or message.extra_headers is None:
+                    message.extra_headers = {}
+                message.extra_headers["provider_message_id"] = msg_id
 
             masked_recipients = [_mask_email(addr) for addr in to_addresses]
             logger.info(

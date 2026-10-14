@@ -18,26 +18,32 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        # Merged active featured jobs from recruiter & staff jobs
-        featured_recruiter = list(
+        from django.utils import timezone
+        today = timezone.now().date()
+
+        # Merged active, publicly visible jobs from recruiter & staff jobs (ordered by publication date)
+        recruiter_jobs = list(
             Job.objects.filter(
                 status=Job.Status.ACTIVE,
                 approval_status=Job.ApprovalStatus.APPROVED,
-                is_featured=True,
+                is_active=True,
             )
-            .select_related("company", "category")
-            .order_by("-published_at")[:6]
+            .filter(Q(deadline__isnull=True) | Q(deadline__gte=today))
+            .select_related("company", "category", "minimum_qualification")
+            .order_by("-published_at", "-created_at", "-id")[:6]
         )
         active_staff = list(
             StaffJob.objects.filter(
                 status=StaffJob.Status.ACTIVE,
                 is_active=True,
             )
-            .order_by("-published_at")[:6]
+            .order_by("-published_at", "-created_at", "-id")[:6]
         )
-        combined_featured = featured_recruiter + active_staff
-        combined_featured.sort(key=lambda j: j.published_at or j.created_at, reverse=True)
-        ctx["featured_jobs"] = combined_featured[:6]
+        combined_jobs = recruiter_jobs + active_staff
+        combined_jobs.sort(key=lambda j: (j.published_at or j.created_at, str(j.id)), reverse=True)
+        latest_jobs = combined_jobs[:6]
+        ctx["featured_jobs"] = latest_jobs
+        ctx["latest_jobs"] = latest_jobs
 
         ctx["categories"] = JobCategory.objects.filter(is_active=True, parent__isnull=True)[:8]
         

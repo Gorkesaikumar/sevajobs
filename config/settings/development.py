@@ -11,7 +11,7 @@ SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
-# Console backend for local mail testing if SES is disabled
+# Default to console backend for local testing; override with ResendEmailBackend in .env if testing Resend API
 EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 
 # CORS settings for development

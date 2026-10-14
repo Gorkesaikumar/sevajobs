@@ -2441,10 +2441,14 @@ class AdminEmailQuotaDashboardView(AdminMixin, View):
 
         # Job Alert Campaigns & Failures
         from apps.notifications.models import JobAlertCampaign, JobAlertRecipient
+        from apps.notifications.health_service import EmailHealthService
         recent_job_alert_campaigns = JobAlertCampaign.objects.select_related("created_by").order_by("-created_at")[:10]
         failed_job_alert_recipients = JobAlertRecipient.objects.filter(
             status=JobAlertRecipient.RecipientStatus.FAILED
         ).select_related("campaign").order_by("-updated_at")[:25]
+
+        # Email Infrastructure Health Diagnostics
+        health_diagnostics = EmailHealthService.run_diagnostics()
 
         context = {
             "quota_status": quota_status,
@@ -2454,6 +2458,7 @@ class AdminEmailQuotaDashboardView(AdminMixin, View):
             "failed_job_alert_recipients": failed_job_alert_recipients,
             "templates": templates,
             "quota_history": quota_history,
+            "health_diagnostics": health_diagnostics,
             "sidebar_section": "email_quota",
         }
         return render(request, "dashboard/admin/email_quota_dashboard.html", context)
@@ -2462,6 +2467,7 @@ class AdminEmailQuotaDashboardView(AdminMixin, View):
         from apps.notifications.campaign_service import CampaignService
         from apps.notifications.job_alert_service import JobAlertCampaignService
         from apps.notifications.quota_service import DailyEmailQuotaService
+        from apps.notifications.health_service import EmailHealthService
         from django.contrib import messages
         from django.urls import reverse
 
@@ -2498,6 +2504,22 @@ class AdminEmailQuotaDashboardView(AdminMixin, View):
         elif action == "reconcile_quota":
             DailyEmailQuotaService.reconcile_today()
             messages.success(request, "Daily email quota synchronized and reconciled against recipient database records.")
+
+        elif action == "send_diagnostic_test_email":
+            test_recipient = request.POST.get("test_recipient", "").strip()
+            if not test_recipient:
+                messages.error(request, "Please enter a valid recipient email address.")
+            else:
+                actor_email = request.user.email if hasattr(request.user, "email") else ""
+                res = EmailHealthService.send_diagnostic_test(test_recipient, actor_email=actor_email)
+                if res.get("status") == "sent":
+                    messages.success(
+                        request,
+                        f"Diagnostic email dispatched to {test_recipient} via {res.get('backend_used')} "
+                        f"(Provider Message ID: {res.get('provider_message_id')})."
+                    )
+                else:
+                    messages.error(request, f"Failed to send diagnostic test email: {res.get('error') or res.get('message')}")
 
         return redirect(reverse("admin-panel:email-quota"))
 

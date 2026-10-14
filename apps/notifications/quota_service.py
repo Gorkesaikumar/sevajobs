@@ -80,6 +80,7 @@ class DailyEmailQuotaService:
             "daily_target": record.daily_target,
             "warning_threshold": limits["warning_threshold"],
             "total_consumed": consumed,
+            "used": consumed,
             "remaining": remaining,
             "target_remaining": target_remaining,
             "status": status_text,
@@ -241,11 +242,11 @@ class DailyEmailQuotaService:
             actual_failed = cr_failed + ja_failed
 
             cr_queue = CampaignRecipient.objects.filter(
-                campaign__created_at__date=target_date,
+                models.Q(queued_at__date=target_date) | models.Q(campaign__created_at__date=target_date),
                 status__in=[CampaignRecipient.RecipientStatus.QUEUED, CampaignRecipient.RecipientStatus.SENDING],
             ).count()
             ja_queue = JobAlertRecipient.objects.filter(
-                campaign__created_at__date=target_date,
+                models.Q(queued_at__date=target_date) | models.Q(campaign__created_at__date=target_date),
                 status__in=[JobAlertRecipient.RecipientStatus.QUEUED, JobAlertRecipient.RecipientStatus.SENDING],
             ).count()
             actual_in_queue = cr_queue + ja_queue

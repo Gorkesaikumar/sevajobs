@@ -186,6 +186,11 @@
         <i class="bi bi-calendar3 me-1"></i> 14-Day Delivery History
       </button>
     </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-600 fs-sm" id="diagnostics-tab" data-bs-toggle="tab" data-bs-target="#diagnostics" type="button" role="tab">
+        <i class="bi bi-shield-check me-1 text-success"></i> Health &amp; Diagnostics
+      </button>
+    </li>
   </ul>
 
   <div class="tab-content" id="quotaTabsContent">
@@ -546,6 +551,161 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 5: Health & Diagnostics -->
+    <div class="tab-pane fade" id="diagnostics" role="tabpanel">
+      <div class="row g-4">
+        <!-- Col 1: System Status & Configuration -->
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h5 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-cpu text-primary me-2"></i>Email Infrastructure Status
+              </h5>
+              <span class="badge {% if health_diagnostics.overall_status == 'HEALTHY' or health_diagnostics.overall_status == 'DEV_CONSOLE_BACKEND' %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning-emphasis{% endif %} px-3 py-2 fs-xs fw-bold">
+                {{ health_diagnostics.overall_status }}
+              </span>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm table-borderless align-middle mb-0">
+                <tbody class="fs-sm">
+                  <tr>
+                    <td class="text-muted fw-semibold" style="width: 35%;">Active Backend:</td>
+                    <td><code>{{ health_diagnostics.configuration.email_backend }}</code></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted fw-semibold">Resend SDK Installed:</td>
+                    <td>
+                      {% if health_diagnostics.provider_client.resend_package_installed %}
+                        <span class="badge bg-success-subtle text-success">Installed (v{{ health_diagnostics.provider_client.resend_version }})</span>
+                      {% else %}
+                        <span class="badge bg-danger-subtle text-danger">Not Installed</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted fw-semibold">Resend API Key:</td>
+                    <td>
+                      {% if health_diagnostics.configuration.resend_api_key_configured %}
+                        <span class="badge bg-success-subtle text-success">Configured</span>
+                        <code class="ms-1 fs-xs">{{ health_diagnostics.configuration.resend_api_key_masked }}</code>
+                      {% else %}
+                        <span class="badge bg-secondary-subtle text-muted">Not Set (Local Console Active)</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted fw-semibold">Sender Identity:</td>
+                    <td>
+                      <span class="fw-semibold">{{ health_diagnostics.configuration.resend_from_name }}</span>
+                      &lt;<code>{{ health_diagnostics.configuration.resend_from_email }}</code>&gt;
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted fw-semibold">Webhook Secret:</td>
+                    <td>
+                      {% if health_diagnostics.configuration.resend_webhook_secret_configured %}
+                        <span class="badge bg-success-subtle text-success">Configured (Svix Active)</span>
+                        <code class="ms-1 fs-xs">{{ health_diagnostics.configuration.resend_webhook_secret_masked }}</code>
+                      {% else %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis">Not Set (Signatures Bypassed in Dev)</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted fw-semibold">Celery Queue Mode:</td>
+                    <td>
+                      <span class="badge bg-info-subtle text-info">{{ health_diagnostics.queue_worker.mode }}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted fw-semibold">Default From Email:</td>
+                    <td><code>{{ health_diagnostics.configuration.default_from_email }}</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Deliverability & Suppression Metrics -->
+          <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <h5 class="fw-bold mb-3 text-dark">
+              <i class="bi bi-shield-x text-danger me-2"></i>Deliverability &amp; Suppressions
+            </h5>
+            <div class="row g-3">
+              <div class="col-4">
+                <div class="border rounded-3 p-3 text-center">
+                  <div class="fs-4 fw-800 text-danger">{{ health_diagnostics.recent_activity.permanent_bounces|default:0 }}</div>
+                  <div class="text-muted fs-xs fw-semibold mt-1">Hard Bounces</div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="border rounded-3 p-3 text-center">
+                  <div class="fs-4 fw-800 text-warning">{{ health_diagnostics.recent_activity.spam_complaints|default:0 }}</div>
+                  <div class="text-muted fs-xs fw-semibold mt-1">Spam Complaints</div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="border rounded-3 p-3 text-center">
+                  <div class="fs-4 fw-800 text-secondary">{{ health_diagnostics.recent_activity.unsubscribed_users|default:0 }}</div>
+                  <div class="text-muted fs-xs fw-semibold mt-1">Unsubscribes</div>
+                </div>
+              </div>
+            </div>
+            <div class="text-muted fs-xs mt-3">
+              <i class="bi bi-info-circle me-1"></i>
+              Suppressed recipients are automatically excluded before campaign dispatches and API calls to protect sender reputation.
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 2: Diagnostic Test Sending Tool -->
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <h5 class="fw-bold mb-2 text-dark">
+              <i class="bi bi-send-check text-primary me-2"></i>Safe Diagnostic Test
+            </h5>
+            <p class="text-muted fs-xs mb-3">
+              Dispatch a single test email through the active provider backend to verify end-to-end rendering and delivery.
+              This bypasses bulk quotas and does not consume daily campaign capacity.
+            </p>
+
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="send_diagnostic_test_email">
+
+              <div class="mb-3">
+                <label for="testRecipient" class="form-label fs-xs fw-bold text-dark text-uppercase">Test Recipient Address</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope"></i></span>
+                  <input type="email" class="form-control" id="testRecipient" name="test_recipient" 
+                         value="{{ request.user.email|default:'' }}" 
+                         placeholder="you@example.com" required>
+                </div>
+                <div class="form-text fs-xs">
+                  We recommend sending to your own verified email address.
+                </div>
+              </div>
+
+              <div class="alert alert-light border rounded-3 p-3 fs-xs text-muted mb-3">
+                <div class="fw-bold text-dark mb-1"><i class="bi bi-check2-circle text-success me-1"></i>What this tests:</div>
+                <ul class="mb-0 ps-3">
+                  <li>Active Django backend: <code>{{ health_diagnostics.configuration.email_backend|truncatechars:35 }}</code></li>
+                  <li>MIME multipart HTML + Text assembly</li>
+                  <li>Provider API key authentication (when Resend active)</li>
+                  <li>Provider message ID persistence and logging</li>
+                </ul>
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100 fw-bold rounded-3 shadow-sm py-2">
+                <i class="bi bi-send me-1"></i> Send Diagnostic Test Email
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

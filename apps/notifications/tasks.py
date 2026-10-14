@@ -1,10 +1,16 @@
-"""Celery tasks for asynchronous email delivery with SES retry & idempotency strategy."""
+"""Celery tasks for asynchronous email delivery with Resend retry & idempotency strategy."""
 
 from __future__ import annotations
 
 import logging
 from smtplib import SMTPConnectError, SMTPServerDisconnected, SMTPException, SMTPDataError, SMTPRecipientsRefused
 from typing import Any, Dict, Optional
+
+import requests
+try:
+    from resend.exceptions import RateLimitError
+except ImportError:
+    RateLimitError = Exception
 
 from celery import shared_task
 from django.conf import settings
@@ -20,6 +26,8 @@ TRANSIENT_EMAIL_ERRORS = (
     ConnectionError,
     OSError,
     TimeoutError,
+    RateLimitError,
+    requests.exceptions.RequestException,
 )
 
 
@@ -95,6 +103,11 @@ def send_transactional_email_task(
             msg.attach_alternative(html_message, "text/html")
         
         msg.send(fail_silently=False)
+        provider_msg_id = getattr(msg, "provider_message_id", "") or (
+            msg.extra_headers.get("provider_message_id", "")
+            if hasattr(msg, "extra_headers") and msg.extra_headers
+            else ""
+        )
         
         # Mark as successfully sent for idempotency (24h) and release processing lock
         if sent_key:
@@ -104,8 +117,11 @@ def send_transactional_email_task(
             cache.delete(lock_key)
 
         masked_email = _mask_email(to_email)
-        logger.info("Transactional email '%s' sent successfully to %s", subject, masked_email)
-        return {"status": "sent", "recipient": masked_email, "subject": subject}
+        logger.info(
+            "Transactional email '%s' sent successfully to %s. provider_message_id=%s",
+            subject, masked_email, provider_msg_id or "unknown"
+        )
+        return {"status": "sent", "recipient": masked_email, "subject": subject, "provider_message_id": provider_msg_id}
 
     except (SMTPRecipientsRefused, SMTPDataError) as perm_err:
         if lock_key:
@@ -283,9 +299,15 @@ def send_bulk_campaign_task(self, campaign_id: str) -> Dict[str, Any]:
             msg.attach_alternative(wrapped_html, "text/html")
             msg.send(fail_silently=False)
 
+            provider_msg_id = getattr(msg, "provider_message_id", "") or (
+                msg.extra_headers.get("provider_message_id", "")
+                if hasattr(msg, "extra_headers") and msg.extra_headers
+                else ""
+            )
             recipient.status = CampaignRecipient.RecipientStatus.SENT
             recipient.sent_at = timezone.now()
-            recipient.save(update_fields=["status", "sent_at", "updated_at"])
+            recipient.provider_message_id = provider_msg_id
+            recipient.save(update_fields=["status", "sent_at", "provider_message_id", "updated_at"])
             DailyEmailQuotaService.record_send_success(1)
 
         except Exception as exc:
@@ -418,29 +440,30 @@ def send_bulk_job_alerts_task(self, campaign_id: str) -> Dict[str, Any]:
 
         elif campaign.alert_type in (JobAlertCampaign.AlertType.WALKIN_ALERT, "walkin", "walkin_alert"):
             walkin_job = campaign.walkin_job
-            if not walkin_job or not walkin_job.is_active or walkin_job.status != Job.Status.ACTIVE:
-                recipient.status = JobAlertRecipient.RecipientStatus.SKIPPED
-                recipient.last_error = "Walk-in vacancy is no longer active or approved."
-                recipient.save(update_fields=["status", "last_error", "updated_at"])
-                campaign.skipped_count += 1
-                DailyEmailQuotaService.release_reserved_quota(1)
-                continue
+            if walkin_job:
+                if not walkin_job.is_active or walkin_job.status != Job.Status.ACTIVE:
+                    recipient.status = JobAlertRecipient.RecipientStatus.SKIPPED
+                    recipient.last_error = "Walk-in vacancy is no longer active or approved."
+                    recipient.save(update_fields=["status", "last_error", "updated_at"])
+                    campaign.skipped_count += 1
+                    DailyEmailQuotaService.release_reserved_quota(1)
+                    continue
 
-            if walkin_job.walkin_end_date and walkin_job.walkin_end_date < today:
-                recipient.status = JobAlertRecipient.RecipientStatus.SKIPPED
-                recipient.last_error = "Walk-in event date has already passed."
-                recipient.save(update_fields=["status", "last_error", "updated_at"])
-                campaign.skipped_count += 1
-                DailyEmailQuotaService.release_reserved_quota(1)
-                continue
+                if walkin_job.walkin_end_date and walkin_job.walkin_end_date < today:
+                    recipient.status = JobAlertRecipient.RecipientStatus.SKIPPED
+                    recipient.last_error = "Walk-in event date has already passed."
+                    recipient.save(update_fields=["status", "last_error", "updated_at"])
+                    campaign.skipped_count += 1
+                    DailyEmailQuotaService.release_reserved_quota(1)
+                    continue
 
             valid_jobs = recipient.matched_jobs_data or []
 
         elif campaign.alert_type in (JobAlertCampaign.AlertType.REQUIREMENT_ALERT, "requirement", "requirement_alert"):
             req = campaign.requirement
-            if not req or req.status not in ["APPROVED", "ASSIGNED"]:
+            if req and req.status.lower() in ["closed", "rejected", "draft", "on_hold"]:
                 recipient.status = JobAlertRecipient.RecipientStatus.SKIPPED
-                recipient.last_error = "Institutional requirement is no longer in APPROVED or ASSIGNED status."
+                recipient.last_error = f"Institutional requirement is inactive (status: {req.status})."
                 recipient.save(update_fields=["status", "last_error", "updated_at"])
                 campaign.skipped_count += 1
                 DailyEmailQuotaService.release_reserved_quota(1)
@@ -555,17 +578,24 @@ def send_bulk_job_alerts_task(self, campaign_id: str) -> Dict[str, Any]:
             msg.attach_alternative(wrapped_html, "text/html")
             msg.send(fail_silently=False)
 
+            provider_msg_id = getattr(msg, "provider_message_id", "") or (
+                msg.extra_headers.get("provider_message_id", "")
+                if hasattr(msg, "extra_headers") and msg.extra_headers
+                else ""
+            )
             recipient.status = JobAlertRecipient.RecipientStatus.SENT
             recipient.sent_at = timezone.now()
-            recipient.save(update_fields=["status", "sent_at", "updated_at"])
+            recipient.provider_message_id = provider_msg_id
+            recipient.save(update_fields=["status", "sent_at", "provider_message_id", "updated_at"])
             DailyEmailQuotaService.record_send_success(1)
 
             # Record persistent deduplication history for each delivered job/event
             if cand:
-                if campaign.alert_type in (JobAlertCampaign.AlertType.WALKIN_ALERT, "walkin", "walkin_alert") and campaign.walkin_job:
+                if campaign.alert_type in (JobAlertCampaign.AlertType.WALKIN_ALERT, "walkin", "walkin_alert"):
+                    walkin_id = campaign.walkin_job.id if campaign.walkin_job else campaign.id
                     CandidateJobAlertDelivery.record_delivery(
                         candidate=cand,
-                        job_id=campaign.walkin_job.id,
+                        job_id=walkin_id,
                         job_type=CandidateJobAlertDelivery.JobType.WALKIN,
                         campaign=campaign,
                         recipient=recipient,
@@ -687,11 +717,13 @@ def send_daily_job_alerts_digest(self) -> Dict[str, Any]:
 
     # 2. Check quota availability
     quota_status = DailyEmailQuotaService.get_quota_status()
-    if quota_status["remaining"] <= 0:
+    if quota_status.get("remaining", 0) <= 0:
+        quota_used = quota_status.get("used", quota_status.get("total_consumed", 0))
+        quota_limit = quota_status.get("daily_limit", 100)
         logger.warning(
             "Daily email quota exhausted (%d/%d used). Cannot dispatch daily job alerts.",
-            quota_status["used"],
-            quota_status["daily_limit"],
+            quota_used,
+            quota_limit,
         )
         return {"status": "quota_exhausted"}
 

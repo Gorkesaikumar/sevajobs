@@ -54,6 +54,13 @@ class SubmitRequirementView(View):
             data = request.POST
         files = request.FILES
 
+        # Authorization check: Authenticated job seekers cannot perform employer requirement creation
+        if request.user.is_authenticated and getattr(request.user, "is_job_seeker", False) and not (request.user.is_staff or request.user.is_superuser):
+            return JsonResponse({
+                "status": "error",
+                "message": "You are currently signed in as a job seeker. Posting requirements is reserved for educational institutions and recruiters."
+            }, status=403)
+
         institution_name = str(data.get("institution_name", "")).strip()
         phone_number = str(data.get("contact_phone") or data.get("phone_number") or "").strip()
         subject = str(data.get("subject", "")).strip()

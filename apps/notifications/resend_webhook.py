@@ -67,7 +67,7 @@ class ResendWebhookView(APIView):
         if not isinstance(data, dict):
             data = {}
 
-        event_id = headers.get("svix-id") or data.get("email_id") or payload.get("created_at", "")
+        event_id = headers.get("svix-id") or data.get("email_id") or data.get("id") or payload.get("created_at", "")
 
         # 3. Idempotency Guard (Redis cache for 24 hours)
         if event_id:
@@ -82,7 +82,7 @@ class ResendWebhookView(APIView):
         from django.db import models as dj_models
         from .models import CampaignRecipient, EmailCampaign, JobAlertRecipient, JobAlertCampaign
 
-        resend_email_id = data.get("email_id", "")
+        resend_email_id = data.get("email_id") or data.get("id") or ""
 
         if event_type == "email.bounced":
             recipients = self._extract_recipients(data)
@@ -104,10 +104,11 @@ class ResendWebhookView(APIView):
                 )
                 logger.warning("Recorded Resend bounce suppression for recipient=%s", email)
 
+                matched = False
                 # Update matching campaign recipient
                 cr_qs = CampaignRecipient.objects.filter(email=email)
                 if resend_email_id:
-                    cr = cr_qs.filter(provider_message_id=resend_email_id).first() or cr_qs.filter(status=CampaignRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                    cr = cr_qs.filter(provider_message_id=resend_email_id).first()
                 else:
                     cr = cr_qs.filter(status=CampaignRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
                 if cr:
@@ -115,13 +116,17 @@ class ResendWebhookView(APIView):
                     cr.last_error = f"Resend Bounce ({bounce_type})"
                     cr.failed_at = timezone.now()
                     cr.save(update_fields=["status", "last_error", "failed_at", "updated_at"])
+                    matched = True
 
-                # Update matching job alert recipient
+                # Update matching job alert recipient only if not already matched to campaign recipient
                 jar_qs = JobAlertRecipient.objects.filter(email=email)
                 if resend_email_id:
-                    jar = jar_qs.filter(provider_message_id=resend_email_id).first() or jar_qs.filter(status=JobAlertRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
-                else:
+                    jar = jar_qs.filter(provider_message_id=resend_email_id).first()
+                elif not matched:
                     jar = jar_qs.filter(status=JobAlertRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                else:
+                    jar = None
+
                 if jar:
                     jar.status = JobAlertRecipient.RecipientStatus.FAILED
                     jar.last_error = f"Resend Bounce ({bounce_type})"
@@ -148,16 +153,27 @@ class ResendWebhookView(APIView):
                 )
                 logger.warning("Recorded Resend spam complaint suppression for recipient=%s", email)
 
+                matched = False
                 cr_qs = CampaignRecipient.objects.filter(email=email)
-                cr = cr_qs.filter(provider_message_id=resend_email_id).first() or cr_qs.filter(status=CampaignRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                if resend_email_id:
+                    cr = cr_qs.filter(provider_message_id=resend_email_id).first()
+                else:
+                    cr = cr_qs.filter(status=CampaignRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
                 if cr:
                     cr.status = CampaignRecipient.RecipientStatus.FAILED
                     cr.last_error = "Resend Spam Complaint"
                     cr.failed_at = timezone.now()
                     cr.save(update_fields=["status", "last_error", "failed_at", "updated_at"])
+                    matched = True
 
                 jar_qs = JobAlertRecipient.objects.filter(email=email)
-                jar = jar_qs.filter(provider_message_id=resend_email_id).first() or jar_qs.filter(status=JobAlertRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                if resend_email_id:
+                    jar = jar_qs.filter(provider_message_id=resend_email_id).first()
+                elif not matched:
+                    jar = jar_qs.filter(status=JobAlertRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                else:
+                    jar = None
+
                 if jar:
                     jar.status = JobAlertRecipient.RecipientStatus.FAILED
                     jar.last_error = "Resend Spam Complaint"
@@ -171,17 +187,29 @@ class ResendWebhookView(APIView):
             from .quota_service import DailyEmailQuotaService
             recipients = self._extract_recipients(data)
             for email in recipients:
+                matched = False
                 cr_qs = CampaignRecipient.objects.filter(email=email)
-                cr = cr_qs.filter(provider_message_id=resend_email_id).first() if resend_email_id else cr_qs.filter(status=CampaignRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                if resend_email_id:
+                    cr = cr_qs.filter(provider_message_id=resend_email_id).first()
+                else:
+                    cr = cr_qs.filter(status=CampaignRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+
                 if cr and cr.status != CampaignRecipient.RecipientStatus.DELIVERED:
                     cr.status = CampaignRecipient.RecipientStatus.DELIVERED
                     cr.delivered_at = timezone.now()
                     cr.save(update_fields=["status", "delivered_at", "updated_at"])
                     EmailCampaign.objects.filter(pk=cr.campaign_id).update(delivered_count=dj_models.F("delivered_count") + 1)
                     DailyEmailQuotaService.record_delivery_success(1)
+                    matched = True
 
                 jar_qs = JobAlertRecipient.objects.filter(email=email)
-                jar = jar_qs.filter(provider_message_id=resend_email_id).first() if resend_email_id else jar_qs.filter(status=JobAlertRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                if resend_email_id:
+                    jar = jar_qs.filter(provider_message_id=resend_email_id).first()
+                elif not matched:
+                    jar = jar_qs.filter(status=JobAlertRecipient.RecipientStatus.SENT).order_by("-sent_at").first()
+                else:
+                    jar = None
+
                 if jar and jar.status != JobAlertRecipient.RecipientStatus.DELIVERED:
                     jar.status = JobAlertRecipient.RecipientStatus.DELIVERED
                     jar.delivered_at = timezone.now()
@@ -193,7 +221,7 @@ class ResendWebhookView(APIView):
             return Response({"status": "acknowledged", "event_type": event_type})
 
         elif event_type in ("email.sent", "email.opened", "email.clicked"):
-            logger.info("Resend event received: type=%s email_id=%s", event_type, data.get("email_id"))
+            logger.info("Resend event received: type=%s email_id=%s", event_type, data.get("email_id") or data.get("id"))
             return Response({"status": "acknowledged", "event_type": event_type})
 
         logger.info("Unhandled Resend webhook event type=%s", event_type)
@@ -206,10 +234,8 @@ class ResendWebhookView(APIView):
             from svix.webhooks import Webhook, WebhookVerificationError
             wh = Webhook(secret)
             # Svix requires headers dict containing svix-id, svix-timestamp, svix-signature
-            verified_data = wh.verify(raw_body.decode("utf-8"), headers)
-            if isinstance(verified_data, str):
-                return json.loads(verified_data)
-            return verified_data
+            wh.verify(raw_body.decode("utf-8"), headers)
+            return json.loads(raw_body.decode("utf-8"))
         except ImportError:
             # Manual HMAC SHA256 verification if svix package is not installed
             return ResendWebhookView._manual_svix_verify(raw_body, headers, secret)

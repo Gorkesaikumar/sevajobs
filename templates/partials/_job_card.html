@@ -1,7 +1,7 @@
 {# Job Card — expects `job` in context #}
 {% load humanize %}
 <article class="sj-card p-4 h-100 d-flex flex-column position-relative">
-  <button class="sj-save-btn {% if job.is_saved %}saved{% endif %}" data-job-id="{{ job.id }}" aria-label="Save job" type="button">
+  <button class="sj-save-btn {% if job.is_saved %}saved{% endif %}" data-job-id="{{ job.id }}" aria-label="Save job" type="button" style="z-index: 3;">
     <i class="bi {% if job.is_saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i>
   </button>
 
@@ -28,11 +28,18 @@
   <div class="d-flex flex-wrap gap-2 mb-3">
     {% if job.state and job.city %}
       <span class="sj-chip text-primary fw-semibold" style="border-color: rgba(var(--bs-primary-rgb), 0.2); background-color: rgba(var(--bs-primary-rgb), 0.05);"><i class="bi bi-geo-alt-fill text-primary"></i> {{ job.state }} • {{ job.city }}</span>
-    {% else %}
+    {% elif job.location %}
       <span class="sj-chip"><i class="bi bi-geo-alt"></i> {{ job.location|truncatechars:20 }}</span>
     {% endif %}
-    <span class="sj-chip"><i class="bi bi-briefcase"></i> {{ job.get_job_type_display }}</span>
-    <span class="sj-chip"><i class="bi bi-bar-chart"></i> {{ job.get_experience_level_display }}</span>
+    {% if job.get_job_type_display %}
+      <span class="sj-chip"><i class="bi bi-briefcase"></i> {{ job.get_job_type_display }}</span>
+    {% endif %}
+    {% if job.get_experience_level_display %}
+      <span class="sj-chip"><i class="bi bi-bar-chart"></i> {{ job.get_experience_level_display }}</span>
+    {% endif %}
+    {% if job.vacancies %}
+      <span class="sj-chip" style="background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;"><i class="bi bi-people me-1"></i>{{ job.vacancies }} Vacanc{{ job.vacancies|pluralize:"y,ies" }}</span>
+    {% endif %}
   </div>
 
   {% if job.skills_required.all %}
@@ -46,14 +53,21 @@
   </div>
   {% endif %}
 
-  <div class="mt-auto d-flex align-items-center justify-content-between pt-3 border-top">
-    <span class="fw-semibold text-ink">
-      {% if job.salary_is_disclosed and job.salary_min %}
-        ₹{{ job.salary_min|intcomma }}{% if job.salary_max %} – ₹{{ job.salary_max|intcomma }}{% endif %}
-      {% else %}
-        <span class="text-muted-2 fw-normal fs-sm">Not disclosed</span>
-      {% endif %}
-    </span>
-    <span class="text-muted-2 small">{{ job.created_at|timesince }} ago</span>
+  <!-- Bottom: Salary, Relative Time & Apply Now Action -->
+  <div class="mt-auto pt-3 border-top" style="position: relative; z-index: 2;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <span class="fw-semibold text-ink">
+        {% if job.salary_is_disclosed and job.salary_min %}
+          ₹{{ job.salary_min|intcomma }}{% if job.salary_max %} – ₹{{ job.salary_max|intcomma }}{% endif %}
+        {% else %}
+          <span class="text-muted-2 fw-normal fs-sm">Not disclosed</span>
+        {% endif %}
+      </span>
+      <span class="text-muted-2 small"><i class="bi bi-clock me-1"></i>{{ job.published_at|default:job.created_at|timesince }} ago</span>
+    </div>
+    <!-- Apply Button -->
+    <a href="{% url 'core:job-detail' slug=job.slug %}" class="btn btn-primary w-100 text-center fw-semibold py-2" style="border-radius: 8px;">
+      Apply Now <i class="bi bi-arrow-right ms-1"></i>
+    </a>
   </div>
 </article>
