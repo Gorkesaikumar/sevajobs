@@ -157,6 +157,9 @@ site/
 *.orig
 *.rej
 .tmp/
+backups/
+*.sql
+*.dump
 
 # ---- Claude Code / agent metadata ------------------------------------------
 .claude/

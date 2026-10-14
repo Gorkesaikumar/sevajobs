@@ -418,7 +418,12 @@ class AdminCompaniesView(AdminMixin, TemplateView):
         
         q = self.request.GET.get("q")
         if q:
-            qs = qs.filter(Q(name__icontains=q) | Q(industry__icontains=q))
+            qs = qs.filter(
+                Q(name__icontains=q)
+                | Q(location__icontains=q)
+                | Q(city__icontains=q)
+                | Q(headquarters__icontains=q)
+            )
             
         status = self.request.GET.get("status")
         if status == "verified":
@@ -428,9 +433,9 @@ class AdminCompaniesView(AdminMixin, TemplateView):
             
         type_filter = self.request.GET.get("type")
         if type_filter == "school":
-            qs = qs.filter(name__icontains="school")
+            qs = qs.filter(institute_type="school")
         elif type_filter == "college":
-            qs = qs.filter(name__icontains="college")
+            qs = qs.filter(institute_type="college")
             
         # Sorting
         sort = self.request.GET.get("sort", "created_at")
@@ -438,8 +443,8 @@ class AdminCompaniesView(AdminMixin, TemplateView):
         
         valid_sort_fields = {
             "name": "name",
-            "industry": "industry",
-            "size": "size",
+            "industry": "institute_type",
+            "size": "number_of_openings",
             "active_jobs": "active_jobs_count",
             "recruiters": "recruiters_count",
             "status": "is_verified",

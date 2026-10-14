@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import JobApplication, ApplicationStatusHistory
 
 
@@ -38,10 +39,12 @@ class ApplicationStatusHistorySerializer(serializers.ModelSerializer):
     def _label(self, value):
         return dict(JobApplication.Status.choices).get(value, value)
 
-    def get_from_status_display(self, obj):
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_from_status_display(self, obj) -> str | None:
         return self._label(obj.from_status) if obj.from_status else None
 
-    def get_to_status_display(self, obj):
+    @extend_schema_field(serializers.CharField())
+    def get_to_status_display(self, obj) -> str:
         return self._label(obj.to_status)
 
 

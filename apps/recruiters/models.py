@@ -81,6 +81,26 @@ class Company(BaseModel):
     )
     is_verified = models.BooleanField(default=False, db_index=True)
 
+    @property
+    def industry(self) -> str:
+        """Backward-compatible computed property for legacy company queries and templates."""
+        return "Education"
+
+    @property
+    def size(self) -> str:
+        """Backward-compatible computed property for legacy company size."""
+        return ""
+
+    @property
+    def website(self) -> str:
+        """Backward-compatible property for company website."""
+        return ""
+
+    @property
+    def description(self) -> str:
+        """Backward-compatible property mapping to current requirements or empty string."""
+        return self.current_requirements or ""
+
     class Meta(BaseModel.Meta):
         verbose_name = "Institute"
         verbose_name_plural = "Institutes"

@@ -283,12 +283,21 @@ class CompanyListPageView(TemplateView):
         )
         q = self.request.GET.get("q", "")
         if q:
-            qs = qs.filter(Q(name__icontains=q) | Q(industry__icontains=q))
+            qs = qs.filter(
+                Q(name__icontains=q)
+                | Q(location__icontains=q)
+                | Q(headquarters__icontains=q)
+                | Q(city__icontains=q)
+            )
             ctx["search_query"] = q
 
+        institute_type = self.request.GET.get("institute_type")
+        if institute_type:
+            qs = qs.filter(institute_type=institute_type)
+
         industry = self.request.GET.get("industry")
-        if industry:
-            qs = qs.filter(industry__icontains=industry)
+        if industry and "education" not in industry.lower():
+            qs = qs.none()
 
         paginator = Paginator(qs.order_by("-created_at"), 12)
         page = self.request.GET.get("page", 1)

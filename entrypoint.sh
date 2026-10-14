@@ -13,11 +13,19 @@ case "$*" in
         echo "Celery service detected - skipping migrations and collectstatic."
         ;;
     *)
-        echo "Applying database migrations..."
-        python manage.py migrate --noinput
+        if [ "$SKIP_MIGRATIONS" = "true" ] || [ "$MIGRATE_ON_STARTUP" = "false" ]; then
+            echo "Skipping automatic database migrations (SKIP_MIGRATIONS=$SKIP_MIGRATIONS)."
+        else
+            echo "Applying database migrations..."
+            python manage.py migrate --noinput
+        fi
 
-        echo "Collecting static files..."
-        python manage.py collectstatic --noinput
+        if [ "$SKIP_COLLECTSTATIC" = "true" ]; then
+            echo "Skipping static files collection (SKIP_COLLECTSTATIC=$SKIP_COLLECTSTATIC)."
+        else
+            echo "Collecting static files..."
+            python manage.py collectstatic --noinput
+        fi
         ;;
 esac
 

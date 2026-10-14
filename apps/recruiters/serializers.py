@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 
 from apps.accounts.models import JobSeekerProfile
 from .models import Company, RecruiterProfile
@@ -13,6 +14,10 @@ from .models import Company, RecruiterProfile
 # ---------------------------------------------------------------------------
 class CompanySerializer(serializers.ModelSerializer):
     open_jobs_count = serializers.SerializerMethodField()
+    industry = serializers.CharField(read_only=True, default="Education")
+    size = serializers.CharField(read_only=True, default="", allow_blank=True)
+    website = serializers.CharField(read_only=True, default="", allow_blank=True)
+    description = serializers.CharField(read_only=True, default="", allow_blank=True)
 
     class Meta:
         model = Company
@@ -22,9 +27,13 @@ class CompanySerializer(serializers.ModelSerializer):
             "email", "phone", "landline", "linkedin_url", "twitter_url",
             "current_requirements", "number_of_openings",
             "is_verified", "open_jobs_count", "created_at",
+            "institute_type", "college_type", "university_affiliation",
+            "courses_offered", "departments", "director_name",
+            "address", "city", "state", "country", "pincode",
         ]
         read_only_fields = ["id", "slug", "is_verified", "created_at"]
 
+    @extend_schema_field(serializers.IntegerField())
     def get_open_jobs_count(self, obj) -> int:
         return obj.jobs.filter(status="active").count()
 

@@ -43,13 +43,20 @@ class RecruiterAdListCreateView(generics.ListCreateAPIView):
         return AdvertisementWriteSerializer if self.request.method == "POST" else AdvertisementSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not getattr(self.request.user, "is_authenticated", False):
+            return Advertisement.objects.none()
         return Advertisement.objects.filter(recruiter__user=self.request.user)
 
     def perform_create(self, serializer):
         _service.create(self.request.user.recruiter_profile, serializer.validated_data)
 
 
-@extend_schema(tags=["advertisements"])
+@extend_schema(
+    tags=["advertisements"],
+    request=None,
+    responses={204: None},
+    description="Record an ad impression.",
+)
 class AdImpressionView(APIView):
     """POST /api/v1/advertisements/<id>/impression/"""
 
@@ -60,7 +67,12 @@ class AdImpressionView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema(tags=["advertisements"])
+@extend_schema(
+    tags=["advertisements"],
+    request=None,
+    responses={204: None},
+    description="Record an ad click.",
+)
 class AdClickView(APIView):
     """POST /api/v1/advertisements/<id>/click/"""
 

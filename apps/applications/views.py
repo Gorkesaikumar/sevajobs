@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,7 +16,11 @@ from .services import ApplicationService
 _service = ApplicationService()
 
 
-@extend_schema(tags=["applications"])
+@extend_schema(
+    tags=["applications"],
+    request=ApplicationSubmitSerializer,
+    responses={201: ApplicationSerializer},
+)
 class ApplyView(APIView):
     """POST /api/v1/applications/apply/ — job seeker submits application."""
 
@@ -52,6 +56,8 @@ class MyApplicationListView(generics.ListAPIView):
     serializer_class = ApplicationSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not getattr(self.request.user, "is_authenticated", False):
+            return JobApplication.objects.none()
         return (
             JobApplication.objects
             .filter(applicant=self.request.user)
@@ -60,7 +66,11 @@ class MyApplicationListView(generics.ListAPIView):
         )
 
 
-@extend_schema(tags=["applications"])
+@extend_schema(
+    tags=["applications"],
+    request=None,
+    responses={200: ApplicationSerializer},
+)
 class WithdrawView(APIView):
     """POST /api/v1/applications/<id>/withdraw/"""
 
@@ -82,15 +92,22 @@ class RecruiterApplicationListView(generics.ListAPIView):
     serializer_class = ApplicationSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not getattr(self.request.user, "is_authenticated", False):
+            return JobApplication.objects.none()
+        job_id = self.kwargs.get("job_id")
         return (
             JobApplication.objects
-            .filter(job__recruiter__user=self.request.user, job_id=self.kwargs["job_id"])
+            .filter(job__recruiter__user=self.request.user, job_id=job_id)
             .select_related("applicant", "job", "resume")
             .prefetch_related("history")
         )
 
 
-@extend_schema(tags=["applications"])
+@extend_schema(
+    tags=["applications"],
+    request=ApplicationStatusUpdateSerializer,
+    responses={200: ApplicationSerializer},
+)
 class RecruiterApplicationStatusView(APIView):
     """PATCH /api/v1/applications/<id>/status/ — recruiter moves a candidate."""
 
@@ -117,7 +134,10 @@ class RecruiterApplicationStatusView(APIView):
         return Response(ApplicationSerializer(application).data)
 
 
-@extend_schema(tags=["applications"])
+@extend_schema(
+    tags=["applications"],
+    responses={200: serializers.DictField()},
+)
 class JobPipelineView(APIView):
     """
     GET /api/v1/applications/job/<job_id>/pipeline/ — ATS board summary.

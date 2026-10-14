@@ -102,12 +102,10 @@ class Command(BaseCommand):
                 company = Company.objects.create(
                     name=school_name,
                     slug=slugify(school_name + f"-{i}"),
-                    industry="Education",
-                    website=f"https://{slugify(school_name)}.example.com",
+                    institute_type=random.choice(Company.InstituteType.choices)[0],
                     location=random.choice(locations),
-                    description=f"A top-tier educational institution focusing on holistic development.",
+                    current_requirements="A top-tier educational institution focusing on holistic development.",
                     is_verified=True,
-                    size=random.choice(Company.Size.choices)[0]
                 )
                 
                 rp = RecruiterProfile.objects.create(

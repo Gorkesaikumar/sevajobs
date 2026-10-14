@@ -16,6 +16,7 @@ from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from django_filters import rest_framework as filters
 
 # Models
 from apps.jobs.models import JobCategory, Skill, Qualification
@@ -124,13 +125,33 @@ class JobViewSet(viewsets.ReadOnlyModelViewSet):
 # ---------------------------------------------------------------------------
 # Companies — public read of verified employers
 # ---------------------------------------------------------------------------
+class CompanyFilterSet(filters.FilterSet):
+    institute_type = filters.ChoiceFilter(choices=Company.InstituteType.choices)
+    city = filters.CharFilter(lookup_expr="icontains")
+    state = filters.CharFilter(lookup_expr="icontains")
+    industry = filters.CharFilter(method="filter_industry")
+    size = filters.CharFilter(method="filter_noop")
+
+    class Meta:
+        model = Company
+        fields = ["institute_type", "city", "state"]
+
+    def filter_industry(self, queryset, name, value):
+        if "education" in value.lower():
+            return queryset
+        return queryset.none()
+
+    def filter_noop(self, queryset, name, value):
+        return queryset
+
+
 class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CompanySerializer
     permission_classes = [AllowAny]
     lookup_field = "id"
     lookup_value_regex = UUID_REGEX
-    filterset_fields = ["industry", "size"]
-    search_fields = ["name", "industry", "location", "headquarters"]
+    filterset_class = CompanyFilterSet
+    search_fields = ["name", "location", "headquarters", "city", "state"]
     ordering_fields = ["name", "created_at"]
 
     def get_queryset(self):
@@ -168,11 +189,13 @@ class ApplicationViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ["-applied_at"]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not getattr(self.request.user, "is_authenticated", False):
+            return JobApplication.objects.none()
         user = self.request.user
         base = JobApplication.objects.select_related("job", "applicant", "resume").prefetch_related("history")
-        if user.is_staff or user.role == "admin":
+        if user.is_staff or getattr(user, "role", None) == "admin":
             return base
-        if user.role == "recruiter":
+        if getattr(user, "role", None) == "recruiter":
             return base.filter(job__recruiter__user=user)
         return base.filter(applicant=user)
 
@@ -192,6 +215,8 @@ class NotificationViewSet(
     ordering = ["-created_at"]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not getattr(self.request.user, "is_authenticated", False):
+            return Notification.objects.none()
         return Notification.objects.filter(recipient=self.request.user)
 
     @action(detail=True, methods=["post"], url_path="read")

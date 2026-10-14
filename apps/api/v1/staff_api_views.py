@@ -9,6 +9,7 @@ from rest_framework import generics, serializers, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import BasePermission
+from drf_spectacular.utils import extend_schema
 
 from apps.accounts.models import User, StaffProfile, AuditLog
 from apps.jobs.models import StaffJob
@@ -145,6 +146,26 @@ class StaffCreateSerializer(serializers.Serializer):
         return formatted_phone
 
 
+class StaffUpdateSerializer(serializers.Serializer):
+    full_name = serializers.CharField(required=False)
+    email = serializers.EmailField(required=False)
+    phone_number = serializers.CharField(required=False)
+    status = serializers.ChoiceField(choices=["Active", "Inactive"], required=False)
+
+
+class StaffIdRequestSerializer(serializers.Serializer):
+    id = serializers.UUIDField(required=True)
+
+
+class StaffActionResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class StaffResetPasswordResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    temporary_password = serializers.CharField()
+
+
 # ===========================================================================
 # Staff Views
 # ===========================================================================
@@ -153,6 +174,8 @@ class StaffJobListView(generics.ListAPIView):
     serializer_class = StaffJobSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not getattr(self.request.user, "is_authenticated", False):
+            return StaffJob.objects.none()
         return StaffJob.objects.filter(created_by=self.request.user).order_by("-created_at")
 
 
@@ -188,6 +211,8 @@ class StaffJobUpdateView(generics.UpdateAPIView):
     lookup_field = "id"
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not getattr(self.request.user, "is_authenticated", False):
+            return StaffJob.objects.none()
         return StaffJob.objects.filter(created_by=self.request.user)
 
     def perform_update(self, serializer):
@@ -207,6 +232,8 @@ class StaffApplicationListView(generics.ListAPIView):
     serializer_class = StaffJobApplicationSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False) or not getattr(self.request.user, "is_authenticated", False):
+            return JobApplication.objects.none()
         return JobApplication.objects.filter(staff_job__created_by=self.request.user).select_related("applicant", "staff_job", "resume").order_by("-applied_at")
 
 
@@ -221,6 +248,10 @@ class AdminStaffListView(generics.ListAPIView):
         return StaffProfile.objects.all().select_related("user").order_by("-created_at")
 
 
+@extend_schema(
+    request=StaffCreateSerializer,
+    responses={201: StaffProfileSerializer},
+)
 class AdminStaffCreateView(APIView):
     permission_classes = [IsAdminUser]
 
@@ -281,6 +312,10 @@ class AdminStaffCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    request=StaffUpdateSerializer,
+    responses={200: StaffProfileSerializer},
+)
 class AdminStaffUpdateView(APIView):
     permission_classes = [IsAdminUser]
 
@@ -339,6 +374,10 @@ class AdminStaffUpdateView(APIView):
         return Response(res_serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=StaffIdRequestSerializer,
+    responses={200: StaffResetPasswordResponseSerializer},
+)
 class AdminStaffResetPasswordView(APIView):
     permission_classes = [IsAdminUser]
 
@@ -366,6 +405,10 @@ class AdminStaffResetPasswordView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=StaffIdRequestSerializer,
+    responses={200: StaffActionResponseSerializer},
+)
 class AdminStaffActivateView(APIView):
     permission_classes = [IsAdminUser]
 
@@ -391,6 +434,10 @@ class AdminStaffActivateView(APIView):
         return Response({"detail": f"Staff account {profile.full_name} activated."}, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=StaffIdRequestSerializer,
+    responses={200: StaffActionResponseSerializer},
+)
 class AdminStaffDeactivateView(APIView):
     permission_classes = [IsAdminUser]
 

@@ -30,17 +30,23 @@ def _recruiter_profile_or_none(user):
 class CompanyListCreateView(generics.ListCreateAPIView):
     """GET/POST /api/v1/recruiters/companies/"""
 
-    search_fields = ["name", "industry", "headquarters"]
+    search_fields = ["name", "headquarters", "location", "city"]
     ordering_fields = ["name", "created_at"]
 
     def get_permissions(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request or not hasattr(self.request, "method"):
+            return [AllowAny()]
         return [AllowAny()] if self.request.method == "GET" else [IsAuthenticated()]
 
     def get_serializer_class(self):
+        if getattr(self, "swagger_fake_view", False) or not self.request or not hasattr(self.request, "method"):
+            return CompanySerializer
         return CompanyWriteSerializer if self.request.method == "POST" else CompanySerializer
 
     def get_queryset(self):
         qs = Company.objects.all()
+        if getattr(self, "swagger_fake_view", False) or not self.request or not hasattr(self.request, "method"):
+            return qs
         if self.request.method == "GET":
             qs = qs.filter(is_verified=True)
         return qs
@@ -55,6 +61,7 @@ class RecruiterProfileView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: RecruiterProfileSerializer})
     def get(self, request):
         try:
             profile = request.user.recruiter_profile
@@ -62,12 +69,14 @@ class RecruiterProfileView(APIView):
             return Response({"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
         return Response(RecruiterProfileSerializer(profile).data)
 
+    @extend_schema(request=RecruiterProfileWriteSerializer, responses={201: RecruiterProfileSerializer})
     def post(self, request):
         serializer = RecruiterProfileWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         profile = _recruiter_service.create_profile(request.user, serializer.validated_data)
         return Response(RecruiterProfileSerializer(profile).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=RecruiterProfileWriteSerializer, responses={200: RecruiterProfileSerializer})
     def patch(self, request):
         profile = request.user.recruiter_profile
         serializer = RecruiterProfileWriteSerializer(profile, data=request.data, partial=True)
@@ -89,12 +98,14 @@ class MyCompanyView(APIView):
         profile = _recruiter_profile_or_none(request.user)
         return profile.company if profile else None
 
+    @extend_schema(responses={200: CompanySerializer})
     def get(self, request):
         company = self._get_company(request)
         if company is None:
             return Response({"detail": "No company linked to your profile."}, status=404)
         return Response(CompanySerializer(company, context={"request": request}).data)
 
+    @extend_schema(request=CompanyWriteSerializer, responses={200: CompanySerializer})
     def patch(self, request):
         company = self._get_company(request)
         if company is None:

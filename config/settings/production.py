@@ -1,6 +1,8 @@
 """Production settings."""
 
-from decouple import config
+import os
+import sys
+from decouple import config, Csv
 from .base import *  # noqa: F401, F403
 
 DEBUG = False
@@ -9,15 +11,29 @@ DEBUG = False
 # Security
 # ---------------------------------------------------------------------------
 
-SECURE_SSL_REDIRECT =  False
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=True, cast=bool)
+CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=True, cast=bool)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
+
+# HSTS settings (safe defaults, configurable for phased rollout to prevent accidental lockouts)
+SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=3600, cast=int)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False, cast=bool)
+SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=False, cast=bool)
+
+# CSRF Trusted Origins for HTTPS reverse proxy
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default=(
+        "https://sevajobs.in,https://www.sevajobs.in,"
+        "https://sevajobs.com,https://www.sevajobs.com,"
+        "https://sevajobs.co.in,https://www.sevajobs.co.in,"
+        "http://187.127.180.60"
+    ),
+    cast=Csv(),
+)
 
 # ---------------------------------------------------------------------------
 # Static files via S3 (optional — toggle with USE_S3)
@@ -61,11 +77,14 @@ if SENTRY_DSN:
 if EMAIL_BACKEND == "apps.notifications.backends.ResendEmailBackend":
     from django.core.exceptions import ImproperlyConfigured
 
-    if not RESEND_API_KEY:
+    skip_check_commands = {"check", "test", "collectstatic", "spectacular", "makemigrations", "showmigrations"}
+    is_mgmt_build = any(arg in skip_check_commands for arg in sys.argv)
+
+    if not RESEND_API_KEY and not is_mgmt_build:
         raise ImproperlyConfigured(
             "RESEND_API_KEY is required in production when using ResendEmailBackend."
         )
-    if not DEFAULT_FROM_EMAIL:
+    if not DEFAULT_FROM_EMAIL and not is_mgmt_build:
         raise ImproperlyConfigured(
             "DEFAULT_FROM_EMAIL is required in production."
         )
