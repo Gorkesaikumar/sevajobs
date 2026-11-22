@@ -13,10 +13,15 @@ DEBUG = False
 
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = config("USE_X_FORWARDED_HOST", default=True, cast=bool)
 SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=True, cast=bool)
 CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=True, cast=bool)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
+
+# Public Base URL for reverse proxy / webhooks / absolute callbacks
+SITE_URL = config("SITE_URL", default=config("PUBLIC_BASE_URL", default="https://sevajobs.in")).strip()
+PUBLIC_BASE_URL = config("PUBLIC_BASE_URL", default=SITE_URL).strip()
 
 # HSTS settings (safe defaults, configurable for phased rollout to prevent accidental lockouts)
 SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=3600, cast=int)

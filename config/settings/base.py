@@ -473,3 +473,12 @@ CSRF_TRUSTED_ORIGINS = [
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
+
+# ---------------------------------------------------------------------------
+# Reverse Proxy & Public Site URL
+# ---------------------------------------------------------------------------
+USE_X_FORWARDED_HOST = config("USE_X_FORWARDED_HOST", default=True, cast=bool)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+SITE_URL = config("SITE_URL", default=config("PUBLIC_BASE_URL", default="")).strip()
+PUBLIC_BASE_URL = config("PUBLIC_BASE_URL", default=SITE_URL).strip()

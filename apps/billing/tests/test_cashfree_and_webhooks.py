@@ -134,3 +134,87 @@ class CashfreeGatewayTestCase(TestCase):
         order.refresh_from_db()
         self.assertEqual(order.status, PaymentOrder.Status.PAID)
         self.assertTrue(PaymentWebhookEvent.objects.filter(order_id="ORDER_SJ_WEBHOOK_01", processed=True).exists())
+
+    def test_webhook_invalid_json_returns_400(self):
+        resp = self.client.post(
+            "/billing/webhook/",
+            data="not-a-valid-json{{{",
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json().get("status"), "invalid_json")
+
+    def test_webhook_invalid_signature_returns_401_without_db_pollution(self):
+        initial_count = PaymentWebhookEvent.objects.count()
+        payload = json.dumps({"type": "ORDER_PAID_WEBHOOK", "data": {"order": {"order_id": "ORDER_FAKE"}}}).encode("utf-8")
+
+        with self.settings(CASHFREE_WEBHOOK_SECRET="valid_secret_key"):
+            resp = self.client.post(
+                "/billing/webhook/",
+                data=payload,
+                content_type="application/json",
+                HTTP_X_WEBHOOK_SIGNATURE="tampered_invalid_signature",
+                HTTP_X_WEBHOOK_TIMESTAMP="1700000002",
+            )
+            self.assertEqual(resp.status_code, 401)
+            self.assertEqual(resp.json().get("status"), "invalid_signature")
+
+        # Zero DB pollution from unauthenticated/scanner POSTs
+        self.assertEqual(PaymentWebhookEvent.objects.count(), initial_count)
+
+    def test_webhook_deterministic_idempotency_retry(self):
+        secret = "deterministic_secret"
+        timestamp = "1700000005"
+        order = PaymentOrder.objects.create(
+            order_id="ORDER_SJ_RETRY_01",
+            company=self.company,
+            user=self.user,
+            plan=self.plan,
+            item_code=self.plan.code,
+            item_type=PaymentOrder.ItemType.PLAN,
+            base_amount=self.plan.price_inr,
+            gst_rate=Decimal("18.00"),
+            gst_amount=self.plan.gst_amount,
+            total_amount=self.plan.total_amount,
+            status=PaymentOrder.Status.CREATED,
+        )
+
+        payload_dict = {
+            "type": "ORDER_PAID_WEBHOOK",
+            "event_time": "2026-11-22T14:00:00Z",
+            "data": {
+                "order": {"order_id": "ORDER_SJ_RETRY_01"},
+                "payment": {"cf_payment_id": "cf_pay_retry_999", "payment_group": "upi"},
+            },
+        }
+        raw_body = json.dumps(payload_dict).encode("utf-8")
+        data_to_sign = timestamp.encode("utf-8") + raw_body
+        valid_sig = base64.b64encode(
+            hmac.new(secret.encode("utf-8"), data_to_sign, hashlib.sha256).digest()
+        ).decode("utf-8")
+
+        with self.settings(CASHFREE_WEBHOOK_SECRET=secret, CASHFREE_SECRET_KEY=secret):
+            # First delivery
+            resp1 = self.client.post(
+                "/billing/webhook/",
+                data=raw_body,
+                content_type="application/json",
+                HTTP_X_WEBHOOK_SIGNATURE=valid_sig,
+                HTTP_X_WEBHOOK_TIMESTAMP=timestamp,
+            )
+            self.assertEqual(resp1.status_code, 200)
+
+            # Second delivery (Cashfree webhook retry)
+            resp2 = self.client.post(
+                "/billing/webhook/",
+                data=raw_body,
+                content_type="application/json",
+                HTTP_X_WEBHOOK_SIGNATURE=valid_sig,
+                HTTP_X_WEBHOOK_TIMESTAMP=timestamp,
+            )
+            self.assertEqual(resp2.status_code, 200)
+            self.assertEqual(resp2.json().get("status"), "already_processed")
+
+        # Exactly 1 event recorded
+        events = PaymentWebhookEvent.objects.filter(order_id="ORDER_SJ_RETRY_01")
+        self.assertEqual(events.count(), 1)

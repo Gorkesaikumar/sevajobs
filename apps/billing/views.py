@@ -4,6 +4,7 @@ Billing, Payment, Webhook, and Recruiter Entitlements Views.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import uuid
@@ -48,6 +49,31 @@ TRANSPARENT_GIF_BYTES = (
     b"\x00\x00\x00\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00"
     b"\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b"
 )
+
+
+def get_public_base_url(request: HttpRequest | None = None) -> str:
+    """
+    Resolves the canonical public base URL (e.g. 'https://sevajobs.in').
+    Priority:
+    1. settings.SITE_URL or settings.PUBLIC_BASE_URL
+    2. request.build_absolute_uri('/')
+    3. fallback to 'https://sevajobs.in'
+    Ensures 'https://' in production environments.
+    """
+    base = getattr(settings, "SITE_URL", "") or getattr(settings, "PUBLIC_BASE_URL", "")
+    if base:
+        base = str(base).strip().rstrip("/")
+        if not getattr(settings, "DEBUG", True) and base.startswith("http://"):
+            base = "https://" + base[len("http://"):]
+        return base
+
+    if request:
+        uri = request.build_absolute_uri("/").rstrip("/")
+        if not getattr(settings, "DEBUG", True) and uri.startswith("http://"):
+            uri = "https://" + uri[len("http://"):]
+        return uri
+
+    return "https://sevajobs.in"
 
 
 class RecruiterAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -215,11 +241,10 @@ class CreatePaymentOrderView(RecruiterAccessMixin, View):
             status=PaymentOrder.Status.CREATED,
         )
 
-        # Build absolute callback URLs
-        scheme = "https" if request.is_secure() else "http"
-        host = request.get_host()
-        return_url = f"{scheme}://{host}/billing/verify/?order_id={order_id}"
-        notify_url = f"{scheme}://{host}/billing/webhook/"
+        # Build canonical public callback URLs (honoring reverse proxy HTTPS & SITE_URL)
+        base_url = get_public_base_url(request)
+        return_url = f"{base_url}/billing/verify/?order_id={order_id}"
+        notify_url = f"{base_url}/billing/webhook/"
 
         pg = CashfreePaymentGateway()
         try:
@@ -342,6 +367,16 @@ class CashfreeWebhookView(View):
         })
 
     def post(self, request: HttpRequest, *args, **kwargs) -> JsonResponse:
+        raw_body = request.body
+
+        # 1. Parse JSON first (400 on invalid/malformed JSON)
+        try:
+            payload = json.loads(raw_body.decode("utf-8")) if raw_body else {}
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            logger.error("Invalid JSON payload in Cashfree webhook: %s", e)
+            return JsonResponse({"status": "invalid_json", "error": "Malformed JSON payload"}, status=400)
+
+        # 2. Extract signature and timestamp headers
         signature = (
             request.headers.get("x-webhook-signature")
             or request.headers.get("x-cf-signature")
@@ -356,59 +391,81 @@ class CashfreeWebhookView(View):
             or request.META.get("HTTP_X_CF_TIMESTAMP")
             or ""
         )
-        raw_body = request.body
 
         pg = CashfreePaymentGateway()
         is_valid_sig = pg.verify_webhook_signature(raw_body, signature, timestamp)
 
-        try:
-            payload = json.loads(raw_body.decode("utf-8")) if raw_body else {}
-        except Exception as e:
-            logger.error("Invalid JSON payload in Cashfree webhook: %s", e)
-            return JsonResponse({"status": "invalid_json"}, status=400)
-
-        event_type = (payload.get("type") or payload.get("event") or "").upper()
+        event_type = str(payload.get("type") or payload.get("event") or "").upper()
         event_data = payload.get("data", {}) if isinstance(payload.get("data"), dict) else {}
         order_info = event_data.get("order", {}) if isinstance(event_data.get("order"), dict) else {}
-        order_id = (
+        payment_info = event_data.get("payment", {}) if isinstance(event_data.get("payment"), dict) else {}
+        order_id = str(
             order_info.get("order_id")
             or event_data.get("order_id")
             or payload.get("order_id")
             or ""
-        )
-        event_id = str(payload.get("event_time", timezone.now().isoformat())) + "_" + str(uuid.uuid4().hex[:8])
+        ).strip()
 
-        # Record incoming event in audit log
-        webhook_event, _ = PaymentWebhookEvent.objects.get_or_create(
-            event_id=event_id,
+        # 3. Handle Cashfree Dashboard Test/Ping Events cleanly
+        is_test_event = (
+            event_type in ("TEST_WEBHOOK", "TEST", "PING")
+            or order_id.lower().startswith("test")
+            or "test" in event_type.lower()
+        )
+        if is_test_event:
+            # If signature provided on test ping, verify it; reject if bad
+            if signature and not is_valid_sig:
+                logger.warning("Rejected Cashfree test webhook due to invalid signature.")
+                return JsonResponse({"status": "invalid_signature", "error": "Test webhook signature failed"}, status=401)
+
+            logger.info("Cashfree dashboard test webhook received and verified: %s", event_type)
+            return JsonResponse({
+                "status": "ok",
+                "message": "Test webhook verified successfully.",
+                "event_type": event_type,
+            }, status=200)
+
+        # 4. Reject invalid HMAC signatures with HTTP 401 BEFORE database persistence
+        # (Prevents unauthenticated scanner bots / random POSTs from polluting the database)
+        if not is_valid_sig:
+            logger.warning(
+                "Rejected Cashfree webhook due to invalid signature (Order: '%s', Event: '%s', IP: %s).",
+                order_id,
+                event_type,
+                request.META.get("REMOTE_ADDR"),
+            )
+            return JsonResponse({"status": "invalid_signature", "error": "Signature verification failed"}, status=401)
+
+        # 5. Deterministic event_id generation for deduplication / replay protection
+        cf_payment_id = str(payment_info.get("cf_payment_id", "") or "").strip()
+        event_time = str(payload.get("event_time", "") or "").strip()
+
+        if order_id and cf_payment_id and event_type:
+            deterministic_event_id = f"{order_id}_{cf_payment_id}_{event_type}"[:128]
+        elif order_id and event_type and event_time:
+            deterministic_event_id = f"{order_id}_{event_type}_{event_time}"[:128]
+        elif payload.get("event_id"):
+            deterministic_event_id = str(payload["event_id"])[:128]
+        else:
+            body_digest = hashlib.sha256((timestamp or "").encode("utf-8") + b":" + raw_body).hexdigest()
+            deterministic_event_id = f"cf_{body_digest[:48]}"
+
+        # 6. Idempotent get_or_create of PaymentWebhookEvent
+        webhook_event, created = PaymentWebhookEvent.objects.get_or_create(
+            event_id=deterministic_event_id,
             defaults={
                 "event_type": event_type or "UNKNOWN",
                 "order_id": order_id,
-                "signature_valid": is_valid_sig,
+                "signature_valid": True,
                 "raw_payload": payload,
             },
         )
 
-        # Handle Cashfree Dashboard 'Test' webhook requests gracefully
-        if (
-            event_type in ("TEST_WEBHOOK", "TEST", "PING")
-            or str(order_id).lower().startswith("test")
-            or "test" in event_type.lower()
-        ):
-            logger.info("Cashfree dashboard test webhook received and verified: %s", event_type)
-            webhook_event.processed = True
-            webhook_event.processed_at = timezone.now()
-            webhook_event.save(update_fields=["processed", "processed_at"])
-            return JsonResponse({"status": "ok", "message": "Test webhook verified successfully."})
+        if not created and webhook_event.processed:
+            logger.info("Webhook event '%s' was already processed. Skipping duplicate delivery.", deterministic_event_id)
+            return JsonResponse({"status": "already_processed", "message": "Event already processed."}, status=200)
 
-        if not is_valid_sig:
-            logger.warning("Rejected Cashfree webhook due to invalid signature (Order: %s).", order_id)
-            webhook_event.error_message = "Invalid signature"
-            webhook_event.save(update_fields=["error_message"])
-            return JsonResponse({"status": "invalid_signature"}, status=401)
-
-        # Handle successful payment events
-        payment_info = event_data.get("payment", {}) if isinstance(event_data.get("payment"), dict) else {}
+        # 7. Process payment events
         payment_status = str(payment_info.get("payment_status", "")).upper()
         order_status = str(order_info.get("order_status", "")).upper()
 
@@ -419,8 +476,7 @@ class CashfreeWebhookView(View):
         )
 
         if is_paid_event and order_id:
-            cf_payment_id = str(payment_info.get("cf_payment_id", ""))
-            payment_method = payment_info.get("payment_group", "")
+            payment_method = payment_info.get("payment_group", "") or payment_info.get("payment_method", "")
 
             success, msg = BillingEntitlementService.process_successful_payment(
                 order_id=order_id,

@@ -33,12 +33,33 @@ class CashfreePaymentGateway:
     webhook_secret: str = ""
 
     def __init__(self):
-        self.app_id = getattr(settings, "CASHFREE_APP_ID", "")
-        self.secret_key = getattr(settings, "CASHFREE_SECRET_KEY", "")
-        self.webhook_secret = getattr(settings, "CASHFREE_WEBHOOK_SECRET", "") or self.secret_key
+        self.app_id = getattr(settings, "CASHFREE_APP_ID", "").strip()
+        self.secret_key = getattr(settings, "CASHFREE_SECRET_KEY", "").strip()
+        raw_webhook_secret = getattr(settings, "CASHFREE_WEBHOOK_SECRET", "").strip()
         self.env = getattr(settings, "CASHFREE_ENV", "TEST").upper()
         self.api_version = getattr(settings, "CASHFREE_API_VERSION", "2023-08-01")
         self.base_url = self.PRODUCTION_URL if self.env == "PROD" else self.SANDBOX_URL
+
+        # Explicitly separate webhook signing secret from API secret key
+        if raw_webhook_secret:
+            self.webhook_secret = raw_webhook_secret
+        elif self.secret_key:
+            self.webhook_secret = self.secret_key
+            logger.warning(
+                "CASHFREE_WEBHOOK_SECRET not explicitly configured in settings; falling back to CASHFREE_SECRET_KEY. "
+                "For production security and key isolation, set CASHFREE_WEBHOOK_SECRET in your server .env."
+            )
+        else:
+            self.webhook_secret = ""
+            logger.warning("Neither CASHFREE_WEBHOOK_SECRET nor CASHFREE_SECRET_KEY is configured.")
+
+        # Check for environment / credentials mismatch
+        if self.env == "PROD":
+            if "test" in self.app_id.lower() or "test" in self.secret_key.lower():
+                logger.warning("CASHFREE_ENV is set to 'PROD' but App ID or Secret contains 'test'. Please verify production credentials.")
+        elif self.env in ("TEST", "SANDBOX"):
+            if "prod" in self.app_id.lower() or "prod" in self.secret_key.lower():
+                logger.warning("CASHFREE_ENV is '%s' but App ID or Secret contains 'prod'. Please verify sandbox credentials.", self.env)
 
     @property
     def is_configured(self) -> bool:
@@ -151,22 +172,34 @@ class CashfreePaymentGateway:
         """
         Verifies Cashfree webhook signature using HMAC-SHA256.
         Formula: base64(hmac_sha256(webhook_secret, timestamp + raw_body))
+        Fails closed (returns False) when signature, timestamp, or webhook_secret is missing.
         """
-        if not signature or not timestamp:
+        if not signature or not str(signature).strip():
+            logger.warning("Webhook verification failed: missing signature header.")
             return False
 
-        secret = self.webhook_secret or self.secret_key
+        if not timestamp or not str(timestamp).strip():
+            logger.warning("Webhook verification failed: missing timestamp header.")
+            return False
+
+        secret = self.webhook_secret
         if not secret:
-            # When unconfigured in local test mode, fail closed unless explicitly mocked
-            logger.warning("No webhook secret configured. Signature verification failed.")
+            logger.error("Webhook verification failed: no webhook signing secret configured. Failing closed.")
             return False
 
-        if isinstance(raw_body, str):
-            raw_body = raw_body.encode("utf-8")
+        try:
+            if isinstance(raw_body, str):
+                raw_body = raw_body.encode("utf-8")
 
-        data_to_sign = timestamp.encode("utf-8") + raw_body
-        computed = base64.b64encode(
-            hmac.new(secret.encode("utf-8"), data_to_sign, hashlib.sha256).digest()
-        ).decode("utf-8")
+            data_to_sign = str(timestamp).strip().encode("utf-8") + raw_body
+            computed = base64.b64encode(
+                hmac.new(secret.encode("utf-8"), data_to_sign, hashlib.sha256).digest()
+            ).decode("utf-8")
 
-        return hmac.compare_digest(computed, signature)
+            is_valid = hmac.compare_digest(computed.strip(), str(signature).strip())
+            if not is_valid:
+                logger.warning("Webhook HMAC signature mismatch.")
+            return is_valid
+        except Exception as exc:
+            logger.exception("Error during webhook signature calculation: %s", exc)
+            return False
