@@ -1,0 +1,625 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}Recruiter Subscription Plans & Pricing | SevaJobs{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ==========================================================================
+     SevaJobs Recruiter Pricing Page Styles
+     Aligned with SevaJobs Design System (Bootstrap 5 + Custom Tokens)
+     ========================================================================== */
+
+  .sj-pricing-hero {
+    padding: 3rem 1rem 2.5rem;
+    text-align: center;
+  }
+
+  .sj-pricing-card {
+    background: #ffffff;
+    border: 1px solid var(--sj-line, #e2e8f0);
+    border-radius: var(--sj-radius-lg, 18px);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+    padding: 2.25rem 1.5rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  .sj-pricing-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 32px -8px rgba(15, 23, 42, 0.12);
+    border-color: var(--sj-primary-300, #a5b4fc);
+  }
+
+  /* Most Popular Highlighted Card */
+  .sj-pricing-card.is-popular {
+    border: 2px solid var(--sj-primary, #4f46e5) !important;
+    box-shadow: 0 12px 30px -4px rgba(79, 70, 229, 0.18);
+  }
+
+  .sj-pricing-card.is-popular::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: var(--sj-gradient, linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%));
+    border-top-left-radius: var(--sj-radius-lg, 16px);
+    border-top-right-radius: var(--sj-radius-lg, 16px);
+  }
+
+  /* Floating Ribbon Pill Badges */
+  .sj-card-badge {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    white-space: nowrap;
+  }
+
+  .sj-card-badge .badge {
+    padding: 0.4rem 1.15rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  }
+
+  .sj-price-val {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--sj-ink, #0f172a);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .sj-feature-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .sj-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.84rem;
+    color: var(--sj-body, #334155);
+    line-height: 1.45;
+  }
+
+  .sj-feature-item i {
+    color: var(--sj-primary, #4f46e5);
+    font-size: 0.95rem;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+  }
+
+  .sj-feature-item i.text-success {
+    color: var(--sj-success, #16a34a) !important;
+  }
+
+  /* Quick Unlock Card */
+  .sj-quick-card {
+    background: #ffffff;
+    border: 1px solid var(--sj-line, #e2e8f0);
+    border-left: 5px solid var(--sj-primary, #4f46e5);
+    border-radius: var(--sj-radius-lg, 16px);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+    transition: all 0.25s ease;
+  }
+
+  .sj-quick-card:hover {
+    box-shadow: 0 10px 24px -4px rgba(15, 23, 42, 0.1);
+  }
+
+  /* Guarantee Callout Box */
+  .sj-guarantee-box {
+    background: rgba(6, 182, 212, 0.08);
+    border: 1px dashed var(--sj-accent-600, #0891b2);
+    border-radius: var(--sj-radius-sm, 10px);
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.81rem;
+    color: var(--sj-accent-700, #0e7490);
+    line-height: 1.4;
+  }
+
+  /* Feature row border */
+  .sj-price-divider {
+    border-top: 1px solid var(--sj-line, #f1f5f9);
+    margin: 1rem 0 1.25rem;
+    padding-top: 0.75rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+
+  <!-- Section Hero Header -->
+  <div class="sj-pricing-hero">
+    <div class="mb-3">
+      <span class="sj-badge is-featured">
+        <i class="bi bi-patch-check-fill me-1"></i> Transparent Educational Institution Plans
+      </span>
+    </div>
+    <h1 class="display-5 fw-800 text-ink mb-2">
+      Simple, Transparent <span class="text-gradient">Recruiter Pricing</span>
+    </h1>
+    <p class="text-muted fs-5 mx-auto mb-0" style="max-width: 680px;">
+      Empowering schools, junior colleges, and academies across India to discover, interview, and recruit verified teaching faculty seamlessly.
+    </p>
+  </div>
+
+  {% if messages %}
+    <div class="mb-4">
+      {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags }} alert-dismissible fade show shadow-sm" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- 4 Primary Pricing Cards Grid -->
+  <div class="row g-4 align-items-stretch mb-5 pt-2">
+    
+    <!-- 1. Free Job Posting -->
+    <div class="col-xl-3 col-lg-6 col-md-6 d-flex align-items-stretch">
+      <div class="sj-pricing-card w-100">
+        <div class="mb-2">
+          <span class="sj-badge">Starter Plan</span>
+        </div>
+        <h3 class="fw-800 text-ink h4 mb-1">Free Job Posting</h3>
+        <p class="text-muted fs-xs mb-3" style="min-height: 34px;">
+          Ideal for single urgent vacancies &amp; exploring SevaJobs
+        </p>
+
+        <div class="d-flex align-items-baseline gap-1 my-2">
+          <span class="sj-price-val">₹0</span>
+          <span class="text-muted fs-xs fw-semibold">/ forever</span>
+        </div>
+        
+        <div class="sj-price-divider d-flex align-items-center justify-content-between fs-xs text-muted">
+          <span>No credit card required</span>
+          <span class="badge bg-light text-dark border">Basic</span>
+        </div>
+
+        <ul class="sj-feature-list flex-grow-1">
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span><strong>2 Active Jobs</strong> live simultaneously</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span><strong>30 Days</strong> listing active validity</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span><strong>"Renew Free"</strong> button after 30 days</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Live on SevaJobs portal &amp; Google Jobs</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>5–10 candidate applications</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Instant email notifications on application</span>
+          </li>
+        </ul>
+
+        <div class="mt-auto pt-2">
+          {% if user.is_authenticated and user.is_recruiter %}
+            {% if current_subscription.plan.code == 'free' %}
+              <button class="btn btn-outline-secondary w-100 rounded-pill py-2.5 fs-sm fw-semibold" disabled>
+                <i class="bi bi-check2 me-1"></i> Current Plan
+              </button>
+            {% else %}
+              <a href="{% url 'recruiter:post-job' %}" class="btn btn-outline-primary w-100 rounded-pill py-2.5 fs-sm fw-semibold">
+                Post Free Job
+              </a>
+            {% endif %}
+          {% else %}
+            <a href="{% url 'recruiter-login' %}?next={% url 'billing:pricing' %}" class="btn btn-outline-primary w-100 rounded-pill py-2.5 fs-sm fw-semibold">
+              Get Started Free
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Premium 50 (Most Popular) -->
+    <div class="col-xl-3 col-lg-6 col-md-6 d-flex align-items-stretch">
+      <div class="sj-pricing-card is-popular w-100">
+        <div class="sj-card-badge">
+          <span class="badge rounded-pill text-white" style="background: var(--sj-gradient, linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%));">
+            <i class="bi bi-star-fill text-warning me-1"></i> MOST POPULAR
+          </span>
+        </div>
+        <div class="mb-2">
+          <span class="sj-badge is-featured">High Visibility</span>
+        </div>
+        <h3 class="fw-800 text-ink h4 mb-1">Premium 50</h3>
+        <p class="text-muted fs-xs mb-3" style="min-height: 34px;">
+          Bulk hiring across multiple classes and departments
+        </p>
+
+        <div class="d-flex align-items-baseline gap-1 my-2">
+          <span class="sj-price-val text-primary">₹5,999</span>
+          <span class="text-muted fs-xs fw-semibold">+ 18% GST</span>
+        </div>
+
+        <div class="sj-price-divider d-flex align-items-center justify-content-between fs-xs text-muted">
+          <span>Total: <strong class="text-ink">₹7,078.82</strong></span>
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle">6 Months Validity</span>
+        </div>
+
+        <ul class="sj-feature-list flex-grow-1">
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>50 Job Postings</strong> included</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>14 Days Featured</strong> on homepage &amp; top</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>Top in Search</strong> priority ranking</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>5 Repost Credits</strong> to bump expired listings</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span>Emailed directly to matching teachers</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span>30 days active listing duration per job</span>
+          </li>
+        </ul>
+
+        <div class="mt-auto pt-2">
+          <button type="button" class="btn btn-gradient w-100 rounded-pill py-2.5 fs-sm fw-bold shadow-sm js-checkout-btn" data-plan="premium_50" data-amount="7078.82">
+            Upgrade to Premium
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Walkin at School! -->
+    <div class="col-xl-3 col-lg-6 col-md-6 d-flex align-items-stretch">
+      <div class="sj-pricing-card w-100">
+        <div class="sj-card-badge">
+          <span class="badge rounded-pill text-white" style="background: var(--sj-accent, #06b6d4);">
+            <i class="bi bi-geo-alt-fill me-1"></i> GUARANTEED EVENT
+          </span>
+        </div>
+        <div class="mb-2">
+          <span class="sj-badge" style="background: var(--sj-accent-50, #ecfeff); color: var(--sj-accent-700, #0e7490);">On-Campus Drive</span>
+        </div>
+        <h3 class="fw-800 text-ink h4 mb-1">Walkin at School!</h3>
+        <p class="text-muted fs-xs mb-3" style="min-height: 34px;">
+          Turnkey on-campus teacher recruitment drive
+        </p>
+
+        <div class="d-flex align-items-baseline gap-1 my-2">
+          <del class="text-muted fs-sm me-1">₹59,999</del>
+          <span class="sj-price-val text-ink">₹29,999</span>
+          <span class="text-muted fs-xs fw-semibold">+ 18% GST</span>
+        </div>
+
+        <div class="sj-price-divider d-flex align-items-center justify-content-between fs-xs text-muted">
+          <span>Total: <strong class="text-ink">₹35,398.82</strong></span>
+          <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Annual Package</span>
+        </div>
+
+        <ul class="sj-feature-list flex-grow-1">
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>2 Walk-in Drives</strong> scheduled at your school</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>Min 10 Candidates</strong> guaranteed per drive</span>
+          </li>
+          
+          <!-- Highlighted Shortfall SLA -->
+          <li class="sj-guarantee-box">
+            <div class="d-flex align-items-start gap-1">
+              <i class="bi bi-shield-check mt-0.5 flex-shrink-0 fs-6"></i>
+              <span><strong>Shortfall Guarantee:</strong> If &lt;10 candidates attend, get 1 promo (₹5,000 value) + 10 resume unlocks free!</span>
+            </div>
+          </li>
+
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>10 Job Postings</strong> + 30d featured banner</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>20 Resume Unlocks</strong> included</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>500 Bulk Emails</strong> to verified teachers</span>
+          </li>
+        </ul>
+
+        <div class="mt-auto pt-2">
+          <button type="button" class="btn btn-outline-primary w-100 rounded-pill py-2.5 fs-sm fw-bold js-checkout-btn" data-plan="walkin_school" data-amount="35398.82">
+            Book Walk-in Package
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Database Access Pro -->
+    <div class="col-xl-3 col-lg-6 col-md-6 d-flex align-items-stretch">
+      <div class="sj-pricing-card w-100">
+        <div class="sj-card-badge">
+          <span class="badge rounded-pill text-white" style="background: var(--sj-primary-900, #1e1b4b);">
+            <i class="bi bi-database-fill me-1 text-info"></i> 20,000+ RESUMES
+          </span>
+        </div>
+        <div class="mb-2">
+          <span class="sj-badge" style="background: var(--sj-primary-100, #e0e7ff); color: var(--sj-primary-800, #312e81);">Enterprise Access</span>
+        </div>
+        <h3 class="fw-800 text-ink h4 mb-1">Database Access Pro</h3>
+        <p class="text-muted fs-xs mb-3" style="min-height: 34px;">
+          Direct contact access to 20,000+ teacher resumes
+        </p>
+
+        <div class="d-flex align-items-baseline gap-1 my-2">
+          <span class="sj-price-val text-ink">₹49,999</span>
+          <span class="text-muted fs-xs fw-semibold">+ 18% GST</span>
+        </div>
+
+        <div class="sj-price-divider d-flex align-items-center justify-content-between fs-xs text-muted">
+          <span>Total: <strong class="text-ink">₹58,998.82</strong></span>
+          <span class="badge bg-dark-subtle text-dark border">1 Year Validity</span>
+        </div>
+
+        <ul class="sj-feature-list flex-grow-1">
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>2,000 Resume Unlocks</strong> (Permanent for school)</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>Instant Phone &amp; Email</strong> unmasked</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>100 Job Postings</strong> included</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>2,000 Bulk Emails</strong> with open/click analytics</span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>20 Repost Credits</strong></span>
+          </li>
+          <li class="sj-feature-item">
+            <i class="bi bi-check-circle-fill text-primary"></i>
+            <span><strong>"Contacted"</strong> candidate tracking tag</span>
+          </li>
+        </ul>
+
+        <div class="mt-auto pt-2">
+          <button type="button" class="btn btn-primary w-100 rounded-pill py-2.5 fs-sm fw-bold shadow-sm js-checkout-btn" data-plan="db_access_pro" data-amount="58998.82">
+            Unlock Database Pro
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Quick Unlock Add-on Banner -->
+  <div class="sj-quick-card p-4 mb-4">
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="sj-badge is-featured">PAY PER RESUME</span>
+          <h5 class="fw-800 text-ink mb-0">Quick Unlock: 10 Resumes for ₹999/- <small class="text-muted fs-xs fw-normal">+ 18% GST (Total: ₹1,178.82)</small></h5>
+        </div>
+        <p class="text-muted mb-0 fs-sm">
+          Need immediate phone numbers and verified emails for a few specific teacher candidates without a full annual subscription? 
+          Get instant unmasked contact details and downloadable CV documents. Valid for 30 days.
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+        <button type="button" class="btn btn-gradient rounded-pill px-4 py-2.5 fs-sm fw-bold shadow-sm js-checkout-btn" data-plan="quick_unlock_10" data-amount="1178.82">
+          <i class="bi bi-lightning-charge-fill me-1"></i> Quick Unlock (₹999)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1K Tier Callout -->
+  <div class="sj-card p-3 mb-5 text-center bg-white border">
+    <div class="d-flex flex-wrap align-items-center justify-content-center gap-3">
+      <span class="fs-sm text-body">
+        Looking for an intermediate package? <strong>Database Access (1K Tier)</strong> includes 1,000 CV unlocks, 50 jobs &amp; 1,000 emails for <strong>₹25,999 + GST</strong> (Total: ₹30,678.82).
+      </span>
+      <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold js-checkout-btn" data-plan="db_access_1k" data-amount="30678.82">
+        Choose 1K Tier (₹25,999)
+      </button>
+    </div>
+  </div>
+
+  <!-- Trust & Platform Security Indicators -->
+  <div class="row text-center py-4 border-top border-bottom g-4 mb-5">
+    <div class="col-md-4">
+      <div class="d-inline-flex p-3 rounded-circle mb-3" style="background: var(--sj-primary-50, #eef2ff);">
+        <i class="bi bi-shield-check text-primary fs-3"></i>
+      </div>
+      <h6 class="fw-bold mb-1">100% Verified Candidates</h6>
+      <p class="text-muted fs-xs mb-0">Every teacher profile is verified by mobile OTP and verified educational resume screening.</p>
+    </div>
+    <div class="col-md-4">
+      <div class="d-inline-flex p-3 rounded-circle mb-3" style="background: var(--sj-success-50, #f0fdf4);">
+        <i class="bi bi-lock-fill text-success fs-3"></i>
+      </div>
+      <h6 class="fw-bold mb-1">Secure Cashfree Checkout</h6>
+      <p class="text-muted fs-xs mb-0">PCI-DSS bank-grade encryption: UPI, Net Banking, and all Credit/Debit cards supported.</p>
+    </div>
+    <div class="col-md-4">
+      <div class="d-inline-flex p-3 rounded-circle mb-3" style="background: var(--sj-accent-50, #ecfeff);">
+        <i class="bi bi-headset text-info fs-3"></i>
+      </div>
+      <h6 class="fw-bold mb-1">Dedicated Institution Support</h6>
+      <p class="text-muted fs-xs mb-0">Our education recruitment specialists assist your school HR at every step of hiring.</p>
+    </div>
+  </div>
+
+  <!-- Frequently Asked Questions Accordion -->
+  <div class="row justify-content-center mb-5">
+    <div class="col-lg-9">
+      <div class="text-center mb-4">
+        <span class="sj-badge mb-2">FAQ</span>
+        <h3 class="fw-800 text-ink">Frequently Asked Questions</h3>
+      </div>
+      <div class="accordion sj-accordion" id="pricingFaqAccordion">
+        <div class="accordion-item border rounded-3 mb-2 overflow-hidden shadow-xs">
+          <h2 class="accordion-header" id="headingOne">
+            <button class="accordion-button collapsed fw-bold text-ink" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+              How does the Walk-in Drive Minimum 10 Candidate Guarantee work?
+            </button>
+          </h2>
+          <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#pricingFaqAccordion">
+            <div class="accordion-body text-muted fs-sm">
+              When you book a Walk-in Package, our team coordinates and screens candidates specifically for your institution's scheduled on-campus interview date. We guarantee a minimum of 10 qualified candidates in attendance. In the rare event that fewer than 10 attend, our system automatically provides an online promotion valued at ₹5,000 plus 10 candidate resume unlocks at no extra charge.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border rounded-3 mb-2 overflow-hidden shadow-xs">
+          <h2 class="accordion-header" id="headingTwo">
+            <button class="accordion-button collapsed fw-bold text-ink" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+              Are Candidate Resume Unlocks permanent for our institution?
+            </button>
+          </h2>
+          <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#pricingFaqAccordion">
+            <div class="accordion-body text-muted fs-sm">
+              Yes! For Database Access Pro and standard annual packages, once your school unlocks a candidate's profile, phone number, and email, that candidate remains permanently unlocked for your school account even after your subscription renews. For Quick Unlock packs, access is provided for 30 days.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border rounded-3 mb-2 overflow-hidden shadow-xs">
+          <h2 class="accordion-header" id="headingThree">
+            <button class="accordion-button collapsed fw-bold text-ink" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+              Do you provide GST tax invoices for institutional accounting?
+            </button>
+          </h2>
+          <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#pricingFaqAccordion">
+            <div class="accordion-body text-muted fs-sm">
+              Yes, all payments are processed through Cashfree PG with full 18% GST tax invoice generation. You can input your institution's GSTIN and legal billing name during checkout or in your recruiter profile, and download GST tax invoices directly from your Billing Dashboard.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border rounded-3 mb-2 overflow-hidden shadow-xs">
+          <h2 class="accordion-header" id="headingFour">
+            <button class="accordion-button collapsed fw-bold text-ink" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+              Can I upgrade my subscription plan before the current one expires?
+            </button>
+          </h2>
+          <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#pricingFaqAccordion">
+            <div class="accordion-body text-muted fs-sm">
+              Yes! When you upgrade to a higher tier (such as upgrading from Premium 50 to Database Access Pro), your remaining unused job credits, repost credits, and resume unlock credits stack and carry forward into your new active plan period.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Cashfree Web Checkout SDK Integration -->
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const cashfreeEnv = "{{ cashfree_env|default:'TEST' }}".toLowerCase() === "prod" ? "production" : "sandbox";
+    let cashfree = null;
+    try {
+      if (typeof Cashfree !== "undefined") {
+        cashfree = Cashfree({ mode: cashfreeEnv });
+      }
+    } catch (e) {
+      console.warn("Cashfree initialization note:", e);
+    }
+
+    const checkoutButtons = document.querySelectorAll(".js-checkout-btn");
+    checkoutButtons.forEach(btn => {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        const planCode = this.getAttribute("data-plan");
+
+        {% if not user.is_authenticated or not user.is_recruiter %}
+          window.location.href = "{% url 'recruiter-login' %}?next={% url 'billing:pricing' %}";
+          return;
+        {% endif %}
+
+        const originalText = this.innerHTML;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Preparing Checkout...';
+        this.disabled = true;
+
+        fetch("{% url 'billing:create-order' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+          body: new URLSearchParams({ plan_code: planCode }),
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (!data.success) {
+              alert(data.error || "Could not initialize checkout. Please try again.");
+              this.innerHTML = originalText;
+              this.disabled = false;
+              return;
+            }
+
+            if (cashfree && data.payment_session_id) {
+              cashfree.checkout({
+                paymentSessionId: data.payment_session_id,
+                redirectTarget: "_self",
+              });
+            } else {
+              window.location.href = "{% url 'billing:verify' %}?order_id=" + data.order_id;
+            }
+          })
+          .catch(err => {
+            console.error("Order error:", err);
+            alert("A network error occurred. Please try again.");
+            this.innerHTML = originalText;
+            this.disabled = false;
+          });
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,10 +1,14 @@
 from django.urls import path
 from . import recruiter_views as views
+from apps.billing import views as billing_views
+from apps.billing import candidate_views as billing_candidate_views
 
 app_name = "recruiter"
 
 urlpatterns = [
     path("", views.RecruiterDashboardView.as_view(), name="dashboard"),
+    path("billing/", billing_views.RecruiterBillingDashboardView.as_view(), name="billing"),
+    path("candidates/", billing_candidate_views.RecruiterCandidateSearchView.as_view(), name="candidate-database"),
     path("company/", views.RecruiterCompanyProfileView.as_view(), name="company-profile"),
     path("post-job/", views.RecruiterPostJobView.as_view(), name="post-job"),
     path("post-job/teaching/", views.RecruiterPostTeachingJobView.as_view(), name="post-teaching-job"),

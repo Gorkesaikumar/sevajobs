@@ -54,6 +54,7 @@ LOCAL_APPS = [
     "apps.dashboard",
     "apps.api",
     "apps.teaching",
+    "apps.billing",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -286,6 +287,13 @@ RESEND_WEBHOOK_SECRET = config("RESEND_WEBHOOK_SECRET", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="SevaJobs <noreply@sevajobs.in>")
 SERVER_EMAIL = config("SERVER_EMAIL", default="SevaJobs <noreply@sevajobs.in>")
 
+# Cashfree Payment Gateway Configuration
+CASHFREE_APP_ID = config("CASHFREE_APP_ID", default="")
+CASHFREE_SECRET_KEY = config("CASHFREE_SECRET_KEY", default="")
+CASHFREE_WEBHOOK_SECRET = config("CASHFREE_WEBHOOK_SECRET", default="")
+CASHFREE_ENV = config("CASHFREE_ENV", default="TEST")  # "TEST" or "PROD"
+CASHFREE_API_VERSION = config("CASHFREE_API_VERSION", default="2023-08-01")
+
 
 # Public URL of the frontend, used to build verification / reset links.
 FRONTEND_URL = config("FRONTEND_URL", default="https://sevajobs.in")
@@ -317,6 +325,14 @@ CELERY_BEAT_SCHEDULE = {
     "jobs.expire_due_jobs": {
         "task": "jobs.expire_due_jobs",
         "schedule": 3600.0,  # hourly
+    },
+    "billing.expire_quick_unlocks": {
+        "task": "billing.expire_quick_unlocks",
+        "schedule": 3600.0,  # hourly
+    },
+    "billing.reconcile_pending_payment_orders": {
+        "task": "billing.reconcile_pending_payment_orders",
+        "schedule": 900.0,  # every 15 minutes
     },
     "notifications.send_daily_job_alerts_digest": {
         "task": "notifications.send_daily_job_alerts_digest",

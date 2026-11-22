@@ -1,0 +1,167 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+
+{% block title %}Create Candidate Campaign — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="mb-4">
+  <a href="{% url 'billing:campaign-list' %}" class="text-decoration-none fs-sm text-muted mb-2 d-inline-block">
+    <i class="bi bi-arrow-left me-1"></i> Back to Campaigns
+  </a>
+  <h4 class="fw-800 text-ink mb-1">Create Bulk Email Campaign</h4>
+  <p class="text-muted fs-sm mb-0">Compose and submit an email campaign for verified SevaJobs candidates.</p>
+</div>
+
+{% if messages %}
+  <div class="mb-4">
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<form method="post" action="{% url 'billing:campaign-create' %}">
+  {% csrf_token %}
+  <div class="row g-4">
+    <!-- Left: Form inputs -->
+    <div class="col-lg-8">
+      <div class="sj-card p-4 mb-4">
+        <h6 class="fw-bold text-ink mb-3">1. Campaign Details</h6>
+        
+        <div class="mb-3">
+          <label class="form-label fs-sm fw-semibold">Campaign Name <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Mathematics Faculty Interview Drive - Nov 2026" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fs-sm fw-semibold">Choose Template (Optional)</label>
+          <select id="templateSelector" class="form-select" name="template_id">
+            <option value="">-- Start from Blank / Custom --</option>
+            {% for t in templates %}
+              <option value="{{ t.id }}" data-subject="{{ t.subject }}" data-body="{{ t.body_html|escapejs }}">
+                {{ t.name }} ({{ t.get_template_type_display }})
+              </option>
+            {% endfor %}
+          </select>
+          <div class="form-text fs-xs">Selecting a template auto-populates the subject and message body.</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fs-sm fw-semibold">Email Subject <span class="text-danger">*</span></label>
+          <input type="text" id="campaignSubject" name="subject" class="form-control" placeholder="e.g. Interview Invitation: PGT Mathematics at {{ company.name }}" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fs-sm fw-semibold">Email HTML Body <span class="text-danger">*</span></label>
+          <textarea id="campaignBody" name="body_html" rows="10" class="form-control font-monospace fs-sm" placeholder="<p>Dear {{candidate_name}},</p><p>We are pleased to invite you...</p>" required></textarea>
+          <div class="form-text fs-xs mt-2">
+            <strong>Supported Placeholders:</strong> 
+            <code>{% verbatim %}{{candidate_name}}{% endverbatim %}</code>, 
+            <code>{% verbatim %}{{job_title}}{% endverbatim %}</code>, 
+            <code>{% verbatim %}{{company_name}}{% endverbatim %}</code>, 
+            <code>{% verbatim %}{{interview_date}}{% endverbatim %}</code>, 
+            <code>{% verbatim %}{{interview_time}}{% endverbatim %}</code>, 
+            <code>{% verbatim %}{{interview_venue}}{% endverbatim %}</code>.
+          </div>
+        </div>
+      </div>
+
+      <!-- Recipient selection -->
+      <div class="sj-card p-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="fw-bold text-ink mb-0">2. Select Recipients (SevaJobs Applicants)</h6>
+          <span class="fs-xs text-muted">Showing recent applicants</span>
+        </div>
+        <p class="fs-xs text-muted mb-3">
+          In compliance with anti-spam policies, bulk campaigns can only be dispatched to candidates registered within SevaJobs who have applied or matched with your school.
+        </p>
+
+        {% if applicants %}
+          <div class="border rounded p-2 mb-3" style="max-height: 280px; overflow-y: auto;">
+            <div class="form-check border-bottom pb-2 mb-2">
+              <input class="form-check-input" type="checkbox" id="selectAllCandidates">
+              <label class="form-check-label fw-bold fs-xs" for="selectAllCandidates">
+                Select All Candidates Below
+              </label>
+            </div>
+            {% for cand in applicants %}
+              <div class="form-check py-1">
+                <input class="form-check-input candidate-checkbox" type="checkbox" name="candidate_ids" value="{{ cand.id }}" id="cand_{{ cand.id }}">
+                <label class="form-check-label fs-sm" for="cand_{{ cand.id }}">
+                  <strong>{{ cand.full_name }}</strong> 
+                  <span class="text-muted fs-xs">({{ cand.email }})</span>
+                  {% if cand.job_seeker_profile.subject %}
+                    <span class="badge bg-light text-dark ms-1 fs-xxs">{{ cand.job_seeker_profile.subject }}</span>
+                  {% endif %}
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-warning fs-sm mb-0">
+            <i class="bi bi-info-circle me-1"></i> No candidate applicants found for your institution yet. 
+            Once candidates apply to your jobs or are shortlisted, you can target them here.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right: Summary & Quota Guard -->
+    <div class="col-lg-4">
+      <div class="sj-card p-4 mb-4">
+        <h6 class="fw-bold text-ink mb-3">Campaign Policy & Quotas</h6>
+        
+        <ul class="list-unstyled fs-sm mb-3">
+          <li class="d-flex justify-content-between py-2 border-bottom">
+            <span class="text-muted">Available Credits:</span>
+            <strong class="text-ink">{{ subscription.remaining_email_credits }}</strong>
+          </li>
+          <li class="d-flex justify-content-between py-2 border-bottom">
+            <span class="text-muted">Today's Daily Quota:</span>
+            <span><strong>{{ today_sent }}</strong> / {{ daily_limit }}</span>
+          </li>
+          <li class="d-flex justify-content-between py-2 border-bottom">
+            <span class="text-muted">Remaining Today:</span>
+            <strong class="text-success">{{ remaining_today }}</strong>
+          </li>
+        </ul>
+
+        <div class="alert alert-info fs-xs mb-3">
+          <i class="bi bi-shield-check me-1"></i> <strong>Admin Approval Gate:</strong> 
+          Your campaign will be queued as <code>Pending Approval</code>. Our operations team reviews all email content within 2–4 hours during business days.
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold" {% if not applicants %}disabled{% endif %}>
+          <i class="bi bi-send-check me-1"></i> Submit for Approval
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const templateSelector = document.getElementById("templateSelector");
+    const subjectInput = document.getElementById("campaignSubject");
+    const bodyInput = document.getElementById("campaignBody");
+
+    templateSelector.addEventListener("change", function () {
+      const selected = this.options[this.selectedIndex];
+      if (selected && selected.value) {
+        subjectInput.value = selected.getAttribute("data-subject") || "";
+        bodyInput.value = selected.getAttribute("data-body") || "";
+      }
+    });
+
+    const selectAll = document.getElementById("selectAllCandidates");
+    const candidateCheckboxes = document.querySelectorAll(".candidate-checkbox");
+    if (selectAll) {
+      selectAll.addEventListener("change", function () {
+        candidateCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+      });
+    }
+  });
+</script>
+{% endblock %}

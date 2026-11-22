@@ -1,0 +1,125 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+
+{% block title %}{{ campaign.name }} — Campaign Report — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="mb-4">
+  <a href="{% url 'billing:campaign-list' %}" class="text-decoration-none fs-sm text-muted mb-2 d-inline-block">
+    <i class="bi bi-arrow-left me-1"></i> Back to Campaigns
+  </a>
+  <div class="d-flex align-items-center justify-content-between">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <h4 class="fw-800 text-ink mb-0">{{ campaign.name }}</h4>
+        {% if campaign.approval_status == 'approved' %}
+          <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1">Approved</span>
+        {% elif campaign.approval_status == 'rejected' %}
+          <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1">Rejected</span>
+        {% else %}
+          <span class="badge bg-warning-subtle text-warning rounded-pill px-3 py-1">Pending Approval</span>
+        {% endif %}
+      </div>
+      <p class="text-muted fs-sm mb-0">Created on {{ campaign.created_at|date:"M d, Y H:i" }}</p>
+    </div>
+  </div>
+</div>
+
+{% if campaign.approval_status == 'rejected' and campaign.rejection_reason %}
+  <div class="alert alert-danger mb-4">
+    <h6 class="fw-bold mb-1"><i class="bi bi-x-circle me-1"></i> Campaign Rejected by Administrator</h6>
+    <p class="fs-sm mb-0">Reason: {{ campaign.rejection_reason }}</p>
+  </div>
+{% endif %}
+
+<!-- Key Metrics Row -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-sm-6">
+    <div class="sj-card p-3 text-center">
+      <div class="fs-xs text-muted text-uppercase fw-bold mb-1">Recipients</div>
+      <div class="fs-2 fw-bold text-ink">{{ campaign.recipient_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="sj-card p-3 text-center">
+      <div class="fs-xs text-muted text-uppercase fw-bold mb-1">Delivered</div>
+      <div class="fs-2 fw-bold text-primary">{{ campaign.sent_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="sj-card p-3 text-center">
+      <div class="fs-xs text-muted text-uppercase fw-bold mb-1">Open Rate</div>
+      <div class="fs-2 fw-bold text-success">{{ open_rate }}%</div>
+      <div class="fs-xs text-muted-2">{{ campaign.opened_count }} unique opens</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="sj-card p-3 text-center">
+      <div class="fs-xs text-muted text-uppercase fw-bold mb-1">Click Rate</div>
+      <div class="fs-2 fw-bold text-info">{{ click_rate }}%</div>
+      <div class="fs-xs text-muted-2">{{ campaign.clicked_count }} unique clicks</div>
+    </div>
+  </div>
+</div>
+
+<!-- Email Preview & Recipients -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="sj-card p-4 h-100">
+      <h6 class="fw-bold text-ink mb-3">Email Content</h6>
+      <div class="mb-2">
+        <span class="fs-xs text-muted fw-bold">Subject:</span>
+        <div class="fw-semibold text-ink">{{ campaign.subject }}</div>
+      </div>
+      <hr>
+      <div class="border rounded p-3 bg-light fs-sm" style="max-height: 400px; overflow-y: auto;">
+        {{ campaign.body_html|safe }}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="sj-card p-4 h-100">
+      <h6 class="fw-bold text-ink mb-3">Recipient Activity Log</h6>
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table sj-table mb-0 fs-sm">
+          <thead>
+            <tr>
+              <th>Candidate</th>
+              <th>Status</th>
+              <th>Opened At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in recipients %}
+              <tr>
+                <td>
+                  <strong>{{ r.candidate_user.full_name }}</strong>
+                  <div class="fs-xs text-muted">{{ r.email }}</div>
+                </td>
+                <td>
+                  {% if r.status == 'opened' %}
+                    <span class="badge bg-success-subtle text-success">Opened</span>
+                  {% elif r.status == 'clicked' %}
+                    <span class="badge bg-info-subtle text-info">Clicked</span>
+                  {% elif r.status == 'sent' %}
+                    <span class="badge bg-secondary-subtle text-secondary">Sent</span>
+                  {% else %}
+                    <span class="badge bg-light text-muted">{{ r.status|title }}</span>
+                  {% endif %}
+                </td>
+                <td class="fs-xs text-muted">
+                  {{ r.opened_at|date:"M d, H:i"|default:"--" }}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="3" class="text-center text-muted py-3">No recipients recorded.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

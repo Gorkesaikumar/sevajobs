@@ -1,0 +1,335 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load humanize %}
+
+{% block title %}Teacher Candidate Database — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div>
+    <h4 class="fw-800 text-ink mb-1">Teacher Candidate Database</h4>
+    <p class="text-muted fs-sm mb-0">Search and connect with verified teachers, professors, and academic administrators across India.</p>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <div class="sj-card px-3 py-2 d-flex align-items-center gap-2">
+      <i class="bi bi-unlock-fill text-success fs-5"></i>
+      <div>
+        <div class="fs-xs text-muted-2 text-uppercase fw-bold">Unlock Credits</div>
+        <div class="fw-bold fs-5 text-ink lh-1" id="creditsCounter">{{ subscription.remaining_resume_credits }}</div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-success btn-sm rounded-pill px-3 py-2 fw-bold shadow-sm js-topup-btn">
+      <i class="bi bi-lightning-charge-fill me-1"></i> Quick Unlock (10 for ₹999)
+    </button>
+  </div>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="sj-card p-3 mb-4">
+  <form method="get" class="row g-2 align-items-center">
+    <div class="col-md-3">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Keyword (e.g. PGT, Physics)">
+    </div>
+    <div class="col-md-2">
+      <input type="text" name="subject" value="{{ subject }}" class="form-control form-control-sm" placeholder="Subject">
+    </div>
+    <div class="col-md-2">
+      <input type="text" name="location" value="{{ location }}" class="form-control form-control-sm" placeholder="City or State">
+    </div>
+    <div class="col-md-2">
+      <select name="min_exp" class="form-select form-select-sm">
+        <option value="">Min Experience</option>
+        <option value="1" {% if min_exp == "1" %}selected{% endif %}>1+ Years</option>
+        <option value="3" {% if min_exp == "3" %}selected{% endif %}>3+ Years</option>
+        <option value="5" {% if min_exp == "5" %}selected{% endif %}>5+ Years</option>
+        <option value="10" {% if min_exp == "10" %}selected{% endif %}>10+ Years</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <div class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" name="unlocked_only" value="1" id="unlockedFilter" {% if unlocked_only %}checked{% endif %}>
+        <label class="form-check-label fs-xs fw-semibold" for="unlockedFilter">Unlocked Only</label>
+      </div>
+    </div>
+    <div class="col-md-1 text-end">
+      <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i></button>
+    </div>
+  </form>
+</div>
+
+<!-- Candidate Listing -->
+<div class="mb-3 d-flex justify-content-between align-items-center">
+  <div class="fs-sm text-muted">Found <strong>{{ total_count|intcomma }}</strong> candidate profiles</div>
+</div>
+
+{% if candidates %}
+  <div class="row g-3 mb-4">
+    {% for cand in candidates %}
+      {% with p=cand.profile u=cand.user %}
+        <div class="col-12">
+          <div class="sj-card p-4 transition-all">
+            <div class="row align-items-center">
+              <div class="col-lg-7">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <h5 class="fw-bold text-ink mb-0">{{ u.full_name }}</h5>
+                  {% if cand.is_unlocked %}
+                    <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 fs-xxs">UNLOCKED</span>
+                  {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1 fs-xxs"><i class="bi bi-lock-fill"></i> LOCKED</span>
+                  {% endif %}
+
+                  {% if cand.is_unlocked %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2 fs-xxs js-toggle-contacted" data-user-id="{{ u.id }}">
+                      <i class="bi bi-check-circle{% if cand.is_contacted %}-fill text-success{% endif %} me-1"></i>
+                      <span class="contacted-label">{% if cand.is_contacted %}Contacted{% else %}Mark Contacted{% endif %}</span>
+                    </button>
+                  {% endif %}
+                </div>
+
+                <div class="fs-sm text-primary fw-semibold mb-2">
+                  {{ p.designation|default:"Educator" }} 
+                  {% if p.subject %} &bull; <span class="text-ink">{{ p.subject }}</span>{% endif %}
+                  {% if p.experience_years %} &bull; <span class="text-muted">{{ p.experience_years }} yrs exp</span>{% endif %}
+                </div>
+
+                <div class="d-flex flex-wrap gap-3 fs-xs text-muted mb-2">
+                  <div><i class="bi bi-geo-alt me-1"></i> {{ p.current_location|default:"India" }}</div>
+                  <div class="cand-phone" id="phone_{{ u.id }}">
+                    <i class="bi bi-telephone me-1"></i> {{ cand.display_phone }}
+                  </div>
+                  <div class="cand-email" id="email_{{ u.id }}">
+                    <i class="bi bi-envelope me-1"></i> {{ cand.display_email }}
+                  </div>
+                </div>
+
+                <!-- Skills & Qualifications badges -->
+                <div class="d-flex flex-wrap gap-1 mt-2">
+                  {% for s in p.skills.all|slice:":5" %}
+                    <span class="badge bg-light text-dark fs-xxs">{{ s.name }}</span>
+                  {% endfor %}
+                  {% for q in p.qualifications.all|slice:":2" %}
+                    <span class="badge bg-primary-subtle text-primary fs-xxs">{{ q.name }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <!-- Right: Actions -->
+              <div class="col-lg-5 text-lg-end mt-3 mt-lg-0">
+                {% if cand.is_unlocked %}
+                  <div class="d-flex justify-content-lg-end gap-2 align-items-center">
+                    {% if cand.primary_resume_url %}
+                      <a href="{{ cand.primary_resume_url }}" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                        <i class="bi bi-file-earmark-arrow-down me-1"></i> Download CV (PDF/Word)
+                      </a>
+                    {% else %}
+                      <span class="text-muted fs-xs">No CV document uploaded</span>
+                    {% endif %}
+                  </div>
+                {% else %}
+                  <div class="d-flex justify-content-lg-end gap-2 align-items-center">
+                    <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold js-unlock-btn" data-user-id="{{ u.id }}" data-cand-name="{{ u.full_name }}">
+                      <i class="bi bi-unlock-fill me-1"></i> Unlock Profile (1 Credit)
+                    </button>
+                  </div>
+                  <div class="fs-xxs text-muted mt-1">Permanent unlock for {{ company.name }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endwith %}
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+    <nav class="d-flex justify-content-center">
+      <ul class="pagination pagination-sm">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&subject={{ subject }}&location={{ location }}&min_exp={{ min_exp }}&unlocked_only={{ unlocked_only|yesno:'1,' }}">Previous</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&subject={{ subject }}&location={{ location }}&min_exp={{ min_exp }}&unlocked_only={{ unlocked_only|yesno:'1,' }}">Next</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% else %}
+  <div class="sj-card p-5 text-center">
+    <i class="bi bi-search display-6 text-muted mb-2 d-block"></i>
+    <h5>No candidates found</h5>
+    <p class="text-muted fs-sm mb-0">Try clearing or adjusting your search filters.</p>
+  </div>
+{% endif %}
+
+<!-- Quick Unlock Upsell Modal -->
+<div class="modal fade" id="quickUnlockModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header border-0 bg-success text-white p-4">
+        <h5 class="modal-title fw-bold"><i class="bi bi-lightning-charge-fill me-1"></i> Out of Resume Credits</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4 text-center">
+        <div class="mb-3">
+          <span class="display-5 fw-bold text-ink">₹999</span>
+          <span class="text-muted fs-xs">+ 18% GST (Total: ₹1,178.82)</span>
+        </div>
+        <h6 class="fw-bold text-ink mb-2">Unlock 10 resumes for ₹999/-+GST. Get phone/email instantly.</h6>
+        <p class="text-muted fs-sm mb-4">
+          Instantly unmask verified phone numbers, emails, and candidate CV details for 10 teacher profiles. Valid for 30 days.
+        </p>
+        <button type="button" class="btn btn-success rounded-pill w-100 py-2 fw-bold shadow-sm js-modal-checkout-btn" data-plan="quick_unlock_10">
+          Unlock 10 Resumes (₹999)
+        </button>
+      </div>
+      <div class="modal-footer border-0 bg-light p-3 justify-content-center">
+        <a href="{% url 'billing:pricing' %}" class="fs-xs text-muted text-decoration-none">
+          Need more? View full annual Database Access plans &rarr;
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Cashfree Web Checkout SDK -->
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const cashfreeEnv = "{{ cashfree_env|default:'TEST' }}".toLowerCase() === "prod" ? "production" : "sandbox";
+    let cashfree = null;
+    try {
+      if (typeof Cashfree !== "undefined") {
+        cashfree = Cashfree({ mode: cashfreeEnv });
+      }
+    } catch (e) {
+      console.warn("Cashfree note:", e);
+    }
+
+    const quickUnlockModal = new bootstrap.Modal(document.getElementById("quickUnlockModal"));
+
+    // Top-up button click
+    document.querySelector(".js-topup-btn").addEventListener("click", function () {
+      quickUnlockModal.show();
+    });
+
+    // Modal checkout click
+    document.querySelector(".js-modal-checkout-btn").addEventListener("click", function () {
+      const planCode = this.getAttribute("data-plan");
+      this.disabled = true;
+      this.innerHTML = "Processing...";
+
+      fetch("{% url 'billing:create-order' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-CSRFToken": "{{ csrf_token }}",
+        },
+        body: new URLSearchParams({ plan_code: planCode }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) {
+            alert(data.error || "Could not start checkout.");
+            this.disabled = false;
+            this.innerHTML = "Unlock 10 Resumes (₹999)";
+            return;
+          }
+          if (cashfree && data.payment_session_id) {
+            cashfree.checkout({
+              paymentSessionId: data.payment_session_id,
+              redirectTarget: "_self",
+            });
+          } else {
+            window.location.href = "{% url 'billing:verify' %}?order_id=" + data.order_id;
+          }
+        })
+        .catch(err => {
+          alert("Network error.");
+          this.disabled = false;
+          this.innerHTML = "Unlock 10 Resumes (₹999)";
+        });
+    });
+
+    // Unlock candidate click
+    document.querySelectorAll(".js-unlock-btn").forEach(btn => {
+      btn.addEventListener("click", function () {
+        const userId = this.getAttribute("data-user-id");
+        const candName = this.getAttribute("data-cand-name");
+        const originalText = this.innerHTML;
+
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Unlocking...';
+
+        fetch(`/api/v1/billing/resumes/${userId}/unlock/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (!data.success) {
+              this.disabled = false;
+              this.innerHTML = originalText;
+              // If insufficient credits, show upsell modal
+              quickUnlockModal.show();
+              return;
+            }
+
+            // Successfully unlocked! Update DOM in place
+            const cand = data.candidate;
+            const phoneEl = document.getElementById(`phone_${userId}`);
+            const emailEl = document.getElementById(`email_${userId}`);
+            if (phoneEl) phoneEl.innerHTML = `<i class="bi bi-telephone me-1"></i> ${cand.phone}`;
+            if (emailEl) emailEl.innerHTML = `<i class="bi bi-envelope me-1"></i> ${cand.email}`;
+
+            // Refresh credits count
+            const counter = document.getElementById("creditsCounter");
+            if (counter && parseInt(counter.innerText) > 0) {
+              counter.innerText = parseInt(counter.innerText) - 1;
+            }
+
+            // Reload to show download CV button and Contacted toggle cleanly
+            window.location.reload();
+          })
+          .catch(err => {
+            alert("Error unlocking candidate.");
+            this.disabled = false;
+            this.innerHTML = originalText;
+          });
+      });
+    });
+
+    // Toggle Contacted tag click
+    document.querySelectorAll(".js-toggle-contacted").forEach(btn => {
+      btn.addEventListener("click", function () {
+        const userId = this.getAttribute("data-user-id");
+        const label = this.querySelector(".contacted-label");
+        const icon = this.querySelector("i");
+
+        fetch(`/api/v1/billing/resumes/${userId}/toggle-contacted/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              if (data.is_contacted) {
+                label.innerText = "Contacted";
+                icon.className = "bi bi-check-circle-fill text-success me-1";
+              } else {
+                label.innerText = "Mark Contacted";
+                icon.className = "bi bi-check-circle me-1";
+              }
+            }
+          });
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -21,6 +21,11 @@
             <div class="sj-table-actions d-flex gap-1">
               <a href="{% url 'core:job-detail' slug=job.slug %}" class="btn btn-ghost btn-sm" title="View"><i class="bi bi-eye"></i></a>
               {% if job.status == 'active' and job.approval_status == 'approved' %}
+                <form method="post" action="{% url 'recruiter:job-action' pk=job.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="repost">
+                  <button type="submit" class="btn btn-ghost btn-sm text-primary" title="Repost to Top (Uses 1 Repost Credit)"><i class="bi bi-arrow-up-circle"></i></button>
+                </form>
                 <form method="post" action="{% url 'recruiter:job-action' pk=job.pk %}" class="d-inline" onsubmit="return confirm('Close this job? It will no longer accept applications.');">
                   {% csrf_token %}
                   <input type="hidden" name="action" value="close">
@@ -28,6 +33,13 @@
                 </form>
               {% else %}
                 <a href="{% url 'recruiter:edit-job' pk=job.pk %}" class="btn btn-ghost btn-sm" title="Edit"><i class="bi bi-pencil"></i></a>
+                {% if job.status == 'expired' %}
+                  <form method="post" action="{% url 'recruiter:job-action' pk=job.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="renew">
+                    <button type="submit" class="btn btn-ghost btn-sm text-success" title="Renew Free (30 Days)"><i class="bi bi-arrow-clockwise"></i></button>
+                  </form>
+                {% endif %}
                 {% if job.status == 'expired' or job.status == 'closed' or job.approval_status == 'rejected' %}
                   <form method="post" action="{% url 'recruiter:job-action' pk=job.pk %}" class="d-inline">
                     {% csrf_token %}

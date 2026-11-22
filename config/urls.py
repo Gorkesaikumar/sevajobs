@@ -90,6 +90,11 @@ urlpatterns = [
     path("api/v1/teaching/", include("apps.teaching.urls")),
     path("api/v1/dashboard/", include("apps.dashboard.urls")),
 
+    # Curated action endpoints & billing
+    path("pricing/", include("apps.billing.urls_pricing")),
+    path("billing/", include("apps.billing.urls")),
+    path("api/v1/billing/", include("apps.billing.api_urls")),
+
     # OpenAPI schema
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),

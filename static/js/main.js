@@ -182,8 +182,8 @@ window.showAlert = function (message, title = 'Notice', iconClass = 'bi-info-cir
   if (!modalEl) {
     const modalHtml = `
       <div class="modal fade" id="genericAlertModal" tabindex="-1" aria-labelledby="genericAlertTitle" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content border-0 shadow">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+          <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
             <div class="modal-header border-bottom-0 pb-0">
               <h5 class="modal-title d-flex align-items-center gap-2" id="genericAlertTitle">
                 <i id="genericAlertIcon" class="bi bi-info-circle text-primary fs-4"></i> 
@@ -191,9 +191,9 @@ window.showAlert = function (message, title = 'Notice', iconClass = 'bi-info-cir
               </h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body py-3" id="genericAlertMessage"></div>
+            <div class="modal-body py-3" id="genericAlertMessage" style="word-break: break-word; overflow-wrap: anywhere; line-height: 1.5; font-size: 0.925rem;"></div>
             <div class="modal-footer border-top-0 pt-0">
-              <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">OK</button>
+              <button type="button" class="btn btn-primary px-4 rounded-pill" data-bs-dismiss="modal">OK</button>
             </div>
           </div>
         </div>

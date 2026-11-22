@@ -91,16 +91,16 @@
 
   <!-- Generic Alert Modal (for replacing window.alert) -->
   <div class="modal fade" id="genericAlertModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content border-0 shadow-lg">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: var(--sj-radius, 14px);">
         <div class="modal-body text-center p-4">
           <div class="mb-3">
             <i class="bi bi-info-circle text-primary" id="genericAlertIcon" style="font-size: 3.5rem;"></i>
           </div>
           <h5 class="fw-bold mb-2" id="genericAlertTitle">Notice</h5>
-          <p class="text-muted-2 mb-4" id="genericAlertMessage">Message</p>
+          <p class="text-muted-2 mb-4" id="genericAlertMessage" style="word-break: break-word; overflow-wrap: anywhere; line-height: 1.5; font-size: 0.925rem;">Message</p>
           <div class="d-flex justify-content-center">
-            <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">OK</button>
+            <button type="button" class="btn btn-primary px-4 rounded-pill" data-bs-dismiss="modal">OK</button>
           </div>
         </div>
       </div>

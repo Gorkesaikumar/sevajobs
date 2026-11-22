@@ -516,6 +516,13 @@ class RecruiterPostJobView(RecruiterMixin, TemplateView):
                 messages.error(request, err)
             return redirect("recruiter:post-teaching-job")
 
+        # Check billing entitlements before job submission
+        from apps.billing.services import BillingEntitlementService
+        can_post, reason = BillingEntitlementService.can_post_job(company)
+        if not can_post:
+            messages.error(request, reason)
+            return redirect("billing:dashboard")
+
         # Duplicate-submission guard: same recruiter + same title within window.
         cutoff = timezone.now() - timedelta(seconds=self._DUPLICATE_WINDOW_SECS)
         if Job.objects.filter(
@@ -528,6 +535,7 @@ class RecruiterPostJobView(RecruiterMixin, TemplateView):
 
         try:
             job = JobService().create_job(recruiter_profile, validated_data)
+            BillingEntitlementService.consume_job_post_credit(company, job)
             if action == "publish":
                 JobService().submit_for_approval(job, recruiter_profile)
                 messages.success(request, f"Job '{job.title}' submitted for approval.")
@@ -674,6 +682,22 @@ class RecruiterJobActionView(RecruiterMixin, TemplateView):
                     job.save(update_fields=["status"])
                 JobService().submit_for_approval(job, recruiter_profile)
                 messages.success(request, f"Job '{job.title}' resubmitted for approval.")
+            elif action == "renew":
+                from apps.billing.services import BillingEntitlementService
+                can_renew, reason = BillingEntitlementService.can_renew_free_job(company, job)
+                if can_renew:
+                    BillingEntitlementService.renew_free_job(company, job)
+                    messages.success(request, f"Job '{job.title}' renewed successfully for 30 days.")
+                else:
+                    messages.warning(request, reason)
+            elif action == "repost":
+                from apps.billing.services import BillingEntitlementService
+                can_repost, reason = BillingEntitlementService.can_repost_job(company, job)
+                if can_repost:
+                    BillingEntitlementService.consume_repost_credit(company, job)
+                    messages.success(request, f"Job '{job.title}' bumped to top using 1 repost credit.")
+                else:
+                    messages.warning(request, reason)
             else:
                 messages.error(request, "Unknown action.")
         except Exception as e:

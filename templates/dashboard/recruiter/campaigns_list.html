@@ -1,0 +1,134 @@
+{% extends "dashboard/recruiter/_layout.html" %}
+{% load humanize %}
+
+{% block title %}Candidate Email Campaigns — SevaJobs{% endblock %}
+
+{% block dashboard_content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-800 text-ink mb-1">Candidate Email Campaigns</h4>
+    <p class="text-muted fs-sm mb-0">Reach verified teachers directly with interview invitations and hiring updates.</p>
+  </div>
+  <div>
+    <a href="{% url 'billing:campaign-create' %}" class="btn btn-gradient btn-sm">
+      <i class="bi bi-plus-circle me-1"></i> New Campaign
+    </a>
+  </div>
+</div>
+
+{% if messages %}
+  <div class="mb-4">
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<!-- Quota & Admin Policy Info Banner -->
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="sj-card p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fs-xs fw-bold text-muted text-uppercase">Daily Sending Limit</span>
+        <span class="badge bg-primary-subtle text-primary rounded-pill">{{ today_sent }} / {{ daily_limit }} sent today</span>
+      </div>
+      <div class="progress mb-2" style="height: 8px;">
+        <div class="progress-bar bg-primary" role="progressbar" style="width: {% widthratio today_sent daily_limit 100 %}%;"></div>
+      </div>
+      <div class="fs-xs text-muted">
+        To prevent spam, institutions can dispatch up to <strong>{{ daily_limit }} emails/day</strong>. You can send <strong>{{ remaining_today }}</strong> more emails today.
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="sj-card p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fs-xs fw-bold text-muted text-uppercase">Available Email Credits</span>
+        <span class="fs-4 fw-bold text-ink">{{ subscription.remaining_email_credits }}</span>
+      </div>
+      <div class="fs-xs text-muted mb-1">
+        <i class="bi bi-shield-check text-success me-1"></i> <strong>Mandatory Admin Approval:</strong> Every campaign is reviewed by SevaJobs administrators before dispatch to maintain candidate trust.
+      </div>
+      <div class="fs-xs text-muted-2">
+        <i class="bi bi-check2-circle text-primary me-1"></i> Only sends to internal SevaJobs candidates (external uploads blocked).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Campaigns Table -->
+<div class="sj-card overflow-hidden">
+  <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+    <h6 class="fw-bold text-ink mb-0">Campaign History</h6>
+  </div>
+  <div class="table-responsive">
+    <table class="table sj-table mb-0">
+      <thead>
+        <tr>
+          <th>Campaign Name</th>
+          <th>Recipients</th>
+          <th>Admin Review</th>
+          <th>Status</th>
+          <th>Open Rate</th>
+          <th>Click Rate</th>
+          <th>Created</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if campaigns %}
+          {% for item in campaigns %}
+            {% with c=item.campaign %}
+              <tr>
+                <td>
+                  <a href="{% url 'billing:campaign-detail' pk=c.pk %}" class="fw-bold text-ink text-decoration-none">
+                    {{ c.name }}
+                  </a>
+                  <div class="fs-xs text-muted-2 text-truncate" style="max-width: 280px;">{{ c.subject }}</div>
+                </td>
+                <td class="fw-semibold">{{ c.recipient_count }}</td>
+                <td>
+                  {% if c.approval_status == 'approved' %}
+                    <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1">Approved</span>
+                  {% elif c.approval_status == 'rejected' %}
+                    <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1" title="{{ c.rejection_reason }}">Rejected</span>
+                  {% else %}
+                    <span class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1">Pending Approval</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1">{{ c.get_status_display }}</span>
+                </td>
+                <td>
+                  <span class="fw-bold text-success">{{ item.open_rate }}%</span>
+                  <div class="fs-xs text-muted-2">{{ c.opened_count }}/{{ c.sent_count }}</div>
+                </td>
+                <td>
+                  <span class="fw-bold text-primary">{{ item.click_rate }}%</span>
+                  <div class="fs-xs text-muted-2">{{ c.clicked_count }}/{{ c.sent_count }}</div>
+                </td>
+                <td class="fs-xs text-muted-2">{{ c.created_at|date:"M d, Y" }}</td>
+                <td>
+                  <a href="{% url 'billing:campaign-detail' pk=c.pk %}" class="btn btn-ghost btn-sm" title="View Report">
+                    <i class="bi bi-bar-chart"></i>
+                  </a>
+                </td>
+              </tr>
+            {% endwith %}
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-envelope-paper display-6 d-block mb-2 text-muted-2"></i>
+              No campaigns created yet. Click <strong>New Campaign</strong> to send interview invitations or hiring updates.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
